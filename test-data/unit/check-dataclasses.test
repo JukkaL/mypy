@@ -579,6 +579,33 @@ class Foo:
 [builtins fixtures/list.pyi]
 [out]
 
+[case testMutableProperty]
+# flags: --python-version 3.6
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass(init=False)
+class C:
+    a: Optional[int]
+
+    def __init__(self, a: Optional[int] = None) -> None:
+        self._a: Optional[int] = None
+        self.a = a
+
+    @property
+    def a(self) -> Optional[int]:
+        return self._a
+
+    @a.setter
+    def a(self, value: Optional[int]) -> Optional[int]:
+        self._a = value
+        return self._a
+
+c = C()
+c.a = 10
+c.a = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Optional[int]")
+
+[builtins fixtures/list.pyi]
 [case testDisallowUntypedWorksForward]
 # flags: --disallow-untyped-defs
 from dataclasses import dataclass
