@@ -1,3 +1,5 @@
+.. _class-basics:
+
 Class basics
 ============
 

@@ -169,7 +169,9 @@ are trying to use has done neither of these things. In that case, you can try:
 
 1.  Searching to see if there is a :ref:`PEP 561 compliant stub package <installed-packages>`.
     corresponding to your third party library. Stub packages let you install
-    type hints independently from the library itself.
+    type hints independently from the library itself. For example, if you want
+    type hints for the `sqlalchemy <https://www.sqlalchemy.org/>`_ library,
+    you can install `sqlalchemy-stubs <https://pypi.org/project/sqlalchemy-stubs/>`_.
 
 2.  :ref:`Writing your own stub files <stub-files>` containing type hints for
     the library. You can point mypy at your type hints either by passing

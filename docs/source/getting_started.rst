@@ -4,7 +4,7 @@ Getting started
 ===============
 
 This chapter introduces some core concepts of mypy, including function
-annotations, the ``typing`` module, library stubs, and more.
+annotations, the ``typing`` module, stub files, and more.
 
 Be sure to read this chapter carefully, as the rest of the documentation
 may not make much sense otherwise.
@@ -300,34 +300,144 @@ syntax like so:
 .. _pep526: https://www.python.org/dev/peps/pep-0526/
 
 
-.. _stubs-intro:
+Types and classes
+*****************
 
-Library stubs and typeshed
-**************************
+So far, we've only seen examples of pre-existing types like the ``int``
+or ``float`` builtins, or the ``List`` and ``Dict`` types from the typing
+module. However, these aren't the only types you can use: in fact, you can
+use any Python class as a type!
 
-Mypy uses library *stubs* to type check code interacting with library
-modules, including the Python standard library. A library stub defines
-a skeleton of the public interface of the library, including classes,
-variables and functions, and their types. Mypy ships with stubs from
-the `typeshed <https://github.com/python/typeshed>`_ project, which
-contains library stubs for the Python builtins, the standard library,
-and selected third-party packages.
-
-For example, consider this code:
+For example, suppose you've defined a custom class representing a bank account:
 
 .. code-block:: python
 
-  x = chr(4)
+    class BankAccount:
+        # Note: It is ok to omit type hints for the "self" parameter.
+        # Mypy will infer the correct type.
 
-Without a library stub, mypy would have no way of inferring the type of ``x``
-and checking that the argument to ``chr`` has a valid type.
+        def __init__(self, account_name: str, initial_balance: int = 0) -> None:
+            # Note: Mypy will infer the correct types of your fields
+            # based on the types of the parameters.
+            self.account_name = account_name
+            self.balance = initial_balance
 
-Mypy complains if it can't find a stub (or a real module) for a
-library module that you import. Some modules ship with stubs that mypy
-can automatically find, or you can install a 3rd party module with
-additional stubs (see :ref:`installed-packages` for details).  You can
-also :ref:`create stubs <stub-files>` easily. We discuss ways of
-silencing complaints about missing stubs in :ref:`ignore-missing-imports`.
+        def deposit(self, amount: int) -> None:
+            self.balance += amount
+
+        def withdraw(self, amount: int) -> None:
+            self.balance -= amount
+
+        def overdrawn(self) -> bool:
+            return self.balance < 0
+
+You can declare that a function will accept any instance of your class
+by simply annotating the parameters with ``BankAccount``:
+
+.. code-block:: python
+
+    def transfer(src: BankAccount, dst: BankAccount, amount: int) -> None:
+        src.withdraw(amount)
+        dst.deposit(amount)
+
+    account_1 = BankAccount('Alice', 400)
+    account_2 = BankAccount('Bob', 200)
+    transfer(account_1, account_2, 50)
+
+In fact, the ``transfer`` function we wrote above can accept more then just
+instances of ``BankAccount``: it can also accept any instance of a *subclass*
+of ``BankAccount``. For example, suppose you write a new class that looks like this:
+
+.. code-block:: python
+
+    class AuditedBankAccount(BankAccount):
+        def __init__(self, account_name: str, initial_balance: int = 0) -> None:
+            super().__init__(account_name, initial_balance)
+
+            # In this case, mypy can't infer the exact type of this field
+            # based on the information available in this constructor, so we
+            # need to add a type annotation.
+            self.audit_log: List[str] = []
+
+        def deposit(self, amount: int) -> None:
+            self.audit_log.append(f"Deposited {amount}")
+            self.balance += amount
+
+        def withdraw(self, amount: int) -> None:
+            self.audit_log.append(f"Withdrew {amount}")
+            self.balance -= amount
+
+Since ``AuditedBankAccount`` is a subclass of ``BankAccount``, we can directly pass
+in instances of it into our ``transfer`` function:
+
+.. code-block:: python
+
+    audited = AuditedBankAccount('Charlie', 300)
+    transfer(account_1, audited, 100)   # Type checks!
+
+This behavior is actually a fundamental aspect of the PEP 484 type system: when 
+we annotate some variable with a type ``T``, we are actually telling mypy that
+variable can be assigned an instance of ``T``, or an instance of a *subclass* of ``T``.
+The same rule applies to type hints on parameters or fields.
+
+See :ref:`class-basics` to learn more about how to work with code involving classes.
+
+
+.. _stubs-intro:
+
+Stubs files and typeshed
+************************
+
+Mypy also understands how to work with classes found in the standard library.
+For example, here is a function which uses the ``Path`` object from the
+`pathlib standard library module <https://docs.python.org/3/library/pathlib.html>`_:
+
+.. code-block:: python
+
+    from pathlib import Path
+
+    def load_template(template_path: Path, name: str) -> str:
+        # Mypy understands that 'file_path.read_text()' returns a str...
+        template = template_path.read_text()
+
+        # ...so understands this line type checks.
+        return template.replace('USERNAME', name)
+
+This behavior may surprise you if you're familiar with how
+Python internally works. The standard library does not use type hints
+anywhere, so how did mypy know that ``Path.read_text()`` returns a ``str``,
+or that ``str.replace(...)`` accepts exactly two ``str`` arguments?
+
+The answer is that mypy comes bundled with *stub files* from the
+the `typeshed <https://github.com/python/typeshed>`_ project.
+
+A *stub file* is a file containing a skeleton of the public interface
+of that Python module, including classes, variables, functions -- and
+most importantly, their types. Typeshed is a collection of stub files
+for modules in the standard library and select third party libraries
+and is what mypy used to identify the correct types for our example above.
+
+Mypy can understand third party libraries in the same way as long as those
+libraries come bundled with stub files. (See :ref:`installed-packages`
+for more details on how this is done). However, if the third party library
+does *not* come bundled with type hints, mypy will not try and guess what
+the types are: it'll assume the entire library is
+:ref:`dynamically typed <dynamic-typing>` and report an error
+whenever you import the library.
+
+We discuss strategies for handling this category of errors in
+:ref:`ignore-missing-imports`, but in short, there are three things you can do:
+
+1. Look for a separate package containing stubs for that library. For example,
+   if you want type hints for the `sqlalchemy <https://www.sqlalchemy.org/>`_ 
+   library, you can install
+   `sqlalchemy-stubs <https://pypi.org/project/sqlalchemy-stubs/>`_.
+
+2. :ref:`Create your own stub files <stub-files>` for that library.
+
+3. :ref:`Silence the errors <ignore-missing-imports>` and accept that
+   any uses of the library will remain dynamically typed.
+
 
 Configuring mypy
 ****************
@@ -382,7 +492,6 @@ resources:
   you encounter problems.
 
 * You can ask questions about mypy in the
-  `mypy issue tracker <https://github.com/python/mypy/issues>`_ and
   typing `Gitter chat <https://gitter.im/python/typing>`_.
 
 You can also continue reading this document and skip sections that
