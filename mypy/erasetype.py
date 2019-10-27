@@ -123,15 +123,16 @@ class TypeVarEraser(TypeTranslator):
         return t
 
 
-def remove_instance_last_known_values(t: Type) -> Type:
-    return t.accept(LastKnownValueEraser())
+def remove_instance_transient_info(t: Type) -> Type:
+    """Recursively removes any info from Instances that exist
+    on a per-instance basis. Currently, this means erasing the
+    last-known literal type and any plugin metadata.
+    """
+    return t.accept(TransientInstanceInfoEraser())
 
 
-class LastKnownValueEraser(TypeTranslator):
-    """Removes the Literal[...] type that may be associated with any
-    Instance types."""
-
+class TransientInstanceInfoEraser(TypeTranslator):
     def visit_instance(self, t: Instance) -> Type:
-        if t.last_known_value:
-            return t.copy_modified(last_known_value=None)
+        if t.last_known_value or t.metadata:
+            return t.copy_modified(last_known_value=None, metadata={})
         return t

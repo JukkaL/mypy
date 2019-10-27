@@ -693,10 +693,11 @@ class Instance(ProperType):
     The list of type variables may be empty.
     """
 
-    __slots__ = ('type', 'args', 'erased', 'invalid', 'type_ref', 'last_known_value')
+    __slots__ = ('type', 'args', 'erased', 'invalid', 'type_ref', 'metadata', 'last_known_value')
 
     def __init__(self, typ: mypy.nodes.TypeInfo, args: List[Type],
                  line: int = -1, column: int = -1, erased: bool = False,
+                 metadata: Optional[Dict[str, JsonDict]] = None,
                  last_known_value: Optional['LiteralType'] = None) -> None:
         super().__init__(line, column)
         self.type = typ
@@ -708,6 +709,13 @@ class Instance(ProperType):
 
         # True if recovered after incorrect number of type arguments error
         self.invalid = False
+
+        # This is a dictionary that will be serialized and un-serialized as is.
+        # It is useful for plugins to add their data to save in the cache.
+        if metadata:
+            self.metadata = metadata  # type: Dict[str, JsonDict]
+        else:
+            self.metadata = {}
 
         # This field keeps track of the underlying Literal[...] value associated with
         # this instance, if one is known.
@@ -776,6 +784,8 @@ class Instance(ProperType):
                 }  # type: JsonDict
         data['type_ref'] = type_ref
         data['args'] = [arg.serialize() for arg in self.args]
+        if self.metadata:
+            data['metadata'] = self.metadata
         if self.last_known_value is not None:
             data['last_known_value'] = self.last_known_value.serialize()
         return data
@@ -794,12 +804,15 @@ class Instance(ProperType):
             args = [deserialize_type(arg) for arg in args_list]
         inst = Instance(NOT_READY, args)
         inst.type_ref = data['type_ref']  # Will be fixed up by fixup.py later.
+        if 'metadata' in data:
+            inst.metadata = data['metadata']
         if 'last_known_value' in data:
             inst.last_known_value = LiteralType.deserialize(data['last_known_value'])
         return inst
 
     def copy_modified(self, *,
                       args: Bogus[List[Type]] = _dummy,
+                      metadata: Bogus[Dict[str, JsonDict]] = _dummy,
                       last_known_value: Bogus[Optional['LiteralType']] = _dummy) -> 'Instance':
         return Instance(
             self.type,
@@ -807,6 +820,7 @@ class Instance(ProperType):
             self.line,
             self.column,
             self.erased,
+            metadata if metadata is not _dummy else self.metadata,
             last_known_value if last_known_value is not _dummy else self.last_known_value,
         )
 

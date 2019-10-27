@@ -2,7 +2,6 @@
 
 import itertools
 import fnmatch
-import sys
 from contextlib import contextmanager
 
 from typing import (
@@ -50,7 +49,8 @@ from mypy.checkmember import (
 from mypy.typeops import (
     map_type_from_supertype, bind_self, erase_to_bound, make_simplified_union,
     erase_def_to_union_or_bound, erase_to_union_or_bound,
-    true_only, false_only, function_type,
+    true_only, false_only, function_type, is_singleton_type,
+    try_expanding_enum_to_union, coerce_to_literal,
 )
 from mypy import message_registry
 from mypy.subtypes import (
@@ -63,7 +63,7 @@ from mypy.maptype import map_instance_to_supertype
 from mypy.typevars import fill_typevars, has_no_typevars, fill_typevars_with_any
 from mypy.semanal import set_callable_name, refers_to_fullname
 from mypy.mro import calculate_mro
-from mypy.erasetype import erase_typevars, remove_instance_last_known_values
+from mypy.erasetype import erase_typevars, remove_instance_transient_info
 from mypy.expandtype import expand_type, expand_type_by_instance
 from mypy.visitor import NodeVisitor
 from mypy.join import join_types
@@ -2069,7 +2069,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                         if partial_types is not None:
                             if not self.current_node_deferred:
                                 # Partial type can't be final, so strip any literal values.
-                                rvalue_type = remove_instance_last_known_values(rvalue_type)
+                                rvalue_type = remove_instance_transient_info(rvalue_type)
                                 inferred_type = make_simplified_union(
                                     [rvalue_type, NoneType()])
                                 self.set_inferred_type(var, lvalue, inferred_type)
@@ -2126,7 +2126,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             if inferred:
                 rvalue_type = self.expr_checker.accept(rvalue)
                 if not inferred.is_final:
-                    rvalue_type = remove_instance_last_known_values(rvalue_type)
+                    rvalue_type = remove_instance_transient_info(rvalue_type)
                 self.infer_variable_type(inferred, lvalue, rvalue_type, rvalue)
 
     def check_compatibility_all_supers(self, lvalue: RefExpr, lvalue_type: Optional[Type],
@@ -4751,97 +4751,6 @@ def is_overlapping_types_no_promote(left: Type, right: Type) -> bool:
 def is_private(node_name: str) -> bool:
     """Check if node is private to class definition."""
     return node_name.startswith('__') and not node_name.endswith('__')
-
-
-def get_enum_values(typ: Instance) -> List[str]:
-    """Return the list of values for an Enum."""
-    return [name for name, sym in typ.type.names.items() if isinstance(sym.node, Var)]
-
-
-def is_singleton_type(typ: Type) -> bool:
-    """Returns 'true' if this type is a "singleton type" -- if there exists
-    exactly only one runtime value associated with this type.
-
-    That is, given two values 'a' and 'b' that have the same type 't',
-    'is_singleton_type(t)' returns True if and only if the expression 'a is b' is
-    always true.
-
-    Currently, this returns True when given NoneTypes, enum LiteralTypes and
-    enum types with a single value.
-
-    Note that other kinds of LiteralTypes cannot count as singleton types. For
-    example, suppose we do 'a = 100000 + 1' and 'b = 100001'. It is not guaranteed
-    that 'a is b' will always be true -- some implementations of Python will end up
-    constructing two distinct instances of 100001.
-    """
-    typ = get_proper_type(typ)
-    # TODO: Also make this return True if the type is a bool LiteralType.
-    # Also make this return True if the type corresponds to ... (ellipsis) or NotImplemented?
-    return (
-        isinstance(typ, NoneType) or (isinstance(typ, LiteralType) and typ.is_enum_literal())
-        or (isinstance(typ, Instance) and typ.type.is_enum and len(get_enum_values(typ)) == 1)
-    )
-
-
-def try_expanding_enum_to_union(typ: Type, target_fullname: str) -> ProperType:
-    """Attempts to recursively expand any enum Instances with the given target_fullname
-    into a Union of all of its component LiteralTypes.
-
-    For example, if we have:
-
-        class Color(Enum):
-            RED = 1
-            BLUE = 2
-            YELLOW = 3
-
-        class Status(Enum):
-            SUCCESS = 1
-            FAILURE = 2
-            UNKNOWN = 3
-
-    ...and if we call `try_expanding_enum_to_union(Union[Color, Status], 'module.Color')`,
-    this function will return Literal[Color.RED, Color.BLUE, Color.YELLOW, Status].
-    """
-    typ = get_proper_type(typ)
-
-    if isinstance(typ, UnionType):
-        items = [try_expanding_enum_to_union(item, target_fullname) for item in typ.items]
-        return make_simplified_union(items)
-    elif isinstance(typ, Instance) and typ.type.is_enum and typ.type.fullname() == target_fullname:
-        new_items = []
-        for name, symbol in typ.type.names.items():
-            if not isinstance(symbol.node, Var):
-                continue
-            new_items.append(LiteralType(name, typ))
-        # SymbolTables are really just dicts, and dicts are guaranteed to preserve
-        # insertion order only starting with Python 3.7. So, we sort these for older
-        # versions of Python to help make tests deterministic.
-        #
-        # We could probably skip the sort for Python 3.6 since people probably run mypy
-        # only using CPython, but we might as well for the sake of full correctness.
-        if sys.version_info < (3, 7):
-            new_items.sort(key=lambda lit: lit.value)
-        return make_simplified_union(new_items)
-    else:
-        return typ
-
-
-def coerce_to_literal(typ: Type) -> ProperType:
-    """Recursively converts any Instances that have a last_known_value or are
-    instances of enum types with a single value into the corresponding LiteralType.
-    """
-    typ = get_proper_type(typ)
-    if isinstance(typ, UnionType):
-        new_items = [coerce_to_literal(item) for item in typ.items]
-        return make_simplified_union(new_items)
-    elif isinstance(typ, Instance):
-        if typ.last_known_value:
-            return typ.last_known_value
-        elif typ.type.is_enum:
-            enum_values = get_enum_values(typ)
-            if len(enum_values) == 1:
-                return LiteralType(value=enum_values[0], fallback=typ)
-    return typ
 
 
 def has_bool_item(typ: ProperType) -> bool:

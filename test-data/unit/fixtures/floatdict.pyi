@@ -36,7 +36,7 @@ class list(Iterable[T], Generic[T]):
     def append(self, x: T) -> None: pass
     def extend(self, x: Iterable[T]) -> None: pass
 
-class dict(Iterable[KT], Mapping[KT, VT], Generic[KT, VT]):
+class dict(Mapping[KT, VT], Generic[KT, VT]):
     @overload
     def __init__(self, **kwargs: VT) -> None: pass
     @overload

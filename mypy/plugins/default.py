@@ -22,6 +22,7 @@ class DefaultPlugin(Plugin):
     def get_function_hook(self, fullname: str
                           ) -> Optional[Callable[[FunctionContext], Type]]:
         from mypy.plugins import ctypes
+        from mypy.plugins import regex
 
         if fullname == 'contextlib.contextmanager':
             return contextmanager_callback
@@ -29,6 +30,10 @@ class DefaultPlugin(Plugin):
             return open_callback
         elif fullname == 'ctypes.Array':
             return ctypes.array_constructor_callback
+        elif fullname == 're.compile':
+            return regex.re_compile_callback
+        elif fullname in regex.FUNCTIONS_PRODUCING_MATCH_OBJECT:
+            return regex.re_direct_match_callback
         return None
 
     def get_method_signature_hook(self, fullname: str
@@ -52,6 +57,7 @@ class DefaultPlugin(Plugin):
     def get_method_hook(self, fullname: str
                         ) -> Optional[Callable[[MethodContext], Type]]:
         from mypy.plugins import ctypes
+        from mypy.plugins import regex
 
         if fullname == 'typing.Mapping.get':
             return typed_dict_get_callback
@@ -69,6 +75,12 @@ class DefaultPlugin(Plugin):
             return ctypes.array_iter_callback
         elif fullname == 'pathlib.Path.open':
             return path_open_callback
+        elif fullname in regex.METHODS_PRODUCING_MATCH_OBJECT:
+            return regex.re_get_match_callback
+        elif fullname == 'typing.Match.groups':
+            return regex.re_match_groups_callback
+        elif fullname in regex.METHODS_PRODUCING_GROUP:
+            return regex.re_match_group_callback
         return None
 
     def get_attribute_hook(self, fullname: str

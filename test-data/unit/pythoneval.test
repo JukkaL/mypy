@@ -1479,3 +1479,133 @@ def f_suppresses() -> int:
 [out]
 _testUnreachableWithStdlibContextManagersNoStrictOptional.py:9: error: Statement is unreachable
 _testUnreachableWithStdlibContextManagersNoStrictOptional.py:15: error: Statement is unreachable
+
+[case testRegexPluginBasicCase]
+# mypy: strict-optional
+import re
+from typing_extensions import Final
+
+pattern1: Final = re.compile("(foo)*(bar)")
+match1: Final = pattern1.match("blah")
+if match1:
+    reveal_type(match1.groups())
+    reveal_type(match1.groups(default="test"))
+    reveal_type(match1.group(0))
+    reveal_type(match1.group(1))
+    reveal_type(match1.group(2))
+    reveal_type(match1.group(0, 1, 2))
+
+pattern2: Final = re.compile(b"(?P<n1>foo){0,4} (?P<n2>bar)")
+match2: Final = pattern2.search(b"blah")
+if match2:
+    reveal_type(match2.groups())
+    reveal_type(match2[0])
+    reveal_type(match2[1])
+    reveal_type(match2[2])
+    reveal_type(match2["n1"])
+    reveal_type(match2["n2"])
+[out]
+_testRegexPluginBasicCase.py:8: note: Revealed type is 'Tuple[Union[builtins.str*, None], builtins.str*]'
+_testRegexPluginBasicCase.py:9: note: Revealed type is 'Tuple[builtins.str*, builtins.str*]'
+_testRegexPluginBasicCase.py:10: note: Revealed type is 'builtins.str*'
+_testRegexPluginBasicCase.py:11: note: Revealed type is 'Union[builtins.str*, None]'
+_testRegexPluginBasicCase.py:12: note: Revealed type is 'builtins.str*'
+_testRegexPluginBasicCase.py:13: note: Revealed type is 'Tuple[builtins.str*, Union[builtins.str*, None], builtins.str*]'
+_testRegexPluginBasicCase.py:18: note: Revealed type is 'Tuple[Union[builtins.bytes*, None], builtins.bytes*]'
+_testRegexPluginBasicCase.py:19: note: Revealed type is 'builtins.bytes*'
+_testRegexPluginBasicCase.py:20: note: Revealed type is 'Union[builtins.bytes*, None]'
+_testRegexPluginBasicCase.py:21: note: Revealed type is 'builtins.bytes*'
+_testRegexPluginBasicCase.py:22: note: Revealed type is 'Union[builtins.bytes*, None]'
+_testRegexPluginBasicCase.py:23: note: Revealed type is 'builtins.bytes*'
+
+[case testRegexPluginNoFinal]
+# mypy: strict-optional
+import re
+
+pattern = re.compile("(foo)*(bar)")
+match = pattern.match("blah")
+if match:
+    # TODO: Consider typeshed so we default to using stricter types given ambiguity
+    reveal_type(match.groups())
+    reveal_type(match[1])
+[out]
+_testRegexPluginNoFinal.py:8: note: Revealed type is 'typing.Sequence[builtins.str*]'
+_testRegexPluginNoFinal.py:9: note: Revealed type is 'builtins.str*'
+
+[case testRegexPluginErrors]
+# mypy: strict-optional
+import re
+from typing_extensions import Final
+
+invalid1 = re.compile("(bad")
+invalid2: Final = re.compile("(bad")
+
+pattern: Final = re.compile("(a)(b)*(?P<name>c)")
+match: Final = pattern.fullmatch("blah")
+if match:
+    match.group(5)
+    match.group("bad")
+[out]
+_testRegexPluginErrors.py:5: error: Invalid regex: missing ), unterminated subpattern
+_testRegexPluginErrors.py:6: error: Invalid regex: missing ), unterminated subpattern
+_testRegexPluginErrors.py:11: error: Regex has 4 total groups, given group number 5 is too big
+_testRegexPluginErrors.py:12: error: Regex does not contain group named 'bad'
+
+[case testRegexPluginDirectMethods]
+# mypy: strict-optional
+import re
+from typing_extensions import Final
+
+match: Final = re.search("(foo)*(bar)", "blah")
+if match:
+    reveal_type(match.groups())
+    reveal_type(match.groups(default="test"))
+    reveal_type(match[0])
+    reveal_type(match[1])
+    reveal_type(match[2])
+    reveal_type(match.group(0, 1, 2))
+[out]
+_testRegexPluginDirectMethods.py:7: note: Revealed type is 'Tuple[Union[builtins.str*, None], builtins.str*]'
+_testRegexPluginDirectMethods.py:8: note: Revealed type is 'Tuple[builtins.str*, builtins.str*]'
+_testRegexPluginDirectMethods.py:9: note: Revealed type is 'builtins.str*'
+_testRegexPluginDirectMethods.py:10: note: Revealed type is 'Union[builtins.str*, None]'
+_testRegexPluginDirectMethods.py:11: note: Revealed type is 'builtins.str*'
+_testRegexPluginDirectMethods.py:12: note: Revealed type is 'Tuple[builtins.str*, Union[builtins.str*, None], builtins.str*]'
+
+[case testRegexPluginUnknownArg]
+# mypy: strict-optional
+import re
+from typing_extensions import Final
+
+index: int
+name: str
+
+pattern1: Final = re.compile("(foo)*(bar)(?P<name1>baz)?(?P<name2>qux)")
+match1: Final = pattern1.match("blah")
+if match1:
+    reveal_type(match1.groups())
+    reveal_type(match1[index])
+    reveal_type(match1[name])
+    reveal_type(match1.group(0, index, name))
+
+pattern2: Final = re.compile("(foo)(?P<name>bar)")
+match2: Final = pattern2.match("blah")
+if match2:
+    # No optional groups, so we can always return str
+    reveal_type(match2.groups())
+    reveal_type(match2[index])
+    reveal_type(match2[name])
+    reveal_type(match2.group(0, index, name))
+    match2["bad"]
+    match2[5]
+[out]
+_testRegexPluginUnknownArg.py:11: note: Revealed type is 'Tuple[Union[builtins.str*, None], builtins.str*, Union[builtins.str*, None], builtins.str*]'
+_testRegexPluginUnknownArg.py:12: note: Revealed type is 'Union[builtins.str*, None]'
+_testRegexPluginUnknownArg.py:13: note: Revealed type is 'Union[builtins.str*, None]'
+_testRegexPluginUnknownArg.py:14: note: Revealed type is 'Tuple[builtins.str*, Union[builtins.str*, None], Union[builtins.str*, None]]'
+_testRegexPluginUnknownArg.py:20: note: Revealed type is 'Tuple[builtins.str*, builtins.str*]'
+_testRegexPluginUnknownArg.py:21: note: Revealed type is 'builtins.str*'
+_testRegexPluginUnknownArg.py:22: note: Revealed type is 'builtins.str*'
+_testRegexPluginUnknownArg.py:23: note: Revealed type is 'Tuple[builtins.str*, builtins.str*, builtins.str*]'
+_testRegexPluginUnknownArg.py:24: error: Regex does not contain group named 'bad'
+_testRegexPluginUnknownArg.py:25: error: Regex has 3 total groups, given group number 5 is too big
