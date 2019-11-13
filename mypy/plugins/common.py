@@ -2,11 +2,11 @@ from typing import List, Optional
 
 from mypy.nodes import (
     ARG_POS, MDEF, Argument, Block, CallExpr, Expression, SYMBOL_FUNCBASE_TYPES,
-    FuncDef, PassStmt, RefExpr, SymbolTableNode, Var
+    Decorator, FuncDef, NameExpr, PassStmt, RefExpr, SymbolTableNode, Var
 )
 from mypy.plugin import ClassDefContext
 from mypy.semanal import set_callable_name
-from mypy.types import CallableType, Overloaded, Type, TypeVarDef, get_proper_type
+from mypy.types import CallableType, Overloaded, Type, TypeType, TypeVarDef, get_proper_type
 from mypy.typevars import fill_typevars
 from mypy.util import get_unique_redefinition_name
 from mypy.typeops import try_getting_str_literals  # noqa: F401  # Part of public API
@@ -86,6 +86,9 @@ def add_method(
         return_type: Type,
         self_type: Optional[Type] = None,
         tvar_def: Optional[TypeVarDef] = None,
+        is_classmethod: bool = False,
+        is_new: bool = False,
+        is_staticmethod: bool = False
 ) -> None:
     """Adds a new method to a class.
     """
@@ -99,9 +102,14 @@ def add_method(
             ctx.cls.defs.body.remove(sym.node)
 
     self_type = self_type or fill_typevars(info)
-    function_type = ctx.api.named_type('__builtins__.function')
-
-    args = [Argument(Var('self'), self_type, None, ARG_POS)] + args
+    if is_classmethod or is_new:
+        first = [Argument(Var('_cls'), TypeType.make_normalized(self_type), None, ARG_POS)]
+    elif is_staticmethod:
+        first = []
+    else:
+        self_type = self_type or fill_typevars(info)
+        first = [Argument(Var('self'), self_type, None, ARG_POS)]
+    args = first + args
     arg_types, arg_names, arg_kinds = [], [], []
     for arg in args:
         assert arg.type_annotation, 'All arguments must be fully typed.'
@@ -109,6 +117,7 @@ def add_method(
         arg_names.append(arg.variable.name())
         arg_kinds.append(arg.kind)
 
+    function_type = ctx.api.named_type('__builtins__.function')
     signature = CallableType(arg_types, arg_kinds, arg_names, return_type, function_type)
     if tvar_def:
         signature.variables = [tvar_def]
@@ -116,6 +125,8 @@ def add_method(
     func = FuncDef(name, args, Block([PassStmt()]))
     func.info = info
     func.type = set_callable_name(signature, func)
+    func.is_class = is_classmethod
+    func.is_static = is_staticmethod
     func._fullname = info.fullname() + '.' + name
     func.line = info.line
 
@@ -126,5 +137,23 @@ def add_method(
         r_name = get_unique_redefinition_name(name, info.names)
         info.names[r_name] = info.names[name]
 
-    info.names[name] = SymbolTableNode(MDEF, func, plugin_generated=True)
+    if is_classmethod or is_staticmethod:
+        func.is_decorated = True
+        v = Var(name, func.type)
+        v.info = info
+        v._fullname = func._fullname
+        if is_classmethod:
+            v.is_classmethod = True
+            dec = Decorator(func, [NameExpr('classmethod')], v)
+        else:
+            v.is_staticmethod = True
+            dec = Decorator(func, [NameExpr('staticmethod')], v)
+
+        dec.line = info.line
+        sym = SymbolTableNode(MDEF, dec)
+    else:
+        sym = SymbolTableNode(MDEF, func)
+    sym.plugin_generated = True
+
+    info.names[name] = sym
     info.defn.defs.body.append(func)
