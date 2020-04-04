@@ -85,6 +85,7 @@ config_types = {
     'package_root': lambda s: [p.strip() for p in s.split(',')],
     'cache_dir': expand_path,
     'python_executable': expand_path,
+    'pep561_override': lambda s: [p.strip() for p in s.split(',')],
 }  # type: Final
 
 

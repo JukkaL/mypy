@@ -267,6 +267,8 @@ class Options:
         self.transform_source = None  # type: Optional[Callable[[Any], Any]]
         # Print full path to each file in the report.
         self.show_absolute_path = False  # type: bool
+        # Consider packages typed even if they do not declare PEP-561 compatiblity
+        self.pep561_override = []  # type: List[str]
 
     # To avoid breaking plugin compatibility, keep providing new_semantic_analyzer
     @property

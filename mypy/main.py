@@ -469,6 +469,10 @@ def process_options(args: List[str],
     imports_group.add_argument(
         '--no-silence-site-packages', action='store_true',
         help="Do not silence errors in PEP 561 compliant installed packages")
+    imports_group.add_argument(
+        '--pep561-override', action='append', default=[],
+        help="Consider the given package typed even if it does not claim to be "
+             "PEP 561 compatible (may be repeated)")
 
     platform_group = parser.add_argument_group(
         title='Platform configuration',
