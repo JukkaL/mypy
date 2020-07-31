@@ -1,6 +1,7 @@
 import io
 import os.path
 import shutil
+import subprocess
 import sys
 import tempfile
 import re
@@ -19,7 +20,9 @@ from mypy.stubgen import (
     mypy_options, is_blacklisted_path, is_non_library_module
 )
 from mypy.stubutil import walk_packages, remove_misplaced_type_comments, common_dir_prefix
-from mypy.stubgenc import generate_c_type_stub, infer_method_sig, generate_c_function_stub
+from mypy.stubgenc import (
+    generate_c_type_stub, infer_method_sig, generate_c_function_stub, generate_stub_for_c_module
+)
 from mypy.stubdoc import (
     parse_signature, parse_all_signatures, build_signature, find_unique_signatures,
     infer_sig_from_docstring, infer_prop_type_from_docstring, FunctionSig, ArgSig,
@@ -183,6 +186,8 @@ class StubgenUtilSuite(unittest.TestCase):
              ('func3', '(arg, arg2)')])
 
     def test_infer_sig_from_docstring(self) -> None:
+        assert_equal(infer_sig_from_docstring(None, 'func'), None)
+
         assert_equal(infer_sig_from_docstring('\nfunc(x) - y', 'func'),
                      [FunctionSig(name='func', args=[ArgSig(name='x')], ret_type='Any')])
 
@@ -803,6 +808,52 @@ class StubgencSuite(unittest.TestCase):
             '@overload',
             'def __init__(*args, **kwargs) -> Any: ...'])
         assert_equal(set(imports), {'from typing import overload'})
+
+    def test_cython(self) -> None:
+        pyx_source = """
+#cython: binding=True
+
+import typing
+
+def f(path: str, a: int = 0, b: bool = True) -> typing.List[str]:
+    return []
+
+cdef class MyClass(object):
+    def run(self, action: str) -> None:
+        pass
+        """
+
+        package_name = 'cython_test'
+        tmpdir = tempfile.gettempdir()
+        package_dir = os.path.join(tmpdir, package_name)
+        if not os.path.exists(package_dir):
+            os.mkdir(package_dir)
+        pyx = os.path.join(package_dir, '{}.pyx'.format(package_name))
+        with open(pyx, 'w') as pyx_f:
+            pyx_f.write(pyx_source)
+        subprocess.check_output([
+            'cythonize', '-a', '-i', pyx
+        ])
+
+        os.chdir(tmpdir)
+        outfile = os.path.join(tmpdir, 'out')
+        generate_stub_for_c_module('{}.{}'.format(package_name, package_name), outfile)
+        with open(outfile, 'r') as outfile_f:
+            outfile_txt = outfile_f.read()
+
+        assert """
+class MyClass:
+    @classmethod
+    def __init__(self, *args, **kwargs) -> None: ...
+    def run(self, action: str) -> None: ...
+                """.strip() in outfile_txt
+
+        # The exact format of the resulting .pyi is different depending on Python version
+        assert """
+def f(path: str, a: int = ..., b: bool = ...) -> typing.List[str]: ...
+        """.strip() in outfile_txt or """
+def f(path: str, a: int = ..., b: bool = ...) -> List: ...
+        """.strip() in outfile_txt
 
 
 class ArgSigSuite(unittest.TestCase):

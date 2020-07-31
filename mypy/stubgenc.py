@@ -8,8 +8,8 @@ import importlib
 import inspect
 import os.path
 import re
-from typing import List, Dict, Tuple, Optional, Mapping, Any, Set
 from types import ModuleType
+from typing import List, Dict, Tuple, Optional, Mapping, Any, Set, Callable, cast
 
 from mypy.moduleinspect import is_c_module
 from mypy.stubdoc import (
@@ -92,7 +92,9 @@ def add_typing_import(output: List[str]) -> List[str]:
 
 
 def is_c_function(obj: object) -> bool:
-    return inspect.isbuiltin(obj) or type(obj) is type(ord)
+    return inspect.isbuiltin(obj) or \
+           type(obj) is type(ord) or \
+           type(obj).__name__ == 'cython_function_or_method'
 
 
 def is_c_method(obj: object) -> bool:
@@ -139,24 +141,12 @@ def generate_c_function_stub(module: ModuleType,
     if class_sigs is None:
         class_sigs = {}
 
-    ret_type = 'None' if name == '__init__' and class_name else 'Any'
-
-    if (name in ('__new__', '__init__') and name not in sigs and class_name and
-            class_name in class_sigs):
-        inferred = [FunctionSig(name=name,
-                                args=infer_arg_sig_from_docstring(class_sigs[class_name]),
-                                ret_type=ret_type)]  # type: Optional[List[FunctionSig]]
-    else:
-        docstr = getattr(obj, '__doc__', None)
-        inferred = infer_sig_from_docstring(docstr, name)
-        if not inferred:
-            if class_name and name not in sigs:
-                inferred = [FunctionSig(name, args=infer_method_sig(name), ret_type=ret_type)]
-            else:
-                inferred = [FunctionSig(name=name,
-                                        args=infer_arg_sig_from_docstring(
-                                            sigs.get(name, '(*args, **kwargs)')),
-                                        ret_type=ret_type)]
+    inferred = _infer_signature_for_c_function_stub(
+        class_name=class_name,
+        class_sigs=class_sigs,
+        name=name,
+        obj=obj,
+        sigs=sigs)
 
     is_overloaded = len(inferred) > 1 if inferred else False
     if is_overloaded:
@@ -187,6 +177,86 @@ def generate_c_function_stub(module: ModuleType,
                 args=", ".join(sig),
                 ret=strip_or_import(signature.ret_type, module, imports)
             ))
+
+
+def _infer_signature_for_c_function_stub(
+        class_name: Optional[str],
+        class_sigs: Dict[str, str],
+        name: str,
+        obj: object,
+        sigs: Dict[str, str]) -> List[FunctionSig]:
+    default_ret_type = 'None' if name == '__init__' and class_name else 'Any'
+
+    if type(obj).__name__ == 'cython_function_or_method':
+        # Special-case Cython functions: if binding=True when compiling a Cython binary, it
+        # generates Python annotations sufficient to use inspect#signature.
+        sig = _infer_signature_via_inspect(
+            obj=cast(Callable[..., Any], obj),
+            default_ret_type=default_ret_type)
+        if sig is not None:
+            return [sig]
+        # Fall through to parse via doc if inspect.signature() didn't work
+
+    if (name in ('__new__', '__init__') and name not in sigs and class_name and
+            class_name in class_sigs):
+        return [FunctionSig(name=name,
+                            args=infer_arg_sig_from_docstring(class_sigs[class_name]),
+                            ret_type=default_ret_type)]
+
+    docstr = getattr(obj, '__doc__', None)
+    inferred = infer_sig_from_docstring(docstr, name)
+    if inferred:
+        return inferred
+
+    if class_name and name not in sigs:
+        return [FunctionSig(name, args=infer_method_sig(name), ret_type=default_ret_type)]
+    else:
+        return [FunctionSig(name=name,
+                            args=infer_arg_sig_from_docstring(
+                                sigs.get(name, '(*args, **kwargs)')),
+                            ret_type=default_ret_type)]
+
+
+def _infer_signature_via_inspect(obj: Callable[..., Any], default_ret_type: str) -> \
+        Optional[FunctionSig]:
+    """
+    Parses a FunctionSig via annotations found in inspect#signature(). Returns None if
+    inspect.signature() failed to generate a signature.
+    """
+
+    try:
+        signature = inspect.signature(obj)
+    except (ValueError, TypeError):
+        # inspect.signature() failed to generate a signature; this can happen for some methods
+        # depending on the implementation of Python, or if a cython function was not compiled with
+        # binding=True.
+        return None
+    args = []
+
+    def annotation_to_name(annotation: Any) -> Optional[str]:
+        if annotation == inspect.Signature.empty:
+            return None
+        if isinstance(annotation, str):
+            return annotation
+        if inspect.isclass(annotation):
+            return annotation.__name__
+        if hasattr(annotation, '__str__'):
+            return annotation.__str__()
+        # Can't do anything here, so ignore
+        return None
+
+    for arg_param in signature.parameters.values():
+        args.append(ArgSig(
+            name=arg_param.name,
+            type=annotation_to_name(arg_param.annotation),
+            default=arg_param.default != inspect.Parameter.empty,
+        ))
+    ret_type = annotation_to_name(signature.return_annotation) or default_ret_type
+    return FunctionSig(
+        name=obj.__name__,
+        args=args,
+        ret_type=ret_type,
+    )
 
 
 def strip_or_import(typ: str, module: ModuleType, imports: List[str]) -> str:
