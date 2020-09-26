@@ -362,6 +362,57 @@ reveal_type(z2)  # E: Name 'z2' is not defined  # N: Revealed type is 'Any'
 
 [builtins fixtures/isinstancelist.pyi]
 
+[case testWalrusConditionalTypeBinder]
+from typing import Union
+from typing_extensions import Literal
+
+class Good:
+    @property
+    def is_good(self) -> Literal[True]: ...
+
+class Bad:
+    @property
+    def is_good(self) -> Literal[False]: ...
+
+def get_thing() -> Union[Good, Bad]: ...
+
+if (thing := get_thing()).is_good:
+    reveal_type(thing)  # N: Revealed type is '__main__.Good'
+else:
+    reveal_type(thing)  # N: Revealed type is '__main__.Bad'
+[builtins fixtures/property.pyi]
+
+[case testWalrusConditionalTypeCheck]
+# flags: --strict-optional
+from typing import Optional
+
+maybe_str: Optional[str]
+
+if (is_str := maybe_str is not None):
+    reveal_type(is_str)  # N: Revealed type is 'builtins.bool'
+    reveal_type(maybe_str)  # N: Revealed type is 'builtins.str'
+else:
+    reveal_type(is_str)  # N: Revealed type is 'builtins.bool'
+    reveal_type(maybe_str)  # N: Revealed type is 'None'
+
+reveal_type(maybe_str)  # N: Revealed type is 'Union[builtins.str, None]'
+[builtins fixtures/bool.pyi]
+
+[case testWalrusConditionalTypeCheck2]
+from typing import Optional
+
+maybe_str: Optional[str]
+
+if (x := maybe_str) is not None:
+    reveal_type(x)  # N: Revealed type is 'builtins.str'
+    reveal_type(maybe_str)  # N: Revealed type is 'Union[builtins.str, None]'
+else:
+    reveal_type(x)  # N: Revealed type is 'None'
+    reveal_type(maybe_str)  # N: Revealed type is 'Union[builtins.str, None]'
+
+reveal_type(maybe_str)  # N: Revealed type is 'Union[builtins.str, None]'
+[builtins fixtures/bool.pyi]
+
 [case testWalrusPartialTypes]
 from typing import List
 
@@ -377,3 +428,74 @@ def check_partial_list() -> None:
         z.append(3)
     reveal_type(z)  # N: Revealed type is 'builtins.list[builtins.int]'
 [builtins fixtures/list.pyi]
+
+[case testWalrusAssignmentAndConditionScopeForLiteral]
+# flags: --warn-unreachable
+
+if (x := 0):
+    reveal_type(x)  # E: Statement is unreachable
+else:
+    reveal_type(x)  # N: Revealed type is 'builtins.int'
+
+reveal_type(x)  # N: Revealed type is 'builtins.int'
+
+[case testWalrusAssignmentAndConditionScopeForProperty]
+# flags: --warn-unreachable
+
+from typing_extensions import Literal
+
+class PropertyWrapper:
+    @property
+    def f(self) -> str: ...
+    @property
+    def always_false(self) -> Literal[False]: ...
+
+wrapper = PropertyWrapper()
+
+if x := wrapper.f:
+    reveal_type(x)  # N: Revealed type is 'builtins.str'
+else:
+    reveal_type(x)  # N: Revealed type is 'builtins.str'
+
+reveal_type(x)  # N: Revealed type is 'builtins.str'
+
+if y := wrapper.always_false:
+    reveal_type(y)  # E: Statement is unreachable
+else:
+    reveal_type(y)  # N: Revealed type is 'Literal[False]'
+
+reveal_type(y)  # N: Revealed type is 'Literal[False]'
+[builtins fixtures/property.pyi]
+
+[case testWalrusAssignmentAndConditionScopeForFunction]
+# flags: --warn-unreachable
+
+from typing_extensions import Literal
+
+def f() -> str: ...
+
+if x := f():
+    reveal_type(x)  # N: Revealed type is 'builtins.str'
+else:
+    reveal_type(x)  # N: Revealed type is 'builtins.str'
+
+reveal_type(x)  # N: Revealed type is 'builtins.str'
+
+def always_false() -> Literal[False]: ...
+
+if y := always_false():
+    reveal_type(y)  # E: Statement is unreachable
+else:
+    reveal_type(y)  # N: Revealed type is 'Literal[False]'
+
+reveal_type(y)  # N: Revealed type is 'Literal[False]'
+
+def always_false_with_parameter(x: int) -> Literal[False]: ...
+
+if z := always_false_with_parameter(5):
+    reveal_type(z)  # E: Statement is unreachable
+else:
+    reveal_type(z)  # N: Revealed type is 'Literal[False]'
+
+reveal_type(z)  # N: Revealed type is 'Literal[False]'
+[builtins fixtures/tuple.pyi]

@@ -13,10 +13,10 @@ from mypy.sametypes import is_same_type
 from mypy.erasetype import remove_instance_last_known_values
 from mypy.nodes import Expression, Var, RefExpr
 from mypy.literals import Key, literal, literal_hash, subkeys
-from mypy.nodes import IndexExpr, MemberExpr, NameExpr
+from mypy.nodes import IndexExpr, MemberExpr, AssignmentExpr, NameExpr
 
 
-BindableExpression = Union[IndexExpr, MemberExpr, NameExpr]
+BindableExpression = Union[IndexExpr, MemberExpr, AssignmentExpr, NameExpr]
 
 
 class Frame:
@@ -128,7 +128,7 @@ class ConditionalTypeBinder:
         return None
 
     def put(self, expr: Expression, typ: Type) -> None:
-        if not isinstance(expr, (IndexExpr, MemberExpr, NameExpr)):
+        if not isinstance(expr, (IndexExpr, MemberExpr, AssignmentExpr, NameExpr)):
             return
         if not literal(expr):
             return

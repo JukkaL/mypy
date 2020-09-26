@@ -3977,9 +3977,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             return {}, None
         elif is_false_literal(node):
             return None, {}
-        elif isinstance(node, CallExpr):
-            if len(node.args) == 0:
-                return {}, {}
+        elif isinstance(node, CallExpr) and len(node.args) != 0:
             expr = collapse_walrus(node.args[0])
             if refers_to_fullname(node.callee, 'builtins.isinstance'):
                 if len(node.args) != 2:  # the error will be reported elsewhere
@@ -4142,20 +4140,29 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
 
             return reduce_conditional_maps(partial_type_maps)
         elif isinstance(node, AssignmentExpr):
-            return self.find_isinstance_check_helper(node.target)
-        elif isinstance(node, RefExpr):
-            # Restrict the type of the variable to True-ish/False-ish in the if and else branches
-            # respectively
-            vartype = type_map[node]
-            if_type = true_only(vartype)  # type: Type
-            else_type = false_only(vartype)  # type: Type
-            ref = node  # type: Expression
-            if_map = ({ref: if_type} if not isinstance(get_proper_type(if_type), UninhabitedType)
-                      else None)
-            else_map = ({ref: else_type} if not isinstance(get_proper_type(else_type),
-                                                           UninhabitedType)
-                        else None)
-            return if_map, else_map
+            if_map = {}
+            else_map = {}
+
+            if_assignment_map, else_assignment_map = self.find_isinstance_check_helper(node.target)
+
+            if if_assignment_map is not None:
+                if_map.update(if_assignment_map)
+
+            if else_assignment_map is not None:
+                else_map.update(else_assignment_map)
+
+            if_condition_map, else_condition_map = self.find_isinstance_check_helper(node.value)
+
+            if if_condition_map is not None:
+                if_map.update(if_condition_map)
+
+            if else_condition_map is not None:
+                else_map.update(else_condition_map)
+
+            return (
+                (if_map if if_condition_map is not None else None),
+                (else_map if else_condition_map is not None else None),
+            )
         elif isinstance(node, OpExpr) and node.op == 'and':
             left_if_vars, left_else_vars = self.find_isinstance_check_helper(node.left)
             right_if_vars, right_else_vars = self.find_isinstance_check_helper(node.right)
@@ -4176,8 +4183,18 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             left, right = self.find_isinstance_check_helper(node.expr)
             return right, left
 
-        # Not a supported isinstance check
-        return {}, {}
+        # Restrict the type of the variable to True-ish/False-ish in the if and else branches
+        # respectively
+        vartype = type_map[node]
+        if_type = true_only(vartype)  # type: Type
+        else_type = false_only(vartype)  # type: Type
+        ref = node  # type: Expression
+        if_map = ({ref: if_type} if not isinstance(get_proper_type(if_type), UninhabitedType)
+                  else None)
+        else_map = ({ref: else_type} if not isinstance(get_proper_type(else_type),
+                                                       UninhabitedType)
+                    else None)
+        return if_map, else_map
 
     def propagate_up_typemap_info(self,
                                   existing_types: Mapping[Expression, Type],

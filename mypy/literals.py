@@ -61,6 +61,9 @@ def literal(e: Expression) -> int:
     elif isinstance(e, (MemberExpr, UnaryExpr, StarExpr)):
         return literal(e.expr)
 
+    elif isinstance(e, AssignmentExpr):
+        return literal(e.target)
+
     elif isinstance(e, IndexExpr):
         if literal(e.index) == LITERAL_YES:
             return literal(e.base)
@@ -159,8 +162,8 @@ class _Hasher(ExpressionVisitor[Optional[Key]]):
             return ('Index', literal_hash(e.base), literal_hash(e.index))
         return None
 
-    def visit_assignment_expr(self, e: AssignmentExpr) -> None:
-        return None
+    def visit_assignment_expr(self, e: AssignmentExpr) -> Optional[Key]:
+        return literal_hash(e.target)
 
     def visit_call_expr(self, e: CallExpr) -> None:
         return None
