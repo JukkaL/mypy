@@ -26,7 +26,7 @@ if failures:
 
     def extract_line(tb):
         formatted = '\n'.join(format_tb(tb))
-        m = re.search('File "native.py", line ([0-9]+), in test_', formatted)
+        m = re.search('File "(native|driver).py", line ([0-9]+), in (test_|<module>)', formatted)
         return m.group(1)
 
     # Sort failures by line number of test function.

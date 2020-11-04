@@ -769,7 +769,7 @@ def f() -> bytes:
     return b'1234'
 [out]
 def f():
-    r0, x, r1 :: object
+    r0, x, r1 :: bytes
 L0:
     r0 = load_global CPyStatic_bytes_1 :: static  (b'\xf0')
     x = r0

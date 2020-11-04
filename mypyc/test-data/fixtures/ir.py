@@ -92,10 +92,10 @@ class complex:
     def __truediv__(self, n: complex) -> complex: pass
 
 class bytes:
-    def __init__(self, x: object) -> None: pass
-    def __add__(self, x: object) -> bytes: pass
-    def __eq__(self, x:object) -> bool:pass
+    def __add__(self, x: bytes) -> bytes: pass
+    def __eq__(self, x: object) -> bool:pass
     def __ne__(self, x: object) -> bool: pass
+    def __getitem__(self, i: int) -> int: pass
     def join(self, x: Iterable[object]) -> bytes: pass
 
 class bool(int):

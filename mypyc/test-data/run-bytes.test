@@ -1,0 +1,55 @@
+# Bytes test cases (compile and run)
+
+[case testBytesBasics]
+# Note: Add tests for additional operations to testBytesOps or in a new test case
+
+def f(x: bytes) -> bytes:
+    return x
+
+def eq(a: bytes, b: bytes) -> bool:
+    return a == b
+
+def neq(a: bytes, b: bytes) -> bool:
+    return a != b
+[file driver.py]
+from native import f, eq, neq
+assert f(b'123') == b'123'
+assert f(b'\x07 \x0b " \t \x7f \xf0') == b'\x07 \x0b " \t \x7f \xf0'
+assert eq(b'123', b'123')
+assert not eq(b'123', b'1234')
+assert neq(b'123', b'1234')
+try:
+    f('x')
+    assert False
+except TypeError:
+    pass
+
+[case testBytesOps]
+def test_indexing() -> None:
+    # Use bytes() to avoid constant folding
+    b = b'asdf' + bytes()
+    assert b[0] == 97
+    assert b[1] == 115
+    assert b[3] == 102
+    assert b[-1] == 102
+    b = b'\xfe\x15' + bytes()
+    assert b[0] == 254
+    assert b[1] == 21
+
+def test_concat() -> None:
+    b1 = b'123' + bytes()
+    b2 = b'456' + bytes()
+    assert b1 + b2 == b'123456'
+
+def test_join() -> None:
+    seq = (b'1', b'"', b'\xf0')
+    assert b'\x07'.join(seq) == b'1\x07"\x07\xf0'
+    assert b', '.join(()) == b''
+    assert b', '.join([bytes() + b'ab']) == b'ab'
+    assert b', '.join([bytes() + b'ab', b'cd']) == b'ab, cd'
+
+def test_len() -> None:
+    # Use bytes() to avoid constant folding
+    b = b'foo' + bytes()
+    assert len(b) == 3
+    assert len(bytes()) == 0

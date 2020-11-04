@@ -30,7 +30,7 @@ from mypyc.ir.rtypes import (
     c_pyssize_t_rprimitive, is_short_int_rprimitive, is_tagged, PyVarObject, short_int_rprimitive,
     is_list_rprimitive, is_tuple_rprimitive, is_dict_rprimitive, is_set_rprimitive, PySetObject,
     none_rprimitive, RTuple, is_bool_rprimitive, is_str_rprimitive, c_int_rprimitive,
-    pointer_rprimitive, PyObject, PyListObject, bit_rprimitive, is_bit_rprimitive
+    pointer_rprimitive, PyObject, PyListObject, bit_rprimitive, is_bit_rprimitive, bytes_rprimitive
 )
 from mypyc.ir.func_ir import FuncDecl, FuncSignature
 from mypyc.ir.class_ir import ClassIR, all_concrete_classes
@@ -467,7 +467,7 @@ class LowLevelIRBuilder:
     def load_static_bytes(self, value: bytes) -> Value:
         """Loads a static bytes value into a register."""
         identifier = self.literal_static_name(value)
-        return self.add(LoadGlobal(object_rprimitive, identifier, ann=value))
+        return self.add(LoadGlobal(bytes_rprimitive, identifier, ann=value))
 
     def load_static_complex(self, value: complex) -> Value:
         """Loads a static complex value into a register."""

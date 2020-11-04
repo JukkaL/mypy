@@ -255,32 +255,6 @@ assert str(to_int(3.14)) == '3'
 assert str(to_int(3)) == '3'
 assert get_complex() == 3+5j
 
-[case testBytes]
-def f(x: bytes) -> bytes:
-    return x
-
-def concat(a: bytes, b: bytes) -> bytes:
-    return a + b
-
-def eq(a: bytes, b: bytes) -> bool:
-    return a == b
-
-def neq(a: bytes, b: bytes) -> bool:
-    return a != b
-
-def join() -> bytes:
-    seq = (b'1', b'"', b'\xf0')
-    return b'\x07'.join(seq)
-[file driver.py]
-from native import f, concat, eq, neq, join
-assert f(b'123') == b'123'
-assert f(b'\x07 \x0b " \t \x7f \xf0') == b'\x07 \x0b " \t \x7f \xf0'
-assert concat(b'123', b'456') == b'123456'
-assert eq(b'123', b'123')
-assert not eq(b'123', b'1234')
-assert neq(b'123', b'1234')
-assert join() == b'1\x07"\x07\xf0'
-
 [case testDel]
 from typing import List
 from testutil import assertRaises

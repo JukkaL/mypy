@@ -14,7 +14,7 @@ from mypyc.ir.ops import LiteralsMap
 from mypyc.ir.rtypes import (
     RType, RUnion, RTuple, RInstance, object_rprimitive, dict_rprimitive, tuple_rprimitive,
     none_rprimitive, int_rprimitive, float_rprimitive, str_rprimitive, bool_rprimitive,
-    list_rprimitive, set_rprimitive
+    list_rprimitive, set_rprimitive, bytes_rprimitive
 )
 from mypyc.ir.func_ir import FuncSignature, FuncDecl, RuntimeArg
 from mypyc.ir.class_ir import ClassIR
@@ -57,6 +57,8 @@ class Mapper:
                 return bool_rprimitive
             elif typ.type.fullname == 'builtins.list':
                 return list_rprimitive
+            elif typ.type.fullname == 'builtins.bytes':
+                return bytes_rprimitive
             # Dict subclasses are at least somewhat common and we
             # specifically support them, so make sure that dict operations
             # get optimized on them.

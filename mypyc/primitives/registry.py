@@ -239,6 +239,7 @@ def load_address_op(name: str,
 # Import various modules that set up global state.
 import mypyc.primitives.int_ops  # noqa
 import mypyc.primitives.str_ops  # noqa
+import mypyc.primitives.bytes_ops  # noqa
 import mypyc.primitives.list_ops  # noqa
 import mypyc.primitives.dict_ops  # noqa
 import mypyc.primitives.tuple_ops  # noqa

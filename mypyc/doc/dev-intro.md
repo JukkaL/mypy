@@ -487,8 +487,12 @@ operations, and so on. You likely also want to add some faster,
 specialized primitive operations for the type (see Adding a
 Specialized Primitive Operation above for how to do this).
 
-Add a test case to `mypyc/test-data/run.test` to test compilation and
-running compiled code. Ideas for things to test:
+Add a test case file `mypyc/test-data/run-<type>.test` to test
+compilation and running compiled code. Update `mypyc/test/test_run.py`
+to include the new file. You may need to also add something to
+`mypyc/test-data/fixtures/ir.py` (stubs used by tests).
+
+Ideas for things to test:
 
 * Test using the type as an argument.
 
