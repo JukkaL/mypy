@@ -16,6 +16,7 @@ from typing_extensions import Final
 
 from mypy.defaults import PYTHON3_VERSION_MIN
 from mypy.fscache import FileSystemCache
+from mypy.nodes import MypyFile
 from mypy.options import Options
 from mypy import sitepkgs
 
@@ -92,6 +93,33 @@ class BuildSource:
             self.base_dir)
 
 
+class BuildSourceSet:
+    """Efficiently test a file's membership in the set of build sources."""
+
+    def __init__(self, sources: List[BuildSource]) -> None:
+        self.source_text_present = False
+        self.source_modules = {}  # type: Dict[str, str]
+        self.source_paths = set()  # type: Set[str]
+
+        for source in sources:
+            if source.text is not None:
+                self.source_text_present = True
+            if source.path:
+                self.source_paths.add(source.path)
+            if source.module:
+                self.source_modules[source.module] = source.path or ''
+
+    def is_source(self, file: MypyFile) -> bool:
+        if file.path and file.path in self.source_paths:
+            return True
+        elif file._fullname in self.source_modules:
+            return True
+        elif self.source_text_present:
+            return True
+        else:
+            return False
+
+
 class FindModuleCache:
     """Module finder with integrated cache.
 
@@ -107,8 +135,10 @@ class FindModuleCache:
                  search_paths: SearchPaths,
                  fscache: Optional[FileSystemCache] = None,
                  options: Optional[Options] = None,
-                 ns_packages: Optional[List[str]] = None) -> None:
+                 ns_packages: Optional[List[str]] = None,
+                 source_set: Optional[BuildSourceSet] = None) -> None:
         self.search_paths = search_paths
+        self.source_set = source_set
         self.fscache = fscache or FileSystemCache()
         # Cache for get_toplevel_possibilities:
         # search_paths -> (toplevel_id -> list(package_dirs))
@@ -123,6 +153,39 @@ class FindModuleCache:
         self.results.clear()
         self.initial_components.clear()
         self.ns_ancestors.clear()
+
+    def find_module_via_source_set(self, id: str) -> Optional[ModuleSearchResult]:
+        if not self.source_set:
+            return None
+        p = self.source_set.source_modules.get(id, None)
+        if p and self.fscache.isfile(p):
+            # NB: need to make sure we still have __init__.py all the way up
+            # otherwise we might have false positives compared to slow path
+            d = os.path.dirname(p)
+            for i in range(id.count('.')):
+                if not self.fscache.isfile(os.path.join(d, '__init__.py')):
+                    return None
+                d = os.path.dirname(d)
+            return p
+
+        idx = id.rfind('.')
+        if idx != - 1:
+            parent = self.find_module_via_source_set(id[:idx])
+            if (
+                    parent and isinstance(parent, str)
+                    and not parent.endswith('__init__.py')
+                    and not self.fscache.isdir(os.path.splitext(parent)[0])
+            ):
+                # if
+                #   1. we're looking for foo.bar.baz
+                #   2. foo.bar.py[i] is in the source set
+                #   3. foo.bar is not a directory
+                # then we don't want to go spelunking in other search paths to find
+                # another 'bar' module, because it's a waste of time and even in the
+                # unlikely event that we did find one that matched, it probably would
+                # be completely unrelated and undesirable
+                return ModuleNotFoundReason.NOT_FOUND
+        return None
 
     def find_lib_path_dirs(self, id: str, lib_path: Tuple[str, ...]) -> PackageDirs:
         """Find which elements of a lib_path have the directory a module needs to exist.
@@ -209,8 +272,8 @@ class FindModuleCache:
         """
         working_dir = os.getcwd()
         parent_search = FindModuleCache(SearchPaths((), (), (), ()))
-        while any(file.endswith(("__init__.py", "__init__.pyi"))
-                  for file in os.listdir(working_dir)):
+        while any(os.path.exists(os.path.join(working_dir, f))
+                  for f in ["__init__.py", "__init__.pyi"]):
             working_dir = os.path.dirname(working_dir)
             parent_search.search_paths = SearchPaths((working_dir,), (), (), ())
             if not isinstance(parent_search._find_module(id), ModuleNotFoundReason):
@@ -219,6 +282,37 @@ class FindModuleCache:
 
     def _find_module(self, id: str) -> ModuleSearchResult:
         fscache = self.fscache
+
+        # fast path for any modules in the current source set
+        # this is particularly important when there are a large number of search
+        # paths which share the first (few) component(s) due to the use of namespace
+        # packages, for instance
+        # foo/
+        #    company/
+        #        __init__.py
+        #        foo/
+        # bar/
+        #    company/
+        #        __init__.py
+        #        bar/
+        # baz/
+        #    company/
+        #        __init__.py
+        #        baz/
+        #
+        # mypy gets [foo/company/foo, foo/company/bar, foo/company/baz, ...] as input
+        # and computes [foo, bar, baz, ...] as the module search path
+        #
+        # This would result in O(n) search for every import of company.* and since,
+        # leading to O(n**2) behavior in load_graph as such imports are unsurprisingly
+        # present at least once, and usually many more times than that, in each and
+        # every file being parsed
+        #
+        # Thankfully, such cases are efficiently handled by looking up the module path
+        # via BuildSourceSet
+        p = self.find_module_via_source_set(id)
+        if p:
+            return p
 
         # If we're looking for a module like 'foo.bar.baz', it's likely that most of the
         # many elements of lib_path don't even have a subdirectory 'foo/bar'.  Discover

@@ -43,8 +43,8 @@ if TYPE_CHECKING:
 from mypy import moduleinfo
 from mypy.fixup import fixup_module
 from mypy.modulefinder import (
-    BuildSource, compute_search_paths, FindModuleCache, SearchPaths, ModuleSearchResult,
-    ModuleNotFoundReason
+    BuildSource, BuildSourceSet, compute_search_paths, FindModuleCache, SearchPaths,
+    ModuleSearchResult, ModuleNotFoundReason
 )
 from mypy.nodes import Expression
 from mypy.options import Options
@@ -104,33 +104,6 @@ class BuildResult:
         self.types = manager.all_types  # Non-empty if export_types True in options
         self.used_cache = manager.cache_enabled
         self.errors = []  # type: List[str]  # Filled in by build if desired
-
-
-class BuildSourceSet:
-    """Efficiently test a file's membership in the set of build sources."""
-
-    def __init__(self, sources: List[BuildSource]) -> None:
-        self.source_text_present = False
-        self.source_modules = set()  # type: Set[str]
-        self.source_paths = set()  # type: Set[str]
-
-        for source in sources:
-            if source.text is not None:
-                self.source_text_present = True
-            elif source.path:
-                self.source_paths.add(source.path)
-            else:
-                self.source_modules.add(source.module)
-
-    def is_source(self, file: MypyFile) -> bool:
-        if file.path and file.path in self.source_paths:
-            return True
-        elif file._fullname in self.source_modules:
-            return True
-        elif self.source_text_present:
-            return True
-        else:
-            return False
 
 
 def build(sources: List[BuildSource],
@@ -622,7 +595,8 @@ class BuildManager:
                                    or options.use_fine_grained_cache)
                               and not has_reporters)
         self.fscache = fscache
-        self.find_module_cache = FindModuleCache(self.search_paths, self.fscache, self.options)
+        self.find_module_cache = FindModuleCache(self.search_paths, self.fscache, self.options,
+                                                 source_set=self.source_set)
         self.metastore = create_metastore(options)
 
         # a mapping from source files to their corresponding shadow files
