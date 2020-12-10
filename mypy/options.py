@@ -87,7 +87,7 @@ class Options:
         # Intended to be used for disabling specific stubs.
         self.follow_imports_for_stubs = False
         # PEP 420 namespace packages
-        self.namespace_packages = False
+        self.namespace_packages = True
 
         # disallow_any options
         self.disallow_any_generics = False

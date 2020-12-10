@@ -2617,12 +2617,13 @@ from foo.bar import x
 x = 0
 
 [case testClassicNotPackage]
+# flags: --no-namespace-packages
 from foo.bar import x
 [file foo/bar.py]
 x = 0
 [out]
-main:1: error: Cannot find implementation or library stub for module named 'foo.bar'
-main:1: note: See https://mypy.readthedocs.io/en/latest/running_mypy.html#missing-imports
+main:2: error: Cannot find implementation or library stub for module named 'foo.bar'
+main:2: note: See https://mypy.readthedocs.io/en/latest/running_mypy.html#missing-imports
 
 [case testNamespacePackage]
 # flags: --namespace-packages

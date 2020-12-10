@@ -446,7 +446,7 @@ def process_options(args: List[str],
         title='Import discovery',
         description="Configure how imports are discovered and followed.")
     add_invertible_flag(
-        '--namespace-packages', default=False,
+        '--no-namespace-packages', dest="namespace_packages", default=True,
         help="Support namespace packages (PEP 420, __init__.py-less)",
         group=imports_group)
     imports_group.add_argument(

@@ -845,7 +845,7 @@ main:2: error: Argument 1 to "f" has incompatible type "int"; expected "str"
 ==
 main:1: error: Cannot find implementation or library stub for module named 'p.a'
 main:1: note: See https://mypy.readthedocs.io/en/latest/running_mypy.html#missing-imports
-main:1: error: Cannot find implementation or library stub for module named 'p'
+main:2: error: "object" has no attribute "a"
 
 [case testDeletePackage2]
 import p

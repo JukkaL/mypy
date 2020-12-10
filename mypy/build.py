@@ -1303,8 +1303,10 @@ def validate_meta(meta: Optional[CacheMeta], id: str, path: Optional[str],
         st = manager.get_stat(path)
     except OSError:
         return None
-    if not stat.S_ISREG(st.st_mode):
-        manager.log('Metadata abandoned for {}: file {} does not exist'.format(id, path))
+    if not stat.S_ISDIR(st.st_mode) and not stat.S_ISREG(st.st_mode):
+        manager.log(
+            'Metadata abandoned for {}: file or directory {} does not exist'.format(id, path)
+        )
         return None
 
     manager.add_stats(validate_stat_time=time.time() - t0)

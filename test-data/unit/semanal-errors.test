@@ -316,15 +316,16 @@ x = y
 tmp/k.py:2: error: Name 'y' is not defined
 
 [case testPackageWithoutInitFile]
+# flags: --no-namespace-packages
 import typing
 import m.n
 m.n.x
 [file m/n.py]
 x = 1
 [out]
-main:2: error: Cannot find implementation or library stub for module named 'm.n'
-main:2: note: See https://mypy.readthedocs.io/en/latest/running_mypy.html#missing-imports
-main:2: error: Cannot find implementation or library stub for module named 'm'
+main:3: error: Cannot find implementation or library stub for module named 'm.n'
+main:3: note: See https://mypy.readthedocs.io/en/latest/running_mypy.html#missing-imports
+main:3: error: Cannot find implementation or library stub for module named 'm'
 
 [case testBreakOutsideLoop]
 break
