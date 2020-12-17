@@ -6,7 +6,7 @@ import random
 import collections
 import itertools
 
-from typing import List, Any, Dict, Tuple, cast, Callable
+from typing import List, Any, Dict, Tuple, cast, Callable, Union
 
 # list, tuple and dict subclasses that do or don't overwrite __repr__
 class list2(list):
@@ -175,7 +175,7 @@ class QueryTestCase(unittest.TestCase):
     def test_nested_indentations(self) -> None:
         o1 = list(range(10))
         o2 = {'first':1, 'second':2, 'third':3}
-        o = [o1, o2]
+        o = [o1, o2]  # type: List[object]
         expected = """\
 [   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     {   'first': 1,
@@ -439,7 +439,7 @@ class QueryTestCase(unittest.TestCase):
     def test_depth(self) -> None:
         nested_tuple = (1, (2, (3, (4, (5, 6)))))
         nested_dict = {1: {2: {3: {4: {5: {6: 6}}}}}}
-        nested_list = [1, [2, [3, [4, [5, [6, []]]]]]]
+        nested_list = [1, [2, [3, [4, [5, [6, []]]]]]]  # type: List[Union[int, List]]
         self.assertEqual(pprint.pformat(nested_tuple), repr(nested_tuple))
         self.assertEqual(pprint.pformat(nested_dict), repr(nested_dict))
         self.assertEqual(pprint.pformat(nested_list), repr(nested_list))

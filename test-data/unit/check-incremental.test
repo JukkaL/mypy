@@ -584,7 +584,8 @@ my_dict = {
 }
 
 [file mod1_private.py.2]
-my_dict = {
+from typing import Dict, List, Union
+my_dict: Dict[str, List[Union[int, str]]] = {
     'a': [1, 2, 3],
     'b': [4, 5, 'a']
 }

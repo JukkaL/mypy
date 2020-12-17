@@ -3176,3 +3176,40 @@ reveal_type(f(lambda: 1))  # N: Revealed type is 'builtins.int*'
 def g() -> None: pass
 
 reveal_type(f(g))  # N: Revealed type is 'None'
+
+-- Tests for checking if annotation is needed
+-- --------------
+
+[case testexplicitAnnotationNeededForLists]
+x = [1, 'two', 3.5]  # E: Need type annotation for 'x' \
+                     # N: Suggested annotation: List[Any] or List[Union[float, int, str]]
+
+y = [2, 'three', object()]
+
+class C:
+    def __init__(self) -> None:
+        self.x = [object()]
+
+c: C
+c.x = [1, 'two']
+[builtins fixtures/list.pyi]
+
+[case testexplicitAnnotationNeededForDict]
+x = {'a': 1, 'b': 'two'}  # E: Need type annotation for 'x' \
+                          # N: Suggested annotation: Dict[str, Any] or Dict[str, Union[int, str]]
+
+y = {'a': 1, 'two': 2}
+[builtins fixtures/dict.pyi]
+
+[case testexplicitAnnotationNeededForSet]
+x = {'a', 1}  # E: Need type annotation for 'x' \
+              # N: Suggested annotation: Set[Any] or Set[Union[int, str]]
+
+y = {'a', 2, object()}
+[builtins fixtures/set.pyi]
+
+[case testSuppressNeedTypeAnnotaionFlag]
+# flags: --no-warn-implicit-object-collection
+
+x1 = [1, 'two', 3.5]
+[builtins fixtures/list.pyi]

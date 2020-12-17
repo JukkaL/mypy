@@ -909,7 +909,7 @@ def write_deps_cache(rdeps: Dict[str, Dict[str, Set[str]]],
             hash = st.meta.hash
         meta_snapshot[id] = hash
 
-    meta = {'snapshot': meta_snapshot, 'deps_meta': fg_deps_meta}
+    meta = {'snapshot': meta_snapshot, 'deps_meta': fg_deps_meta}  # type: Dict[str, object]
 
     if not metastore.write(DEPS_META_FILE, json.dumps(meta)):
         manager.log("Error writing fine-grained deps meta JSON file {}".format(DEPS_META_FILE))

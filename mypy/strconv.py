@@ -153,7 +153,7 @@ class StrConv(NodeVisitor[str]):
         return self.dump(a, o)
 
     def visit_class_def(self, o: 'mypy.nodes.ClassDef') -> str:
-        a = [o.name, o.defs.body]
+        a = [o.name, o.defs.body]  # type: List[object]
         # Display base types unless they are implicitly just builtins.object
         # (in this case base_type_exprs is empty).
         if o.base_type_exprs:

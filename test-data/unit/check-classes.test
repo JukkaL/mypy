@@ -6394,6 +6394,7 @@ class Child(Base):  # E: Too few arguments for "__init_subclass__" of "Base"
 [builtins fixtures/object_with_init_subclass.pyi]
 
 [case testInitSubclassTooFewArgs2]
+from typing import Dict, Union
 class Base:
     default_name: str
 
@@ -6402,7 +6403,7 @@ class Base:
         cls.default_name = default_name
         return
 # TODO implement this, so that no error is raised?
-d = {"default_name": "abc", "thing": 0}
+d: Dict[str, Union[str, int]] = {"default_name": "abc", "thing": 0}
 class Child(Base, **d):  # E: Too few arguments for "__init_subclass__" of "Base"
     pass
 [builtins fixtures/object_with_init_subclass.pyi]

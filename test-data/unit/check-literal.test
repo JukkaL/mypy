@@ -1475,7 +1475,8 @@ b = [1, 1, 1]
 c: List[Literal[1, 2, 3]] = [1, 2, 3]
 d = [1, 2, 3]
 e: List[Literal[1, "x"]] = [1, "x"]
-f = [1, "x"]
+f = [1, "x"] # E: Need type annotation for 'f' \
+             # N: Suggested annotation: List[Any] or List[Union[int, str]]
 g: List[List[List[Literal[1, 2, 3]]]] = [[[1, 2, 3], [3]]]
 h: List[Literal[1]] = []
 
@@ -1495,7 +1496,8 @@ lit3: Literal["foo"]
 arr1 = [lit1, lit1, lit1]
 arr2 = [lit1, lit2]
 arr3 = [lit1, 4, 5]
-arr4 = [lit1, lit2, lit3]
+arr4 = [lit1, lit2, lit3] # E: Need type annotation for 'arr4' \
+                          # N: Suggested annotation: List[Any]
 arr5 = [object(), lit1]
 
 reveal_type(arr1)  # N: Revealed type is 'builtins.list[Literal[1]]'

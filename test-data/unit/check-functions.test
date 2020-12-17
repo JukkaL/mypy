@@ -2431,16 +2431,18 @@ def g() -> List[Union[str, int]]:
 [case testInferredTypeIsObjectMismatch]
 from typing import Union, Dict, List
 def f() -> Dict[str, Union[str, int]]:
-    x = {'a': 'a', 'b': 2}
-    return x # E: Incompatible return value type (got "Dict[str, object]", expected "Dict[str, Union[str, int]]")
+    x = {'a': 'a', 'b': 2}  # E: Need type annotation for 'x' \
+                            # N: Suggested annotation: Dict[str, Any] or Dict[str, Union[int, str]]
+    return x  # E: Incompatible return value type (got "Dict[str, object]", expected "Dict[str, Union[str, int]]")
 
 def g() -> Dict[str, Union[str, int]]:
     x: Dict[str, Union[str, int]] = {'a': 'a', 'b': 2}
     return x
 
 def h() -> List[Union[str, int]]:
-    x = ['a', 2]
-    return x # E: Incompatible return value type (got "List[object]", expected "List[Union[str, int]]")
+    x = ['a', 2]  # E: Need type annotation for 'x' \
+                  # N: Suggested annotation: List[Any] or List[Union[int, str]]
+    return x  # E: Incompatible return value type (got "List[object]", expected "List[Union[str, int]]")
 
 def i() -> List[Union[str, int]]:
     x: List[Union[str, int]] = ['a', 2]

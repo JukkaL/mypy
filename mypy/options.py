@@ -142,6 +142,10 @@ class Options:
         # Warn about unused '[mypy-<pattern>] config sections
         self.warn_unused_configs = False
 
+        # Suppress "Need type annotation" errors when inferred
+        # item in list, dict or set is object type
+        self.warn_implicit_object_collection = True
+
         # Files in which to ignore all non-fatal errors
         self.ignore_errors = False
 

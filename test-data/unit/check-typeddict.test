@@ -527,8 +527,10 @@ from typing import Mapping
 Cell = TypedDict('Cell', {'value': int})
 left = Cell(value=42)
 right = 42
-joined1 = [left, right]
-joined2 = [right, left]
+joined1 = [left, right]  # E: Need type annotation for 'joined1' \
+                         # N: Suggested annotation: List[Any]
+joined2 = [right, left]  # E: Need type annotation for 'joined2' \
+                         # N: Suggested annotation: List[Any]
 reveal_type(joined1)  # N: Revealed type is 'builtins.list[builtins.object*]'
 reveal_type(joined2)  # N: Revealed type is 'builtins.list[builtins.object*]'
 [builtins fixtures/dict.pyi]
