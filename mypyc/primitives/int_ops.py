@@ -148,6 +148,14 @@ int_less_than_ = custom_op(
     c_function_name='CPyTagged_IsLt_',
     error_kind=ERR_NEVER)
 
+int_min = c_function_op(
+    name="builtins.min",
+    arg_types=[int_rprimitive, int_rprimitive],
+    return_type=int_rprimitive,
+    c_function_name='Py_MIN',
+    error_kind=ERR_NEVER)
+
+
 # provide mapping from textual op to short int's op variant and boxed int's description
 # note these are not complete implementations
 int_comparison_op_mapping = {

@@ -300,3 +300,12 @@ def test_left_shift() -> None:
             assert False
         except Exception:
             pass
+
+[case testMin]
+def check_min(x: int, y: int) -> int:
+    return min(x, y)
+[file driver.py]
+from native import check_min
+print(check_min(12, 10))
+[out]
+10
