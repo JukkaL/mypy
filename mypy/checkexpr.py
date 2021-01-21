@@ -864,12 +864,11 @@ class ExpressionChecker(ExpressionVisitor[Type]):
         res = []  # type: List[Type]
         for typ in object_type.relevant_items():
             # Member access errors are already reported when visiting the member expression.
-            self.msg.disable_errors()
-            item = analyze_member_access(member, typ, e, False, False, False,
-                                         self.msg, original_type=object_type, chk=self.chk,
-                                         in_literal_context=self.is_literal_context(),
-                                         self_type=typ)
-            self.msg.enable_errors()
+            with self.msg.disable_errors():
+                item = analyze_member_access(member, typ, e, False, False, False,
+                                            self.msg, original_type=object_type, chk=self.chk,
+                                            in_literal_context=self.is_literal_context(),
+                                            self_type=typ)
             narrowed = self.narrow_type_from_binder(e.callee, item, skip_non_overlapping=True)
             if narrowed is None:
                 continue
@@ -1202,12 +1201,10 @@ class ExpressionChecker(ExpressionVisitor[Type]):
             # due to partial available context information at this time, but
             # these errors can be safely ignored as the arguments will be
             # inferred again later.
-            self.msg.disable_errors()
+            with self.msg.disable_errors():
 
-            arg_types = self.infer_arg_types_in_context(
-                callee_type, args, arg_kinds, formal_to_actual)
-
-            self.msg.enable_errors()
+                arg_types = self.infer_arg_types_in_context(
+                    callee_type, args, arg_kinds, formal_to_actual)
 
             arg_pass_nums = self.get_arg_infer_passes(
                 callee_type.arg_types, formal_to_actual, len(args))

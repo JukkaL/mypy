@@ -1992,10 +1992,9 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             if isinstance(s.expr, EllipsisExpr):
                 return True
             elif isinstance(s.expr, CallExpr):
-                self.expr_checker.msg.disable_errors()
-                typ = get_proper_type(self.expr_checker.accept(
-                    s.expr, allow_none_return=True, always_allow_any=True))
-                self.expr_checker.msg.enable_errors()
+                with self.expr_checker.msg.disable_errors():
+                    typ = get_proper_type(self.expr_checker.accept(
+                        s.expr, allow_none_return=True, always_allow_any=True))
 
                 if isinstance(typ, UninhabitedType):
                     return True
@@ -3046,14 +3045,13 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
 
         # Here we just infer the type, the result should be type-checked like a normal assignment.
         # For this we use the rvalue as type context.
-        self.msg.disable_errors()
-        _, inferred_dunder_set_type = self.expr_checker.check_call(
-            dunder_set_type,
-            [TempNode(instance_type, context=context), rvalue],
-            [nodes.ARG_POS, nodes.ARG_POS],
-            context, object_type=attribute_type,
-            callable_name=callable_name)
-        self.msg.enable_errors()
+        with self.msg.disable_errors():
+            _, inferred_dunder_set_type = self.expr_checker.check_call(
+                dunder_set_type,
+                [TempNode(instance_type, context=context), rvalue],
+                [nodes.ARG_POS, nodes.ARG_POS],
+                context, object_type=attribute_type,
+                callable_name=callable_name)
 
         # And now we type check the call second time, to show errors related
         # to wrong arguments count, etc.
