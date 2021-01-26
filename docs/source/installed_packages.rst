@@ -134,3 +134,12 @@ the ``setup.py`` might look like:
         package_data={"package_c-stubs": ["__init__.pyi", "lib.pyi"]},
         packages=["package_c-stubs"]
     )
+
+While instructions above assure that the builded wheel contains the type files,
+you may also need to modify your ``MANIFEST.in`` file to ensure their inclusion
+inside ``sdist`` (``.tar.gz``) archive:
+
+.. code-block:: text
+
+    global-include *.pyi
+    global-include *.typed
