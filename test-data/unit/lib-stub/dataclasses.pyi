@@ -28,3 +28,6 @@ def field(*, default_factory: Callable[[], _T],
 def field(*,
     init: bool = ..., repr: bool = ..., hash: Optional[bool] = ..., compare: bool = ...,
     metadata: Optional[Mapping[str, Any]] = ...) -> Any: ...
+
+
+class Field(Generic[_T]): pass

@@ -1390,3 +1390,14 @@ class B(A):
 
 reveal_type(B)  # N: Revealed type is 'def (foo: builtins.int) -> __main__.B'
 [builtins fixtures/bool.pyi]
+
+[case testAttrsClassHasAttributeWithAttributes]
+import attr
+
+@attr.s
+class A:
+    pass
+
+reveal_type(A.__attrs_attrs__)  # N: Revealed type is 'builtins.tuple[attr.Attribute[Any]]'
+
+[builtins fixtures/attr.pyi]

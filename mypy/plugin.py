@@ -253,6 +253,13 @@ class SemanticAnalyzerPluginInterface:
         raise NotImplementedError
 
     @abstractmethod
+    def named_type_or_none(self,
+                           qualified_name: str,
+                           args: Optional[List[Type]] = None) -> Optional[Instance]:
+        """Construct an instance of a builtin type with given type arguments."""
+        raise NotImplementedError
+
+    @abstractmethod
     def parse_bool(self, expr: Expression) -> Optional[bool]:
         """Parse True/False literals."""
         raise NotImplementedError

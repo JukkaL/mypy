@@ -25,3 +25,4 @@ class complex:
 class str: pass
 class unicode: pass
 class ellipsis: pass
+class tuple: pass

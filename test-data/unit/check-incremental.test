@@ -3803,7 +3803,7 @@ class A:
     E = 7
     F: ClassVar[int] = 22
 
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out1]
 [out2]
 
@@ -3835,7 +3835,7 @@ from dataclasses import dataclass
 class A:
     x: int
 
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out1]
 [out2]
 tmp/b.py:8: note: Revealed type is 'def (x: builtins.int) -> b.B'
@@ -3879,7 +3879,7 @@ class NoInit:
 class NoCmp:
     x: int
 
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out1]
 [out2]
 tmp/b.py:4: error: Property "x" defined in "Frozen" is read-only
@@ -3933,7 +3933,7 @@ from dataclasses import dataclass
 class A:
     a: int
 
-[builtins fixtures/attr.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out1]
 [out2]
 tmp/b.py:3: note: Revealed type is 'def (a: builtins.int) -> a.A'
@@ -3979,7 +3979,7 @@ from dataclasses import dataclass
 class B(A):
     y: int
 
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out1]
 [out2]
 main:2: error: Argument 2 to "B" has incompatible type "str"; expected "int"
@@ -4012,7 +4012,7 @@ from dataclasses import dataclass
 class B(A):
     y: str
 
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out1]
 main:2: error: Argument 2 to "B" has incompatible type "str"; expected "int"
 
@@ -4054,7 +4054,7 @@ from dataclasses import dataclass
 class C(A, B):
     c: bool
 
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out1]
 [out2]
 tmp/c.py:7: error: Incompatible types in assignment (expression has type "bool", base class "B" defined the type as "str")
@@ -4085,7 +4085,7 @@ from dataclasses import dataclass
 class A:
     a: int = 6
 
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out1]
 [out2]
 main:2: error: Argument 1 to "A" has incompatible type "int"; expected "str"

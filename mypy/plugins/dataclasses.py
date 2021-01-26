@@ -13,7 +13,10 @@ from mypy.plugins.common import (
     add_method, _get_decorator_bool_argument, deserialize_and_fixup_type,
 )
 from mypy.typeops import map_type_from_supertype
-from mypy.types import Type, Instance, NoneType, TypeVarDef, TypeVarType, get_proper_type
+from mypy.types import (
+    Type, Instance, NoneType, TypeVarDef, TypeVarType, get_proper_type,
+    AnyType, TypeOfAny,
+)
 from mypy.server.trigger import make_wildcard_trigger
 
 # The set of decorators that generate dataclasses.
@@ -172,6 +175,8 @@ class DataclassTransformer:
             self._freeze(attributes)
 
         self.reset_init_only_vars(info, attributes)
+
+        self._add_dataclass_fields_magic_attribute()
 
         info.metadata['dataclass'] = {
             'attributes': [attr.serialize() for attr in attributes],
@@ -352,6 +357,23 @@ class DataclassTransformer:
                 var.is_property = True
                 var._fullname = info.fullname + '.' + var.name
                 info.names[var.name] = SymbolTableNode(MDEF, var)
+
+    def _add_dataclass_fields_magic_attribute(self) -> None:
+        attr_name = '__dataclass_fields__'
+        any_type = AnyType(TypeOfAny.explicit)
+        field_type = self._ctx.api.named_type_or_none('dataclasses.Field', [any_type]) or any_type
+        attr_type = self._ctx.api.named_type('__builtins__.dict', [
+            self._ctx.api.named_type('__builtins__.str'),
+            field_type,
+        ])
+        var = Var(name=attr_name, type=attr_type)
+        var.info = self._ctx.cls.info
+        var._fullname = self._ctx.cls.info.fullname + '.' + attr_name
+        self._ctx.cls.info.names[attr_name] = SymbolTableNode(
+            kind=MDEF,
+            node=var,
+            plugin_generated=True,
+        )
 
 
 def dataclass_class_maker_callback(ctx: ClassDefContext) -> None:

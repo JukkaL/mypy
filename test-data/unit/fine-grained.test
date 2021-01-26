@@ -688,7 +688,7 @@ class A:
 ==
 b.py:8: error: Argument 1 to "B" has incompatible type "int"; expected "str"
 ==
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 
 [case testDataclassUpdate2]
 # flags: --python-version 3.7
@@ -719,7 +719,7 @@ B(1, 2)
 [out]
 ==
 b.py:8: error: Argument 1 to "B" has incompatible type "int"; expected "str"
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 
 [case testDataclassUpdate3]
 # flags: --python-version 3.7
@@ -743,7 +743,7 @@ from dataclasses import dataclass
 class A:
     a: int
     other: int
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out]
 ==
 main:3: error: Missing positional argument "b" in call to "B"
@@ -770,7 +770,7 @@ from dataclasses import dataclass
 class A:
     a: int
     other: int
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out]
 ==
 main:3: error: Missing positional argument "b" in call to "B"
@@ -804,7 +804,7 @@ from dataclasses import dataclass
 class A:
     a: int
 
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out]
 ==
 main:3: error: Missing positional argument "b" in call to "B"
@@ -831,7 +831,7 @@ from dataclasses import dataclass
 @dataclass
 class A:
     a: int
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out]
 ==
 main:3: error: Unsupported left operand type for < ("B")
@@ -864,7 +864,7 @@ from dataclasses import dataclass
 class A:
     a: int
     other: int
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out]
 ==
 main:3: error: Missing positional argument "c" in call to "C"
@@ -904,7 +904,7 @@ from dataclasses import dataclass
 class A:
     a: int
 
-[builtins fixtures/list.pyi]
+[builtins fixtures/dataclasses.pyi]
 [out]
 ==
 main:3: error: Missing positional argument "c" in call to "C"

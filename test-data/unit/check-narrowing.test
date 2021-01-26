@@ -168,7 +168,7 @@ if x5["key"] is Key.A:
     reveal_type(x5)         # N: Revealed type is 'TypedDict('__main__.TypedDict1', {'key': Literal[__main__.Key.A], 'foo': builtins.int})'
 else:
     reveal_type(x5)         # N: Revealed type is 'TypedDict('__main__.TypedDict2', {'key': Literal[__main__.Key.B], 'foo': builtins.str})'
-[builtins fixtures/tuple.pyi]
+[builtins fixtures/narrowing.pyi]
 
 [case testNarrowingParentWithIsInstanceBasic]
 from dataclasses import dataclass
@@ -233,7 +233,7 @@ if isinstance(x5["key"], int):
     reveal_type(x5)         # N: Revealed type is 'TypedDict('__main__.TypedDict1', {'key': builtins.int})'
 else:
     reveal_type(x5)         # N: Revealed type is 'TypedDict('__main__.TypedDict2', {'key': builtins.str})'
-[builtins fixtures/isinstance.pyi]
+[builtins fixtures/narrowing.pyi]
 
 [case testNarrowingParentMultipleKeys]
 # flags: --warn-unreachable
