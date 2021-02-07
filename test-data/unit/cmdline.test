@@ -797,6 +797,59 @@ p/a.py:4: error: Argument 1 to "foo" has incompatible type "str"; expected "int"
 p/b/__init__.py:5: error: Argument 1 to "bar" has incompatible type "str"; expected "int"
 c.py:2: error: Argument 1 to "bar" has incompatible type "str"; expected "int"
 
+[case testModulesAndPackagesInIni]
+# cmd: mypy
+[file mypy.ini]
+\[mypy]
+modules=c
+packages=p.a,p.b
+[file p/__init__.py]
+[file p/a.py]
+def foo(x):
+    # type: (int) -> str
+    return "x"
+foo("wrong")
+[file p/b/__init__.py]
+from ..a import foo
+def bar(a):
+    # type: (int) -> str
+    return foo(a)
+bar("wrong")
+[file c.py]
+import p.b
+p.b.bar("wrong")
+[out]
+p/a.py:4: error: Argument 1 to "foo" has incompatible type "str"; expected "int"
+p/b/__init__.py:5: error: Argument 1 to "bar" has incompatible type "str"; expected "int"
+c.py:2: error: Argument 1 to "bar" has incompatible type "str"; expected "int"
+
+[case testModulesAndPackagesAndFilesInIni]
+# cmd: mypy
+[file mypy.ini]
+\[mypy]
+modules=c
+packages=p.a,p.b
+files=meh.py
+[out]
+May only specify one of: module/package or files. Ignoring key: files
+Can't find package 'p.a'
+== Return code: 2
+
+
+[case testModulesAndPackagesAndFilesInIniModLater]
+# cmd: mypy
+[file mypy.ini]
+\[mypy]
+files=meh.py
+modules=c
+packages=p.a,p.b
+[out]
+May only specify one of: module/package or files. Ignoring key: modules
+May only specify one of: module/package or files. Ignoring key: packages
+mypy: cannot read file 'meh.py': No such file or directory
+== Return code: 2
+
+
 [case testSrcPEP420Packages]
 # cmd: mypy -p anamespace --namespace-packages
 [file mypy.ini]

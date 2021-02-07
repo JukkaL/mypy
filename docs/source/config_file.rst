@@ -197,6 +197,24 @@ section of the command line docs.
 
     This option may only be set in the global section (``[mypy]``).
 
+.. confval:: modules
+
+    :type: comma-separated list of strings
+
+    A comma-separated list of modules to be type checked. See the
+    corresponding flag :option:`--module <mypy --module>` for more information.
+
+    This option may only be set in the global section (``[mypy]``).
+
+.. confval:: packages
+
+    :type: comma-separated list of strings
+
+    A comma-separated list of packages to be type checked. See the
+    corresponding flag :option:`--package <mypy --package>` for more information.
+
+    This option may only be set in the global section (``[mypy]``).
+
 .. confval:: namespace_packages
 
     :type: boolean
