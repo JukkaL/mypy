@@ -1504,8 +1504,10 @@ def f6(x: int, z: str) -> None: pass
 
 a: A
 f1(**a)
-f2(**a) # E: Argument "y" to "f2" has incompatible type "str"; expected "int"
-f3(**a) # E: Argument "x" to "f3" has incompatible type "int"; expected "B"
+f2(**a) # E: Argument "y" to "f2" has incompatible type "str"; expected "int" \
+        # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
+f3(**a) # E: Argument "x" to "f3" has incompatible type "int"; expected "B" \
+        # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
 f4(**a) # E: Extra argument "y" from **args for "f4"
 f5(**a) # E: Missing positional arguments "y", "z" in call to "f5"
 f6(**a) # E: Extra argument "y" from **args for "f6"
@@ -1536,13 +1538,16 @@ def g(x: int, **kwargs: str) -> None: ...
 
 a: A
 b: B
-f(**a) # E: Argument 1 to "f" has incompatible type "**A"; expected "str"
+f(**a) # E: Argument 1 to "f" has incompatible type "**A"; expected "str" \
+       # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
 f(**b)
 g(**a)
-g(**b) # E: Argument "x" to "g" has incompatible type "str"; expected "int"
+g(**b) # E: Argument "x" to "g" has incompatible type "str"; expected "int" \
+       # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
 g(1, **a) # E: "g" gets multiple values for keyword argument "x"
 g(1, **b) # E: "g" gets multiple values for keyword argument "x" \
-          # E: Argument "x" to "g" has incompatible type "str"; expected "int"
+          # E: Argument "x" to "g" has incompatible type "str"; expected "int" \
+          # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
 [builtins fixtures/dict.pyi]
 
 [case testTypedDictAsStarStarTwice]
@@ -1561,13 +1566,18 @@ b: B
 c: C
 f1(**a, **b)
 f1(**b, **a)
-f2(**a, **b) # E: Argument "y" to "f2" has incompatible type "str"; expected "float"
-f3(**a, **b) # E: Argument "z" to "f3" has incompatible type "bytes"; expected "float"
-f3(**b, **a) # E: Argument "z" to "f3" has incompatible type "bytes"; expected "float"
+f2(**a, **b) # E: Argument "y" to "f2" has incompatible type "str"; expected "float" \
+             # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
+f3(**a, **b) # E: Argument "z" to "f3" has incompatible type "bytes"; expected "float" \
+             # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
+f3(**b, **a) # E: Argument "z" to "f3" has incompatible type "bytes"; expected "float" \
+             # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
 f1(**a, **c) # E: "f1" gets multiple values for keyword argument "x" \
-             # E: Argument "x" to "f1" has incompatible type "str"; expected "int"
+             # E: Argument "x" to "f1" has incompatible type "str"; expected "int" \
+             # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
 f1(**c, **a) # E: "f1" gets multiple values for keyword argument "x" \
-             # E: Argument "x" to "f1" has incompatible type "str"; expected "int"
+             # E: Argument "x" to "f1" has incompatible type "str"; expected "int" \
+             # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
 [builtins fixtures/tuple.pyi]
 
 [case testTypedDictAsStarStarAndDictAsStarStar]

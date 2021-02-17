@@ -299,8 +299,11 @@ d = None # type: Dict[str, A]
 f(**d)
 f(x=A(), **d)
 d2 = None # type: Dict[str, B]
-f(**d2)        # E: Argument 1 to "f" has incompatible type "**Dict[str, B]"; expected "A"
-f(x=A(), **d2) # E: Argument 2 to "f" has incompatible type "**Dict[str, B]"; expected "A"
+f(**d2)        # E: Argument 1 to "f" has incompatible type "**Dict[str, B]"; expected "A" \
+               # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
+f(x=A(), **d2) # E: Argument 2 to "f" has incompatible type "**Dict[str, B]"; expected "A" \
+               # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
+
 class A: pass
 class B: pass
 [builtins fixtures/dict.pyi]
@@ -363,7 +366,8 @@ def f(a: 'A', b: 'B') -> None: pass
 d = None # type: Dict[str, Any]
 f(**d)
 d2 = None # type: Dict[str, A]
-f(**d2) # E: Argument 1 to "f" has incompatible type "**Dict[str, A]"; expected "B"
+f(**d2) # E: Argument 1 to "f" has incompatible type "**Dict[str, A]"; expected "B" \
+        # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
 class A: pass
 class B: pass
 [builtins fixtures/dict.pyi]
@@ -440,7 +444,8 @@ f(**a) # okay
 
 b = {'': ''}
 f(b) # E: Argument 1 to "f" has incompatible type "Dict[str, str]"; expected "int"
-f(**b) # E: Argument 1 to "f" has incompatible type "**Dict[str, str]"; expected "int"
+f(**b) # E: Argument 1 to "f" has incompatible type "**Dict[str, str]"; expected "int" \
+       # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
 
 c = {0: 0}
 f(**c) # E: Keywords must be strings
@@ -485,7 +490,8 @@ def g(arg: int = 0, **kwargs: object) -> None:
 
 d = {} # type: Dict[str, object]
 f(**d)
-g(**d)  # E: Argument 1 to "g" has incompatible type "**Dict[str, object]"; expected "int"
+g(**d)  # E: Argument 1 to "g" has incompatible type "**Dict[str, object]"; expected "int" \
+        # N: Use TypedDict or Dict[str, Any] for unpacked **kwargs
 
 m = {} # type: Mapping[str, object]
 f(**m)

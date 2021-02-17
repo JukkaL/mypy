@@ -528,6 +528,7 @@ class MessageBuilder:
                 arg_type_str = '*' + arg_type_str
             elif arg_kind == ARG_STAR2:
                 arg_type_str = '**' + arg_type_str
+                notes.append("Use TypedDict or Dict[str, Any] for unpacked **kwargs")
 
             # For function calls with keyword arguments, display the argument name rather than the
             # number.

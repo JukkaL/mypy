@@ -772,3 +772,60 @@ False:
 
 If you use the :option:`--warn-unreachable <mypy --warn-unreachable>` flag, mypy will generate
 an error about each unreachable code block.
+
+Unpacking Dictionary in keyword arguments
+-----------------------------------------
+
+If you are unpacking a dictionary into a Callable's arguments, then
+you need to ensure the types of dictionary members by providing either
+a TypedDict or a variable with type Dict[str, Any].
+
+For example, the following function calls are valid:
+
+.. code-block:: python
+
+    def func(a: int, b: str, c: List[int]):
+        ...
+    
+    some_dict: Dict[str, Any] = {
+        "a": 1,
+        "b": "somestr",
+        "c": [1, 2, 3],
+    }
+
+    func(**some_dict)
+
+    TypedArgs = TypedDict("TypedArgs", {"a": int, "b": str, "c": List[float]})
+
+    some_other_dict: TypedArgs = {
+        "a": 1,
+        "b": "somestr",
+        "c": [1, 2, 3],
+    }
+
+    func(**some_other_dict)
+
+The following function calls are invalid, on account of untyped/mistyped unpacking:
+
+.. code-block:: python
+
+    def func(a: int, b: str, c: List[int]):
+        ...
+    
+    some_dict = {
+        "a": 1,
+        "b": "somestr",
+        "c": [1, 2, 3],
+    }
+
+    func(**some_dict)
+
+    TypedArgs = TypedDict("TypedArgs", {"a": int, "b": str, "c": List[str]})
+
+    some_other_dict: TypedArgs = {
+        "a": 1,
+        "b": "somestr",
+        "c": ["1", "2", "3"],
+    }
+
+    func(**some_other_dict)
