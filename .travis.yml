@@ -80,6 +80,10 @@ jobs:
   #   env:
   #   - TOXENV=dev
   #   - EXTRA_ARGS=
+  - name: "check MANIFEST.in completeness"
+    python: 3.7
+    install: ""
+    script: RELEASE_SKIP=head ${TRAVIS_BUILD_DIR}/misc/release-test.sh
 
 install:
 # pip 21.0 no longer works on Python 3.5
