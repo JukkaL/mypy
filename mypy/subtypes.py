@@ -524,8 +524,7 @@ def is_protocol_implementation(left: Instance, right: Instance,
     TypeState.record_protocol_subtype_check(left.type, right.type)
     assuming = right.type.assuming_proper if proper_subtype else right.type.assuming
     for (l, r) in reversed(assuming):
-        if (mypy.sametypes.is_same_type(l, left)
-                and mypy.sametypes.is_same_type(r, right)):
+        if l == left and r == right:
             return True
     with pop_on_exit(assuming, left, right):
         for member in right.type.protocol_members:

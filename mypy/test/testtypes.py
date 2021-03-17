@@ -1010,6 +1010,7 @@ class SameTypeSuite(Suite):
         self.fx = TypeFixture()
 
     def test_literal_type(self) -> None:
+        a = self.fx.a
         b = self.fx.b  # Reminder: b is a subclass of a
         d = self.fx.d
 
@@ -1020,6 +1021,7 @@ class SameTypeSuite(Suite):
         self.assert_same(lit1, lit1)
         self.assert_same(UnionType([lit1, lit2]), UnionType([lit1, lit2]))
         self.assert_same(UnionType([lit1, lit2]), UnionType([lit2, lit1]))
+        self.assert_same(UnionType([a, b]), UnionType([b, a]))
         self.assert_not_same(lit1, b)
         self.assert_not_same(lit1, lit2)
         self.assert_not_same(lit1, lit3)

@@ -1059,3 +1059,100 @@ x: Union[None, Any]
 y: Union[int, None]
 reveal_type(f(x, y)) # N: Revealed type is 'Union[None, Any, builtins.int]'
 reveal_type(f(y, x)) # N: Revealed type is 'Union[builtins.int, None, Any]'
+
+[case testNestedProtocolUnions]
+from typing import Union, Iterator, Iterable
+def foo(
+    values: Union[
+        Iterator[Union[
+            Iterator[Union[Iterator[int], Iterable[int]]],
+            Iterable[Union[Iterator[int], Iterable[int]]],
+        ]],
+        Iterable[Union[
+            Iterator[Union[Iterator[int], Iterable[int]]],
+            Iterable[Union[Iterator[int], Iterable[int]]],
+        ]],
+    ]
+) -> Iterator[int]:
+    for i in values:
+        for j in i:
+            for k in j:
+                yield k
+foo([[[1]]])
+[builtins fixtures/list.pyi]
+
+[case testNestedProtocolGenericUnions]
+from typing import Union, Iterator, List
+def foo(
+    values: Union[
+        Iterator[Union[
+            Iterator[Union[Iterator[int], List[int]]],
+            List[Union[Iterator[int], List[int]]],
+        ]],
+        List[Union[
+            Iterator[Union[Iterator[int], List[int]]],
+            List[Union[Iterator[int], List[int]]],
+        ]],
+    ]
+) -> Iterator[int]:
+    for i in values:
+        for j in i:
+            for k in j:
+                yield k
+foo([[[1]]])
+[builtins fixtures/list.pyi]
+
+[case testNestedProtocolGenericUnionsDeep]
+from typing import TypeVar, Union, Iterator, List
+T = TypeVar("T")
+Iter = Union[Iterator[T], List[T]]
+def foo(
+    values: Iter[Iter[Iter[Iter[Iter[int]]]]],
+) -> Iterator[int]:
+    for i in values:
+        for j in i:
+            for k in j:
+                for l in k:
+                    for m in l:
+                        yield m
+foo([[[[[1]]]]])
+[builtins fixtures/list.pyi]
+
+[case testNestedInstanceUnsimplifiedUnion]
+from typing import TypeVar, Union, Iterator, List, Any
+T = TypeVar("T")
+
+Iter = Union[Iterator[T], List[T]]
+def foo(
+    values: Iter[Union[Any, Any]],
+) -> Iterator[Any]:
+    for i in values:
+        yield i
+foo([1])
+[builtins fixtures/list.pyi]
+
+[case testNestedInstanceTypeAlias]
+from typing import TypeVar, Union, Iterator, List, Any
+T = TypeVar("T")
+
+Iter = Union[Iterator[T], List[T]]
+def foo(
+    values: Iter["Any"],
+) -> Iterator[Any]:
+    for i in values:
+        yield i
+foo([1])
+[builtins fixtures/list.pyi]
+
+[case testNestedInstanceTypeAliasUnsimplifiedUnion]
+from typing import TypeVar, Union, Iterator, List, Any
+T = TypeVar("T")
+
+Iter = Union[Iterator[T], List[T]]
+def foo(
+    values: Iter["Union[Any, Any]"],
+) -> Iterator[Any]:
+    for i in values:
+        yield i
+foo([1])
+[builtins fixtures/list.pyi]
