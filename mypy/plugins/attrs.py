@@ -556,6 +556,8 @@ def _attribute_from_attrib_maker(ctx: 'mypy.plugin.ClassDefContext',
     # If the type isn't set through annotation but is passed through `type=` use that.
     type_arg = _get_argument(rvalue, 'type')
     if type_arg and not init_type:
+        if ctx.api.options.python_version >= (3, 6):
+            ctx.api.note('Variable annotation syntax is preferred over type= arguments', rvalue)
         try:
             un_type = expr_to_unanalyzed_type(type_arg)
         except TypeTranslationError:

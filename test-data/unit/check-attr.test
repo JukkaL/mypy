@@ -102,7 +102,7 @@ class C:
         return self.x  # E: Incompatible return value type (got "int", expected "str")
 @attr.s
 class D:
-    x = attr.ib(8, type=int)
+    x = attr.ib(8, type=int)  # N: Variable annotation syntax is preferred over type= arguments
     def foo(self) -> str:
         return self.x  # E: Incompatible return value type (got "int", expected "str")
 [builtins fixtures/bool.pyi]
@@ -346,8 +346,8 @@ import attr
 
 @attr.s
 class A:
-    a = attr.ib(type=int)
-    b = attr.ib(18, type=int)
+    a = attr.ib(type=int)  # N: Variable annotation syntax is preferred over type= arguments
+    b = attr.ib(18, type=int)  # N: Variable annotation syntax is preferred over type= arguments
 reveal_type(A) # N: Revealed type is 'def (a: builtins.int, b: builtins.int =) -> __main__.A'
 [builtins fixtures/bool.pyi]
 
@@ -932,7 +932,7 @@ reveal_type(A)  # N: Revealed type is 'def (x: builtins.int =, y: builtins.int =
 import attr
 @attr.s
 class A:
-   x, y, z = attr.ib(), attr.ib(type=int), attr.ib(default=17)
+   x, y, z = attr.ib(), attr.ib(type=int), attr.ib(default=17)  # N: Variable annotation syntax is preferred over type= arguments
 reveal_type(A) # N: Revealed type is 'def (x: Any, y: builtins.int, z: Any =) -> __main__.A'
 [builtins fixtures/list.pyi]
 
@@ -1295,6 +1295,7 @@ import attr
 
 @attr.s
 class C:
+    # N: Variable annotation syntax is preferred over type= arguments
     total = attr.ib(type=Bad)  # E: Name 'Bad' is not defined
 [builtins fixtures/bool.pyi]
 
@@ -1303,7 +1304,7 @@ import attr
 
 @attr.s
 class C:
-    total = attr.ib(type=Forward)
+    total = attr.ib(type=Forward)  # N: Variable annotation syntax is preferred over type= arguments
 
 reveal_type(C.total)  # N: Revealed type is '__main__.Forward'
 C('no')  # E: Argument 1 to "C" has incompatible type "str"; expected "Forward"
@@ -1329,6 +1330,7 @@ import attr
 
 @attr.s(frozen=True)
 class C:
+    # N: Variable annotation syntax is preferred over type= arguments
     total = attr.ib(type=Bad)  # E: Name 'Bad' is not defined
 
 C(0).total = 1  # E: Property "total" defined in "C" is read-only
@@ -1344,7 +1346,7 @@ if MYPY:  # Force deferral
 
 @attr.s
 class C:
-    total = attr.ib(type=int)
+    total = attr.ib(type=int)  # N: Variable annotation syntax is preferred over type= arguments
 
 C()  # E: Missing positional argument "total" in call to "C"
 C('no')  # E: Argument 1 to "C" has incompatible type "str"; expected "int"
