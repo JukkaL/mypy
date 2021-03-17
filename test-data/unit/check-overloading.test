@@ -525,21 +525,21 @@ if int():
 if int():
     b = f(a) # E: Incompatible types in assignment (expression has type "A", variable has type "B")
 f(b)     # E: No overload variant of "f" matches argument type "B" \
-         # N: Possible overload variant: \
+         # N: Possible overload variants: \
          # N:     def f(x: A) -> A \
-         # N:     <1 more non-matching overload not shown>
+         # N:     def f(x: B, y: A) -> B
 if int():
     b = f(b, a)
 if int():
     a = f(b, a) # E: Incompatible types in assignment (expression has type "B", variable has type "A")
 f(a, a)     # E: No overload variant of "f" matches argument types "A", "A" \
-            # N: Possible overload variant: \
-            # N:     def f(x: B, y: A) -> B \
-            # N:     <1 more non-matching overload not shown>
+            # N: Possible overload variants: \
+            # N:     def f(x: A) -> A \
+            # N:     def f(x: B, y: A) -> B
 f(b, b)     # E: No overload variant of "f" matches argument types "B", "B" \
-            # N: Possible overload variant: \
-            # N:     def f(x: B, y: A) -> B \
-            # N:     <1 more non-matching overload not shown>
+            # N: Possible overload variants: \
+            # N:     def f(x: A) -> A \
+            # N:     def f(x: B, y: A) -> B
 
 @overload
 def f(x: 'A') -> 'A': pass
@@ -1174,15 +1174,15 @@ def f(x: int, y: str) -> int: pass
 @overload
 def f(*x: str) -> str: pass
 f(*(1,))() # E: No overload variant of "f" matches argument type "Tuple[int]" \
-           # N: Possible overload variant: \
-           # N:     def f(*x: str) -> str \
-           # N:     <1 more non-matching overload not shown>
+           # N: Possible overload variants: \
+           # N:     def f(x: int, y: str) -> int \
+           # N:     def f(*x: str) -> str
 f(*('',))() # E: "str" not callable
 f(*(1, ''))() # E: "int" not callable
 f(*(1, '', 1))() # E: No overload variant of "f" matches argument type "Tuple[int, str, int]" \
-                 # N: Possible overload variant: \
-                 # N:     def f(*x: str) -> str \
-                 # N:     <1 more non-matching overload not shown>
+                 # N: Possible overload variants: \
+                 # N:     def f(x: int, y: str) -> int \
+                 # N:     def f(*x: str) -> str
 [builtins fixtures/tuple.pyi]
 
 [case testPreferExactSignatureMatchInOverload]
@@ -2423,9 +2423,9 @@ reveal_type(foo(*x))  # N: Revealed type is '__main__.C'
 y: List[str]
 foo(*y)  # E: No overload variant of "foo" matches argument type "List[str]" \
          # N: Possible overload variants: \
-         # N:     def foo(x: int, y: int, z: int, *args: int) -> C \
          # N:     def foo(x: int) -> A \
-         # N:     def foo(x: int, y: int) -> B
+         # N:     def foo(x: int, y: int) -> B \
+         # N:     def foo(x: int, y: int, z: int, *args: int) -> C
 [builtins fixtures/list.pyi]
 
 [case testOverloadMultipleVarargDefinition]
@@ -4674,7 +4674,9 @@ f(3)  # E: No overload variant of "f" matches argument type "int" \
       # N: Possible overload variants: \
       # N:     def f(x: A) -> None \
       # N:     def f(x: B) -> None \
-      # N:     <2 more similar overloads not shown, out of 5 total overloads>
+      # N:     def f(x: C) -> None \
+      # N:     def f(x: D) -> None \
+      # N:     def f(x: int, y: int) -> None
 
 @overload
 def g(x: A) -> None: ...
@@ -4740,9 +4742,9 @@ def f() -> None:
         pass
 
     g(str(), str())  # E: No overload variant of "g" matches argument types "str", "str" \
-                     # N: Possible overload variant: \
-                     # N:     def [T] g(x: T, y: int) -> T \
-                     # N:     <1 more non-matching overload not shown>
+                     # N: Possible overload variants: \
+                     # N:     def g(x: str) -> str \
+                     # N:     def [T] g(x: T, y: int) -> T
     reveal_type(g(str(), int()))  # N: Revealed type is 'builtins.str*'
 [out]
 
@@ -4793,9 +4795,9 @@ reveal_type(attr("hi"))  # N: Revealed type is 'builtins.int'
 x: Any
 reveal_type(attr(x)) # N: Revealed type is 'Any'
 attr("hi", 1)  # E: No overload variant of "attr" matches argument types "str", "int" \
-               # N: Possible overload variant: \
+               # N: Possible overload variants: \
                # N:     def [T in (int, float)] attr(default: T = ..., blah: int = ...) -> T \
-               # N:     <1 more non-matching overload not shown>
+               # N:     def attr(default: Any = ...) -> int
 [file lib.pyi]
 from typing import overload, Any, TypeVar
 
@@ -4816,9 +4818,9 @@ reveal_type(attr("hi"))  # N: Revealed type is 'builtins.int'
 x: Any
 reveal_type(attr(x)) # N: Revealed type is 'Any'
 attr("hi", 1)  # E: No overload variant of "attr" matches argument types "str", "int" \
-               # N: Possible overload variant: \
+               # N: Possible overload variants: \
                # N:     def [T <: int] attr(default: T = ..., blah: int = ...) -> T \
-               # N:     <1 more non-matching overload not shown>
+               # N:     def attr(default: Any = ...) -> int
 [file lib.pyi]
 from typing import overload, TypeVar, Any
 

@@ -710,7 +710,6 @@ class MessageBuilder:
         self.fail('Assignment to variable{} outside except: block'.format(s), context)
 
     def no_variant_matches_arguments(self,
-                                     plausible_targets: List[CallableType],
                                      overload: Overloaded,
                                      arg_types: List[Type],
                                      context: Context,
@@ -734,8 +733,13 @@ class MessageBuilder:
             self.fail('No overload variant{} matches argument types {}'
                       .format(name_str, arg_types_str), context, code=code)
 
-        self.pretty_overload_matches(plausible_targets, overload, context, offset=2, max_items=2,
-                                     code=code)
+        variants = overload.items()
+        self.note(
+            'Possible overload variant{}:'.format(plural_s(len(variants))),
+            context, code=code,
+        )
+        for item in variants:
+            self.note(pretty_callable(item), context, offset=4, code=code)
 
     def wrong_number_values_to_unpack(self, provided: int, expected: int,
                                       context: Context) -> None:
@@ -1395,13 +1399,13 @@ class MessageBuilder:
                         self.note(pretty_callable(exp), context, offset=2 * OFFSET, code=code)
                     else:
                         assert isinstance(exp, Overloaded)
-                        self.pretty_overload(exp, context, OFFSET, MAX_ITEMS, code=code)
+                        self.pretty_overload(exp, context, OFFSET, code=code)
                     self.note('Got:', context, offset=OFFSET, code=code)
                     if isinstance(got, CallableType):
                         self.note(pretty_callable(got), context, offset=2 * OFFSET, code=code)
                     else:
                         assert isinstance(got, Overloaded)
-                        self.pretty_overload(got, context, OFFSET, MAX_ITEMS, code=code)
+                        self.pretty_overload(got, context, OFFSET, code=code)
             self.print_more(conflict_types, context, OFFSET, MAX_ITEMS, code=code)
 
         # Report flag conflicts (i.e. settable vs read-only etc.)
@@ -1433,52 +1437,11 @@ class MessageBuilder:
                         tp: Overloaded,
                         context: Context,
                         offset: int,
-                        max_items: int,
                         *,
                         code: Optional[ErrorCode] = None) -> None:
-        for item in tp.items()[:max_items]:
+        for item in tp.items():
             self.note('@overload', context, offset=2 * offset, code=code)
             self.note(pretty_callable(item), context, offset=2 * offset, code=code)
-        left = len(tp.items()) - max_items
-        if left > 0:
-            msg = '<{} more overload{} not shown>'.format(left, plural_s(left))
-            self.note(msg, context, offset=2 * offset, code=code)
-
-    def pretty_overload_matches(self,
-                                targets: List[CallableType],
-                                func: Overloaded,
-                                context: Context,
-                                offset: int,
-                                max_items: int,
-                                code: ErrorCode) -> None:
-        if not targets:
-            targets = func.items()
-
-        shown = min(max_items, len(targets))
-        max_matching = len(targets)
-        max_available = len(func.items())
-
-        # If there are 3 matches but max_items == 2, we might as well show
-        # all three items instead of having the 3rd item be an error message.
-        if shown + 1 == max_matching:
-            shown = max_matching
-
-        self.note('Possible overload variant{}:'.format(plural_s(shown)), context, code=code)
-        for item in targets[:shown]:
-            self.note(pretty_callable(item), context, offset=2 * offset, code=code)
-
-        assert shown <= max_matching <= max_available
-        if shown < max_matching <= max_available:
-            left = max_matching - shown
-            msg = '<{} more similar overload{} not shown, out of {} total overloads>'.format(
-                left, plural_s(left), max_available)
-            self.note(msg, context, offset=2 * offset, code=code)
-        elif shown == max_matching < max_available:
-            left = max_available - shown
-            msg = '<{} more non-matching overload{} not shown>'.format(left, plural_s(left))
-            self.note(msg, context, offset=2 * offset, code=code)
-        else:
-            assert shown == max_matching == max_available
 
     def print_more(self,
                    conflicts: Sequence[Any],

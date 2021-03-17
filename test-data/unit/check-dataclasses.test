@@ -224,9 +224,10 @@ from dataclasses import dataclass, field
 class Person:
     name: str
     age: int = field(init=None)  # E: No overload variant of "field" matches argument type "None" \
-                                 # N: Possible overload variant: \
-                                 # N:     def field(*, init: bool = ..., repr: bool = ..., hash: Optional[bool] = ..., compare: bool = ..., metadata: Optional[Mapping[str, Any]] = ...) -> Any \
-                                 # N:     <2 more non-matching overloads not shown>
+                                 # N: Possible overload variants: \
+                                 # N:     def [_T] field(*, default: _T, init: bool = ..., repr: bool = ..., hash: Optional[bool] = ..., compare: bool = ..., metadata: Optional[Mapping[str, Any]] = ...) -> _T \
+                                 # N:     def [_T] field(*, default_factory: Callable[[], _T], init: bool = ..., repr: bool = ..., hash: Optional[bool] = ..., compare: bool = ..., metadata: Optional[Mapping[str, Any]] = ...) -> _T \
+                                 # N:     def field(*, init: bool = ..., repr: bool = ..., hash: Optional[bool] = ..., compare: bool = ..., metadata: Optional[Mapping[str, Any]] = ...) -> Any
 
 [builtins fixtures/list.pyi]
 

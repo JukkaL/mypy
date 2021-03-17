@@ -1616,7 +1616,7 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                 else:
                     code = codes.OPERATOR
                 arg_messages.no_variant_matches_arguments(
-                    plausible_targets, callee, arg_types, context, code=code)
+                    callee, arg_types, context, code=code)
 
         result = self.check_call(target, args, arg_kinds, context, arg_names,
                                  arg_messages=arg_messages,

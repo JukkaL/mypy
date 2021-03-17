@@ -7186,9 +7186,9 @@ class C:
 [out]
 ==
 a.py:2: error: No overload variant of "B" matches argument type "int"
-a.py:2: note: Possible overload variant:
+a.py:2: note: Possible overload variants:
 a.py:2: note:     def __init__(self, x: str) -> B
-a.py:2: note:     <1 more non-matching overload not shown>
+a.py:2: note:     def __init__(self, x: str, y: int) -> B
 
 [case testOverloadedToNormalMethodMetaclass]
 import a

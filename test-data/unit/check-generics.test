@@ -2079,9 +2079,9 @@ reveal_type(Base.make_some(1, 1))  # N: Revealed type is 'builtins.tuple[__main_
 
 class Sub(Base[str]): ...
 Sub.make_some(1)  # E: No overload variant of "make_some" of "Base" matches argument type "int" \
-                  # N: Possible overload variant: \
+                  # N: Possible overload variants: \
                   # N:     def make_some(cls, item: str) -> Sub \
-                  # N:     <1 more non-matching overload not shown>
+                  # N:     def make_some(cls, item: str, n: int) -> Tuple[Sub, ...]
 [builtins fixtures/classmethod.pyi]
 
 [case testNoGenericAccessOnImplicitAttributes]
