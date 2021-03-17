@@ -611,7 +611,7 @@ def _parse_converter(ctx: 'mypy.plugin.ClassDefContext',
 
         # Signal that we have an unsupported converter.
         ctx.api.fail(
-            "Unsupported converter, only named functions and types are currently supported",
+            "Unsupported converter supports types and named functions with annotated return type",
             converter
         )
         return Converter('')

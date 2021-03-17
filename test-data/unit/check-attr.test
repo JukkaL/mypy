@@ -832,9 +832,9 @@ def factory(default: int):
    ...
 @attr.s
 class C:
-    x: str = attr.ib(converter=thing.do_it)  # E: Unsupported converter, only named functions and types are currently supported
-    y: str = attr.ib(converter=lambda x: x)  # E: Unsupported converter, only named functions and types are currently supported
-    z: str = attr.ib(converter=factory(8))   # E: Unsupported converter, only named functions and types are currently supported
+    x: str = attr.ib(converter=thing.do_it)  # E: Unsupported converter supports types and named functions with annotated return type
+    y: str = attr.ib(converter=lambda x: x)  # E: Unsupported converter supports types and named functions with annotated return type
+    z: str = attr.ib(converter=factory(8))   # E: Unsupported converter supports types and named functions with annotated return type
 reveal_type(C)  # N: Revealed type is 'def (x: Any, y: Any, z: Any) -> __main__.C'
 [builtins fixtures/list.pyi]
 
