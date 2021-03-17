@@ -2229,7 +2229,7 @@ y: PBad = None  # E: Incompatible types in assignment (expression has type "None
 [out]
 
 [case testOnlyMethodProtocolUsableWithIsSubclass]
-from typing import Protocol, runtime_checkable, Union, Type
+from typing import Protocol, runtime_checkable, Union, Type, Sequence, overload
 @runtime_checkable
 class P(Protocol):
     def meth(self) -> int:
@@ -2251,6 +2251,17 @@ if issubclass(cls, P):
     reveal_type(cls)  # N: Revealed type is 'Type[__main__.C]'
 else:
     reveal_type(cls)  # N: Revealed type is 'Type[__main__.E]'
+
+@runtime_checkable
+class POverload(Protocol):
+    @overload
+    def meth(self, a: int) -> float: ...
+    @overload
+    def meth(self, a: str) -> Sequence[float]: ...
+    def meth(self, a):
+        pass
+
+reveal_type(issubclass(int, POverload))  # N: Revealed type is 'builtins.bool'
 [builtins fixtures/isinstance.pyi]
 [typing fixtures/typing-full.pyi]
 [out]
