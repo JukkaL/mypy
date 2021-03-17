@@ -301,8 +301,8 @@ def write_file(path: str, contents: str) -> None:
         old_contents = None
     if old_contents != encoded_contents:
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, 'wb') as f:
-            f.write(encoded_contents)
+        with open(path, 'wb') as g:
+            g.write(encoded_contents)
 
         # Fudge the mtime forward because otherwise when two builds happen close
         # together (like in a test) setuptools might not realize the source is newer

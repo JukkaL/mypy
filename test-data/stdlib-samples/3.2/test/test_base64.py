@@ -248,8 +248,8 @@ class TestMain(unittest.TestCase):
         output = self.get_output('-e', support.TESTFN)
         self.assertEqual(output.rstrip(), b'Yf9iCg==')
 
-        with open(support.TESTFN, 'rb') as fp:
-            output = self.get_output('-e', stdin=fp)
+        with open(support.TESTFN, 'rb') as fp2:
+            output = self.get_output('-e', stdin=fp2)
         self.assertEqual(output.rstrip(), b'Yf9iCg==')
 
     def test_decode(self) -> None:

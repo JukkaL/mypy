@@ -243,10 +243,10 @@ class AnyExpressionsReporter(AbstractReporter):
             f.write(separator + '\n')
             for row_values in rows:
                 r = ("{:>{}}" * len(widths)).format(*itertools.chain(*zip(row_values, widths)))
-                f.writelines(r + '\n')
+                f.write(r + '\n')
             f.write(separator + '\n')
             footer_str = ("{:>{}}" * len(widths)).format(*itertools.chain(*zip(footer, widths)))
-            f.writelines(footer_str + '\n')
+            f.write(footer_str + '\n')
 
     def _report_any_exprs(self) -> None:
         total_any = sum(num_any for num_any, _ in self.counts.values())

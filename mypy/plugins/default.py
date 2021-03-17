@@ -2,10 +2,9 @@ from functools import partial
 from typing import Callable, Optional, List
 
 from mypy import message_registry
-from mypy.nodes import Expression, StrExpr, IntExpr, DictExpr, UnaryExpr
+from mypy.nodes import StrExpr, IntExpr, DictExpr, UnaryExpr
 from mypy.plugin import (
-    Plugin, FunctionContext, MethodContext, MethodSigContext, AttributeContext, ClassDefContext,
-    CheckerPluginInterface,
+    Plugin, FunctionContext, MethodContext, MethodSigContext, AttributeContext, ClassDefContext
 )
 from mypy.plugins.common import try_getting_str_literals
 from mypy.types import (
@@ -26,8 +25,6 @@ class DefaultPlugin(Plugin):
 
         if fullname == 'contextlib.contextmanager':
             return contextmanager_callback
-        elif fullname == 'builtins.open' and self.python_version[0] == 3:
-            return open_callback
         elif fullname == 'ctypes.Array':
             return ctypes.array_constructor_callback
         return None
@@ -70,8 +67,6 @@ class DefaultPlugin(Plugin):
             return ctypes.array_getitem_callback
         elif fullname == 'ctypes.Array.__iter__':
             return ctypes.array_iter_callback
-        elif fullname == 'pathlib.Path.open':
-            return path_open_callback
         return None
 
     def get_attribute_hook(self, fullname: str
@@ -115,58 +110,6 @@ class DefaultPlugin(Plugin):
         elif fullname in dataclasses.dataclass_makers:
             return dataclasses.dataclass_class_maker_callback
         return None
-
-
-def open_callback(ctx: FunctionContext) -> Type:
-    """Infer a better return type for 'open'."""
-    return _analyze_open_signature(
-        arg_types=ctx.arg_types,
-        args=ctx.args,
-        mode_arg_index=1,
-        default_return_type=ctx.default_return_type,
-        api=ctx.api,
-    )
-
-
-def path_open_callback(ctx: MethodContext) -> Type:
-    """Infer a better return type for 'pathlib.Path.open'."""
-    return _analyze_open_signature(
-        arg_types=ctx.arg_types,
-        args=ctx.args,
-        mode_arg_index=0,
-        default_return_type=ctx.default_return_type,
-        api=ctx.api,
-    )
-
-
-def _analyze_open_signature(arg_types: List[List[Type]],
-                            args: List[List[Expression]],
-                            mode_arg_index: int,
-                            default_return_type: Type,
-                            api: CheckerPluginInterface,
-                            ) -> Type:
-    """A helper for analyzing any function that has approximately
-    the same signature as the builtin 'open(...)' function.
-
-    Currently, the only thing the caller can customize is the index
-    of the 'mode' argument. If the mode argument is omitted or is a
-    string literal, we refine the return type to either 'TextIO' or
-    'BinaryIO' as appropriate.
-    """
-    mode = None
-    if not arg_types or len(arg_types[mode_arg_index]) != 1:
-        mode = 'r'
-    else:
-        mode_expr = args[mode_arg_index][0]
-        if isinstance(mode_expr, StrExpr):
-            mode = mode_expr.value
-    if mode is not None:
-        assert isinstance(default_return_type, Instance)  # type: ignore
-        if 'b' in mode:
-            return api.named_generic_type('typing.BinaryIO', [])
-        else:
-            return api.named_generic_type('typing.TextIO', [])
-    return default_return_type
 
 
 def contextmanager_callback(ctx: FunctionContext) -> Type:

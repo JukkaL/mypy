@@ -271,8 +271,8 @@ f.write('x')
 f.write(b'x')
 f.foobar()
 [out]
-_program.py:3: error: Argument 1 to "write" of "IO" has incompatible type "bytes"; expected "str"
-_program.py:4: error: "TextIO" has no attribute "foobar"
+_program.py:3: error: Argument 1 to "write" of "TextIOBase" has incompatible type "bytes"; expected "str"
+_program.py:4: error: "TextIOWrapper" has no attribute "foobar"
 
 [case testOpenReturnTypeInference]
 reveal_type(open('x'))
@@ -281,9 +281,9 @@ reveal_type(open('x', 'rb'))
 mode = 'rb'
 reveal_type(open('x', mode))
 [out]
-_program.py:1: note: Revealed type is 'typing.TextIO'
-_program.py:2: note: Revealed type is 'typing.TextIO'
-_program.py:3: note: Revealed type is 'typing.BinaryIO'
+_program.py:1: note: Revealed type is 'io.TextIOWrapper'
+_program.py:2: note: Revealed type is 'io.TextIOWrapper'
+_program.py:3: note: Revealed type is 'io.BufferedReader'
 _program.py:5: note: Revealed type is 'typing.IO[Any]'
 
 [case testOpenReturnTypeInferenceSpecialCases]
@@ -292,8 +292,8 @@ reveal_type(open(file='x', mode='rb'))
 mode = 'rb'
 reveal_type(open(mode=mode, file='r'))
 [out]
-_testOpenReturnTypeInferenceSpecialCases.py:1: note: Revealed type is 'typing.BinaryIO'
-_testOpenReturnTypeInferenceSpecialCases.py:2: note: Revealed type is 'typing.BinaryIO'
+_testOpenReturnTypeInferenceSpecialCases.py:1: note: Revealed type is 'io.BufferedReader'
+_testOpenReturnTypeInferenceSpecialCases.py:2: note: Revealed type is 'io.BufferedReader'
 _testOpenReturnTypeInferenceSpecialCases.py:4: note: Revealed type is 'typing.IO[Any]'
 
 [case testPathOpenReturnTypeInference]
@@ -305,21 +305,21 @@ reveal_type(p.open('rb'))
 mode = 'rb'
 reveal_type(p.open(mode))
 [out]
-_program.py:3: note: Revealed type is 'typing.TextIO'
-_program.py:4: note: Revealed type is 'typing.TextIO'
-_program.py:5: note: Revealed type is 'typing.BinaryIO'
+_program.py:3: note: Revealed type is 'io.TextIOWrapper'
+_program.py:4: note: Revealed type is 'io.TextIOWrapper'
+_program.py:5: note: Revealed type is 'io.BufferedReader'
 _program.py:7: note: Revealed type is 'typing.IO[Any]'
 
 [case testPathOpenReturnTypeInferenceSpecialCases]
 from pathlib import Path
 p = Path("x")
-reveal_type(p.open(mode='rb', errors='replace'))
-reveal_type(p.open(errors='replace', mode='rb'))
-mode = 'rb'
+reveal_type(p.open(mode='r', errors='replace'))
+reveal_type(p.open(errors='replace', mode='r'))
+mode = 'r'
 reveal_type(p.open(mode=mode, errors='replace'))
 [out]
-_program.py:3: note: Revealed type is 'typing.BinaryIO'
-_program.py:4: note: Revealed type is 'typing.BinaryIO'
+_program.py:3: note: Revealed type is 'io.TextIOWrapper'
+_program.py:4: note: Revealed type is 'io.TextIOWrapper'
 _program.py:6: note: Revealed type is 'typing.IO[Any]'
 
 [case testGenericPatterns]

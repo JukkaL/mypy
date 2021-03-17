@@ -114,26 +114,21 @@ class GenericTest(unittest.TestCase):
             support.unlink(support.TESTFN)
 
     def test_time(self) -> None:
-        f = open(support.TESTFN, "wb")
-        try:
-            f.write(b"foo")
-            f.close()
-            f = open(support.TESTFN, "ab")
-            f.write(b"bar")
-            f.close()
-            f = open(support.TESTFN, "rb")
-            d = f.read()
-            f.close()
-            self.assertEqual(d, b"foobar")
+        f1 = open(support.TESTFN, "wb")
+        f1.write(b"foo")
+        f1.close()
+        f2 = open(support.TESTFN, "ab")
+        f2.write(b"bar")
+        f2.close()
+        f3 = open(support.TESTFN, "rb")
+        d = f3.read()
+        f3.close()
+        self.assertEqual(d, b"foobar")
 
-            self.assertLessEqual(
-                self.pathmodule.getctime(support.TESTFN),
-                self.pathmodule.getmtime(support.TESTFN)
-            )
-        finally:
-            if not f.closed:
-                f.close()
-            support.unlink(support.TESTFN)
+        self.assertLessEqual(
+            self.pathmodule.getctime(support.TESTFN),
+            self.pathmodule.getmtime(support.TESTFN)
+        )
 
     def test_exists(self) -> None:
         self.assertIs(self.pathmodule.exists(support.TESTFN), False)
