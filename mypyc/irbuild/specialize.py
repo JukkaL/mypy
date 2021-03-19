@@ -291,3 +291,16 @@ def translate_isinstance(builder: IRBuilder, expr: CallExpr, callee: RefExpr) ->
         if irs is not None:
             return builder.builder.isinstance_helper(builder.accept(expr.args[0]), irs, expr.line)
     return None
+
+
+@specialize_function('builtins.min')
+def faster_min(builder: IRBuilder, expr: CallExpr, callee: RefExpr) -> Optional[Value]:
+    if (len(expr.args) == 2
+            and expr.arg_kinds == [ARG_POS, ARG_POS]):
+        x, y = builder.accept(expr.args[0]), builder.accept(expr.args[1])
+        comparison = builder.binary_op(x, y, '<', expr.line)
+        if comparison == Integer(1,  bool_rprimitive):
+            return x
+        else:
+            return y
+    return None

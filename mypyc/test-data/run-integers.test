@@ -328,3 +328,14 @@ def test_int_as_bool() -> None:
     for x in 1, 55, -1, -7, 1 << 50, 1 << 101, -(1 << 50), -(1 << 101):
         assert is_true(x)
         assert not is_false(x)
+
+[case testMin]
+def check_min_int() -> None:
+    x: int = 200
+    y: int = 30
+    assert min(x, y) == 30
+
+def check_min_float() -> None:
+    x: float = 2.2
+    y: float = 4.5
+    assert min(x, y) == 2.2
