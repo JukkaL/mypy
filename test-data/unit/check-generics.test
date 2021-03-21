@@ -2430,3 +2430,50 @@ class C: ...
 def test() -> Optional[S]:
     reveal_type(A().gen(C()))  # N: Revealed type is '__main__.C*'
     return None
+
+[case testGenericJoinCovariant]
+from typing import Generic, TypeVar, List
+
+T = TypeVar("T", covariant=True)
+
+class Container(Generic[T]): ...
+class Base: ...
+class A(Base): ...
+class B(Base): ...
+
+a: A
+b: B
+
+a_c: Container[A]
+b_c: Container[B]
+
+reveal_type([a, b])  # N: Revealed type is 'builtins.list[__main__.Base*]'
+reveal_type([a_c, b_c])  # N: Revealed type is 'builtins.list[__main__.Container*[__main__.Base]]'
+[builtins fixtures/list.pyi]
+
+[case testGenericJoinContravariant]
+from typing import Generic, TypeVar, List
+
+T = TypeVar("T", contravariant=True)
+
+class Container(Generic[T]): ...
+class A: ...
+class B(A): ...
+
+a_c: Container[A]
+b_c: Container[B]
+
+reveal_type([a_c, b_c])  # N: Revealed type is 'builtins.list[__main__.Container*[__main__.B]]'
+[builtins fixtures/list.pyi]
+
+[case testGenericJoinRecursiveTypes]
+from typing import Sequence, TypeVar
+
+class A(Sequence[A]): ...
+class B(Sequence[B]): ...
+
+a: A
+b: B
+
+reveal_type([a, b])  # N: Revealed type is 'builtins.list[typing.Sequence*[builtins.object]]'
+[builtins fixtures/list.pyi]

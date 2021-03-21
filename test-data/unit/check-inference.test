@@ -791,10 +791,10 @@ AnyStr = TypeVar('AnyStr', bytes, str)
 def f(x: Union[AnyStr, int], *a: AnyStr) -> None: pass
 f('foo')
 f('foo', 'bar')
-f('foo', b'bar') # E: Value of type variable "AnyStr" of "f" cannot be "object"
+f('foo', b'bar') # E: Value of type variable "AnyStr" of "f" cannot be "Sequence[object]"
 f(1)
 f(1, 'foo')
-f(1, 'foo', b'bar') # E: Value of type variable "AnyStr" of "f" cannot be "object"
+f(1, 'foo', b'bar') # E: Value of type variable "AnyStr" of "f" cannot be "Sequence[object]"
 [builtins fixtures/primitives.pyi]
 
 

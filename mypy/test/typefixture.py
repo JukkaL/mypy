@@ -129,6 +129,7 @@ class TypeFixture:
         self.gtf2 = Instance(self.gi, [self.tf2])    # G[T`-2]
         self.gs = Instance(self.gi, [self.s])        # G[S]
         self.gdyn = Instance(self.gi, [self.anyt])    # G[Any]
+        self.gn = Instance(self.gi, [NoneType()])    # G[None]
 
         self.g2a = Instance(self.g2i, [self.a])      # G2[A]
 
@@ -145,6 +146,7 @@ class TypeFixture:
         self.hbb = Instance(self.hi, [self.b, self.b])    # H[B, B]
         self.hts = Instance(self.hi, [self.t, self.s])    # H[T, S]
         self.had = Instance(self.hi, [self.a, self.d])    # H[A, D]
+        self.hao = Instance(self.hi, [self.a, self.o])    # H[A, object]
 
         self.lsta = Instance(self.std_listi, [self.a])  # List[A]
         self.lstb = Instance(self.std_listi, [self.b])  # List[B]

@@ -1,9 +1,6 @@
 from mypy.ordered_dict import OrderedDict
 from typing import List, Optional, Tuple, Callable
 
-from mypy.join import (
-    is_similar_callables, combine_similar_callables, join_type_list, unpack_callback_protocol
-)
 from mypy.types import (
     Type, AnyType, TypeVisitor, UnboundType, NoneType, TypeVarType, Instance, CallableType,
     TupleType, TypedDictType, ErasedType, UnionType, PartialType, DeletedType,
@@ -15,6 +12,7 @@ from mypy.erasetype import erase_type
 from mypy.maptype import map_instance_to_supertype
 from mypy.typeops import tuple_fallback, make_simplified_union, is_recursive_pair
 from mypy import state
+from mypy import join
 
 # TODO Describe this module.
 
@@ -513,7 +511,7 @@ class TypeMeetVisitor(TypeVisitor[ProperType]):
                     else:
                         return NoneType()
         elif isinstance(self.s, FunctionLike) and t.type.is_protocol:
-            call = unpack_callback_protocol(t)
+            call = join.unpack_callback_protocol(t)
             if call:
                 return meet_types(call, self.s)
         elif isinstance(self.s, FunctionLike) and self.s.is_type_obj() and t.type.is_metaclass():
@@ -531,9 +529,9 @@ class TypeMeetVisitor(TypeVisitor[ProperType]):
         return self.default(self.s)
 
     def visit_callable_type(self, t: CallableType) -> ProperType:
-        if isinstance(self.s, CallableType) and is_similar_callables(t, self.s):
+        if isinstance(self.s, CallableType) and join.is_similar_callables(t, self.s):
             if is_equivalent(t, self.s):
-                return combine_similar_callables(t, self.s)
+                return join.combine_similar_callables(t, self.s)
             result = meet_similar_callables(t, self.s)
             # We set the from_type_type flag to suppress error when a collection of
             # concrete class objects gets inferred as their common abstract superclass.
@@ -551,7 +549,7 @@ class TypeMeetVisitor(TypeVisitor[ProperType]):
                 return TypeType.make_normalized(res)
             return self.default(self.s)
         elif isinstance(self.s, Instance) and self.s.type.is_protocol:
-            call = unpack_callback_protocol(self.s)
+            call = join.unpack_callback_protocol(self.s)
             if call:
                 return meet_types(t, call)
         return self.default(self.s)
@@ -570,7 +568,7 @@ class TypeMeetVisitor(TypeVisitor[ProperType]):
             else:
                 return meet_types(t.fallback, s.fallback)
         elif isinstance(self.s, Instance) and self.s.type.is_protocol:
-            call = unpack_callback_protocol(self.s)
+            call = join.unpack_callback_protocol(self.s)
             if call:
                 return meet_types(t, call)
         return meet_types(t.fallback, s)
@@ -606,7 +604,7 @@ class TypeMeetVisitor(TypeVisitor[ProperType]):
                     assert t_item_type is not None
                     item_list.append((item_name, t_item_type))
             items = OrderedDict(item_list)
-            mapping_value_type = join_type_list(list(items.values()))
+            mapping_value_type = join.join_type_list(list(items.values()))
             fallback = self.s.create_anonymous_fallback(value_type=mapping_value_type)
             required_keys = t.required_keys | self.s.required_keys
             return TypedDictType(items, required_keys, fallback)

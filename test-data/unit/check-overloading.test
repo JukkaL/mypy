@@ -1315,10 +1315,10 @@ def g(x: int, *a: AnyStr) -> None: pass
 
 g('foo')
 g('foo', 'bar')
-g('foo', b'bar') # E: Value of type variable "AnyStr" of "g" cannot be "object"
+g('foo', b'bar') # E: Value of type variable "AnyStr" of "g" cannot be "Sequence[object]"
 g(1)
 g(1, 'foo')
-g(1, 'foo', b'bar') # E: Value of type variable "AnyStr" of "g" cannot be "object"
+g(1, 'foo', b'bar') # E: Value of type variable "AnyStr" of "g" cannot be "Sequence[object]"
 [builtins fixtures/primitives.pyi]
 
 [case testOverloadOverlapWithTypeVarsWithValuesOrdering]

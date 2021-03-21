@@ -477,7 +477,9 @@ class TypeOpsSuite(Suite):
 
 class JoinSuite(Suite):
     def setUp(self) -> None:
-        self.fx = TypeFixture()
+        self.fx = TypeFixture(INVARIANT)
+        self.fx_co = TypeFixture(COVARIANT)
+        self.fx_contra = TypeFixture(CONTRAVARIANT)
 
     def test_trivial_cases(self) -> None:
         for simple in self.fx.a, self.fx.o, self.fx.b:
@@ -597,11 +599,6 @@ class JoinSuite(Suite):
                     self.assert_join(t1, t2, self.fx.o)
 
     def test_simple_generics(self) -> None:
-        self.assert_join(self.fx.ga, self.fx.ga, self.fx.ga)
-        self.assert_join(self.fx.ga, self.fx.gb, self.fx.ga)
-        self.assert_join(self.fx.ga, self.fx.gd, self.fx.o)
-        self.assert_join(self.fx.ga, self.fx.g2a, self.fx.o)
-
         self.assert_join(self.fx.ga, self.fx.nonet, self.fx.ga)
         self.assert_join(self.fx.ga, self.fx.anyt, self.fx.anyt)
 
@@ -609,23 +606,43 @@ class JoinSuite(Suite):
                   self.callable(self.fx.a, self.fx.b)]:
             self.assert_join(t, self.fx.ga, self.fx.o)
 
+    def test_generics_invariant(self) -> None:
+        self.assert_join(self.fx.ga, self.fx.ga, self.fx.ga)
+        self.assert_join(self.fx.ga, self.fx.gb, self.fx.o)
+        self.assert_join(self.fx.ga, self.fx.gd, self.fx.o)
+        self.assert_join(self.fx.ga, self.fx.g2a, self.fx.o)
+
+    def test_generics_covariant(self) -> None:
+        self.assert_join(self.fx_co.ga, self.fx_co.ga, self.fx_co.ga)
+        self.assert_join(self.fx_co.ga, self.fx_co.gb, self.fx_co.ga)
+        self.assert_join(self.fx_co.ga, self.fx_co.gd, self.fx_co.go)
+        self.assert_join(self.fx_co.ga, self.fx_co.g2a, self.fx_co.o)
+
+    def test_generics_contravariant(self) -> None:
+        self.assert_join(self.fx_contra.ga, self.fx_contra.ga, self.fx_contra.ga)
+        self.assert_join(self.fx_contra.ga, self.fx_contra.gb, self.fx_contra.gb)
+        self.assert_join(self.fx_contra.ga, self.fx_contra.gd, self.fx_contra.gn)
+        self.assert_join(self.fx_contra.ga, self.fx_contra.g2a, self.fx_contra.o)
+
     def test_generics_with_multiple_args(self) -> None:
-        self.assert_join(self.fx.hab, self.fx.hab, self.fx.hab)
-        self.assert_join(self.fx.hab, self.fx.hbb, self.fx.hab)
-        self.assert_join(self.fx.had, self.fx.haa, self.fx.o)
+        self.assert_join(self.fx_co.hab, self.fx_co.hab, self.fx_co.hab)
+        self.assert_join(self.fx_co.hab, self.fx_co.hbb, self.fx_co.hab)
+        self.assert_join(self.fx_co.had, self.fx_co.haa, self.fx_co.hao)
 
     def test_generics_with_inheritance(self) -> None:
-        self.assert_join(self.fx.gsab, self.fx.gb, self.fx.gb)
-        self.assert_join(self.fx.gsba, self.fx.gb, self.fx.ga)
-        self.assert_join(self.fx.gsab, self.fx.gd, self.fx.o)
+        self.assert_join(self.fx_co.gsab, self.fx_co.gb, self.fx_co.gb)
+        self.assert_join(self.fx_co.gsba, self.fx_co.gb, self.fx_co.ga)
+        self.assert_join(self.fx_co.gsab, self.fx_co.gd, self.fx_co.go)
 
     def test_generics_with_inheritance_and_shared_supertype(self) -> None:
-        self.assert_join(self.fx.gsba, self.fx.gs2a, self.fx.ga)
-        self.assert_join(self.fx.gsab, self.fx.gs2a, self.fx.ga)
-        self.assert_join(self.fx.gsab, self.fx.gs2d, self.fx.o)
+        self.assert_join(self.fx_co.gsba, self.fx_co.gs2a, self.fx_co.ga)
+        self.assert_join(self.fx_co.gsab, self.fx_co.gs2a, self.fx_co.ga)
+        self.assert_join(self.fx_co.gsab, self.fx_co.gs2d, self.fx_co.go)
 
     def test_generic_types_and_any(self) -> None:
         self.assert_join(self.fx.gdyn, self.fx.ga, self.fx.gdyn)
+        self.assert_join(self.fx_co.gdyn, self.fx_co.ga, self.fx_co.gdyn)
+        self.assert_join(self.fx_contra.gdyn, self.fx_contra.ga, self.fx_contra.gdyn)
 
     def test_callables_with_any(self) -> None:
         self.assert_join(self.callable(self.fx.a, self.fx.a, self.fx.anyt,
