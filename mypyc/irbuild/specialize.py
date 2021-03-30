@@ -18,7 +18,7 @@ from mypy.nodes import CallExpr, RefExpr, MemberExpr, TupleExpr, GeneratorExpr, 
 from mypy.types import AnyType, TypeOfAny
 
 from mypyc.ir.ops import (
-    Value, Register, BasicBlock, Integer, RaiseStandardError, Unreachable
+    Value, Register, BasicBlock, Integer, RaiseStandardError, Unreachable, Return
 )
 from mypyc.ir.rtypes import (
     RType, RTuple, str_rprimitive, list_rprimitive, dict_rprimitive, set_rprimitive,
@@ -147,6 +147,20 @@ def translate_safe_generator_call(
                 expr, callee,
                 ([translate_list_comprehension(builder, expr.args[0])]
                     + [builder.accept(arg) for arg in expr.args[1:]]))
+    elif (len(expr.args) > 0
+            and expr.arg_kinds == [ARG_POS, ARG_POS]
+            and callee.fullname == "builtins.min"):
+        x, y = builder.accept(expr.args[0]), builder.accept(expr.args[1])
+        comparison = builder.binary_op(x, y, '<', expr.line)
+        true = BasicBlock()
+        false = BasicBlock()
+        builder.add_bool_branch(comparison, true, false)
+        builder.activate_block(true)
+        builder.add(Return(x))
+        builder.activate_block(false)
+        builder.add(Return(y))
+        builder.activate_block(BasicBlock())
+
     return None
 
 
@@ -290,17 +304,4 @@ def translate_isinstance(builder: IRBuilder, expr: CallExpr, callee: RefExpr) ->
         irs = builder.flatten_classes(expr.args[1])
         if irs is not None:
             return builder.builder.isinstance_helper(builder.accept(expr.args[0]), irs, expr.line)
-    return None
-
-
-@specialize_function('builtins.min')
-def faster_min(builder: IRBuilder, expr: CallExpr, callee: RefExpr) -> Optional[Value]:
-    if (len(expr.args) == 2
-            and expr.arg_kinds == [ARG_POS, ARG_POS]):
-        x, y = builder.accept(expr.args[0]), builder.accept(expr.args[1])
-        comparison = builder.binary_op(x, y, '<', expr.line)
-        if comparison == Integer(1,  bool_rprimitive):
-            return x
-        else:
-            return y
     return None
