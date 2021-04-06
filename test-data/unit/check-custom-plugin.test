@@ -740,11 +740,11 @@ class Cls:
     attr = 'test'
     unchanged = 'test'
 
-reveal_type(Cls().attr)  # N: Revealed type is 'builtins.str'
-reveal_type(Cls.attr)  # N: Revealed type is 'builtins.int'
-reveal_type(Cls.unchanged)  # N: Revealed type is 'builtins.str'
+reveal_type(Cls().attr)  # N: Revealed type is "builtins.str"
+reveal_type(Cls.attr)  # N: Revealed type is "builtins.int"
+reveal_type(Cls.unchanged)  # N: Revealed type is "builtins.str"
 x: Type[Cls]
-reveal_type(x.attr)  # N: Revealed type is 'builtins.int'
+reveal_type(x.attr)  # N: Revealed type is "builtins.int"
 [file mypy.ini]
 \[mypy]
 plugins=<ROOT>/test-data/unit/plugins/class_attr_hook.py
@@ -756,7 +756,7 @@ class Cls:
     def attr(self) -> None:
         pass
 
-reveal_type(Cls.attr)  # N: Revealed type is 'builtins.int'
+reveal_type(Cls.attr)  # N: Revealed type is "builtins.int"
 [file mypy.ini]
 \[mypy]
 plugins=<ROOT>/test-data/unit/plugins/class_attr_hook.py
@@ -769,7 +769,7 @@ import enum
 class Cls(enum.Enum):
     attr = 'test'
 
-reveal_type(Cls.attr)  # N: Revealed type is 'builtins.int'
+reveal_type(Cls.attr)  # N: Revealed type is "builtins.int"
 [file mypy.ini]
 \[mypy]
 plugins=<ROOT>/test-data/unit/plugins/class_attr_hook.py
@@ -785,7 +785,7 @@ B: Any
 class Cls(B, metaclass=M):
     pass
 
-reveal_type(Cls.attr) # N: Revealed type is 'builtins.int'
+reveal_type(Cls.attr) # N: Revealed type is "builtins.int"
 [file mypy.ini]
 \[mypy]
 plugins=<ROOT>/test-data/unit/plugins/class_attr_hook.py
