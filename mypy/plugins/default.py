@@ -2,7 +2,9 @@ from functools import partial
 from typing import Callable, Optional, List
 
 from mypy import message_registry
-from mypy.nodes import Expression, StrExpr, IntExpr, DictExpr, UnaryExpr
+from mypy.nodes import (
+    Expression, StrExpr, IntExpr, DictExpr, UnaryExpr
+)
 from mypy.plugin import (
     Plugin, FunctionContext, MethodContext, MethodSigContext, AttributeContext, ClassDefContext,
     CheckerPluginInterface,
@@ -23,6 +25,7 @@ class DefaultPlugin(Plugin):
     def get_function_hook(self, fullname: str
                           ) -> Optional[Callable[[FunctionContext], Type]]:
         from mypy.plugins import ctypes
+        from mypy.plugins import dataclasses
 
         if fullname == 'contextlib.contextmanager':
             return contextmanager_callback
@@ -30,6 +33,8 @@ class DefaultPlugin(Plugin):
             return open_callback
         elif fullname == 'ctypes.Array':
             return ctypes.array_constructor_callback
+        elif fullname == 'dataclasses.asdict':
+            return dataclasses.asdict_callback
         return None
 
     def get_method_signature_hook(self, fullname: str

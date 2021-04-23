@@ -24,8 +24,8 @@ from mypy.nodes import (
     Import, ImportFrom, ImportAll, ImportBase, TypeAlias,
     ARG_POS, ARG_STAR, LITERAL_TYPE, MDEF, GDEF,
     CONTRAVARIANT, COVARIANT, INVARIANT, TypeVarExpr, AssignmentExpr,
-    is_final_node,
-    ARG_NAMED)
+    is_final_node, ARG_NAMED
+)
 from mypy import nodes
 from mypy.literals import literal, literal_hash, Key
 from mypy.typeanal import has_any_from_unimported_type, check_for_explicit_any
@@ -4685,6 +4685,21 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         any_type = AnyType(TypeOfAny.from_omitted_generics)
         return Instance(node, [any_type] * len(node.defn.type_vars))
 
+    def named_type_or_none(self, qualified_name: str,
+                           args: Optional[List[Type]] = None) -> Optional[Instance]:
+        sym = self.lookup_fully_qualified_or_none(qualified_name)
+        if not sym:
+            return None
+        node = sym.node
+        if isinstance(node, TypeAlias):
+            assert isinstance(node.target, Instance)  # type: ignore
+            node = node.target.type
+        assert isinstance(node, TypeInfo), node
+        if args is not None:
+            # TODO: assert len(args) == len(node.defn.type_vars)
+            return Instance(node, args)
+        return Instance(node, [AnyType(TypeOfAny.unannotated)] * len(node.defn.type_vars))
+
     def named_generic_type(self, name: str, args: List[Type]) -> Instance:
         """Return an instance with the given name and type arguments.
 
@@ -4695,6 +4710,13 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         args = [remove_instance_last_known_values(arg) for arg in args]
         # TODO: assert len(args) == len(info.defn.type_vars)
         return Instance(info, args)
+
+    def add_plugin_dependency(self, trigger: str, target: Optional[str] = None) -> None:
+        if target is None:
+            target = self.tscope.current_target()
+
+        cur_module_node = self.modules[self.tscope.current_module_id()]
+        cur_module_node.plugin_deps.setdefault(trigger, set()).add(target)
 
     def lookup_typeinfo(self, fullname: str) -> TypeInfo:
         # Assume that the name refers to a class.
@@ -4767,6 +4789,26 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             else:
                 msg = "Failed qualified lookup: '{}' (fullname = '{}')."
                 raise KeyError(msg.format(last, name))
+
+    def lookup_fully_qualified_or_none(self, fullname: str) -> Optional[SymbolTableNode]:
+        """Lookup a fully qualified name that refers to a module-level definition.
+
+        Don't assume that the name is defined. This happens in the global namespace --
+        the local module namespace is ignored. This does not dereference indirect
+        refs.
+
+        Note that this can't be used for names nested in class namespaces.
+        """
+        # TODO: unify/clean-up/simplify lookup methods, see #4157.
+        # TODO: support nested classes (but consider performance impact,
+        #       we might keep the module level only lookup for thing like 'builtins.int').
+        assert '.' in fullname
+        module, name = fullname.rsplit('.', maxsplit=1)
+        if module not in self.modules:
+            return None
+        filenode = self.modules[module]
+        result = filenode.names.get(name)
+        return result
 
     @contextmanager
     def enter_partial_types(self, *, is_function: bool = False,

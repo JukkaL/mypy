@@ -1,10 +1,12 @@
 """Semantic analysis of TypedDict definitions."""
 
 from mypy.ordered_dict import OrderedDict
-from typing import Optional, List, Set, Tuple
+from collections import OrderedDict
+from typing import Optional, List, Set, Tuple, Union
 from typing_extensions import Final
 
-from mypy.types import Type, AnyType, TypeOfAny, TypedDictType, TPDICT_NAMES
+from mypy.plugin import CheckerPluginInterface
+from mypy.types import Type, AnyType, TypeOfAny, TypedDictType, TPDICT_NAMES, Instance
 from mypy.nodes import (
     CallExpr, TypedDictExpr, Expression, NameExpr, Context, StrExpr, BytesExpr, UnicodeExpr,
     ClassDef, RefExpr, TypeInfo, AssignmentStmt, PassStmt, ExpressionStmt, EllipsisExpr, TempNode,
@@ -306,10 +308,7 @@ class TypedDictAnalyzer:
     def build_typeddict_typeinfo(self, name: str, items: List[str],
                                  types: List[Type],
                                  required_keys: Set[str]) -> TypeInfo:
-        # Prefer typing then typing_extensions if available.
-        fallback = (self.api.named_type_or_none('typing._TypedDict', []) or
-                    self.api.named_type_or_none('typing_extensions._TypedDict', []) or
-                    self.api.named_type_or_none('mypy_extensions._TypedDict', []))
+        fallback = get_anonymous_typeddict_type(self.api)
         assert fallback is not None
         info = self.api.basic_new_typeinfo(name, fallback)
         info.typeddict_type = TypedDictType(OrderedDict(zip(items, types)), required_keys,
@@ -324,3 +323,11 @@ class TypedDictAnalyzer:
 
     def fail(self, msg: str, ctx: Context, *, code: Optional[ErrorCode] = None) -> None:
         self.api.fail(msg, ctx, code=code)
+
+
+def get_anonymous_typeddict_type(
+        api: Union[SemanticAnalyzerInterface, CheckerPluginInterface]) -> Optional[Instance]:
+    # Prefer typing then typing_extensions if available.
+    return (api.named_type_or_none('typing._TypedDict', []) or
+            api.named_type_or_none('typing_extensions._TypedDict', []) or
+            api.named_type_or_none('mypy_extensions._TypedDict', []))

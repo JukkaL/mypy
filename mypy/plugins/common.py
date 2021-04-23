@@ -1,13 +1,16 @@
-from typing import List, Optional, Union
+from collections import OrderedDict
+from typing import List, Optional, Union, Set
 
 from mypy.nodes import (
     ARG_POS, MDEF, Argument, Block, CallExpr, ClassDef, Expression, SYMBOL_FUNCBASE_TYPES,
     FuncDef, PassStmt, RefExpr, SymbolTableNode, Var, JsonDict,
 )
-from mypy.plugin import ClassDefContext, SemanticAnalyzerPluginInterface
+from mypy.plugin import ClassDefContext, SemanticAnalyzerPluginInterface, CheckerPluginInterface
 from mypy.semanal import set_callable_name
+from mypy.semanal_typeddict import get_anonymous_typeddict_type
 from mypy.types import (
     CallableType, Overloaded, Type, TypeVarDef, deserialize_type, get_proper_type,
+    TypedDictType
 )
 from mypy.typevars import fill_typevars
 from mypy.util import get_unique_redefinition_name
@@ -155,8 +158,17 @@ def add_method_to_class(
 
 
 def deserialize_and_fixup_type(
-    data: Union[str, JsonDict], api: SemanticAnalyzerPluginInterface
+    data: Union[str, JsonDict],
+    api: Union[SemanticAnalyzerPluginInterface, CheckerPluginInterface]
 ) -> Type:
     typ = deserialize_type(data)
     typ.accept(TypeFixer(api.modules, allow_missing=False))
     return typ
+
+
+def make_anonymous_typeddict(api: CheckerPluginInterface, fields: 'OrderedDict[str, Type]',
+                             required_keys: Set[str]) -> TypedDictType:
+    fallback = get_anonymous_typeddict_type(api)
+    assert fallback is not None
+    return TypedDictType(fields, required_keys=required_keys,
+                         fallback=fallback)

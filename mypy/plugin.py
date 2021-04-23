@@ -209,6 +209,7 @@ class CheckerPluginInterface:
     docstrings in checker.py for more details.
     """
 
+    modules = None  # type: Dict[str, MypyFile]
     msg = None  # type: MessageBuilder
     options = None  # type: Options
     path = None  # type: str
@@ -228,6 +229,19 @@ class CheckerPluginInterface:
     @abstractmethod
     def named_generic_type(self, name: str, args: List[Type]) -> Instance:
         """Construct an instance of a builtin type with given type arguments."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def named_type_or_none(self, qualified_name: str,
+                           args: Optional[List[Type]] = None) -> Optional[Instance]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def add_plugin_dependency(self, trigger: str, target: Optional[str] = None) -> None:
+        """Specify semantic dependencies for generated methods/variables.
+
+        See the same function on SemanticAnalyzerPluginInterface for more details.
+        """
         raise NotImplementedError
 
 

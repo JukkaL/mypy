@@ -1446,3 +1446,35 @@ class B(A):
 <m.Z> -> m
 <dataclasses.dataclass> -> m
 <dataclasses> -> m
+
+
+[case testDataclassesAsdictDeps]
+# flags: --python-version 3.8
+from dataclasses import asdict
+from a import my_var
+x = asdict(my_var)
+x['attr'] + "foo"
+
+[file a.py]
+from dataclasses import dataclass
+from b import AttributeInOtherModule
+
+@dataclass
+class MyDataclass:
+    attr: AttributeInOtherModule
+
+my_var: MyDataclass
+
+[file b.py]
+AttributeInOtherModule = str
+
+[typing fixtures/typing-typeddict.pyi]
+[builtins fixtures/fine_grained.pyi]
+
+[out]
+<m.x> -> m
+<a.MyDataclass.attr> -> m
+<a.my_var> -> m
+<a> -> m
+<dataclasses.asdict> -> m
+<dataclasses> -> m

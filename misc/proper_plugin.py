@@ -127,7 +127,7 @@ def proper_types_hook(ctx: FunctionContext) -> Type:
 
 
 def get_proper_type_instance(ctx: FunctionContext) -> Instance:
-    types = ctx.api.modules['mypy.types']  # type: ignore
+    types = ctx.api.modules['mypy.types']
     proper_type_info = types.names['ProperType']
     assert isinstance(proper_type_info.node, TypeInfo)
     return Instance(proper_type_info.node, [])

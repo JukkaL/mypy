@@ -910,6 +910,34 @@ class A:
 main:3: error: Missing positional argument "c" in call to "C"
 ==
 
+[case testDataclassesAsdictFineGrained]
+# flags: --python-version 3.8
+[file a.py]
+from dataclasses import dataclass
+from b import AttributeInOtherModule
+
+@dataclass
+class MyDataclass:
+    attr: AttributeInOtherModule
+
+my_var: MyDataclass
+
+[file b.py]
+AttributeInOtherModule = str
+[file c.py]
+from dataclasses import asdict
+from a import my_var
+asdict(my_var)['attr'] + "foo"
+
+[file b.py.2]
+AttributeInOtherModule = int
+
+[typing fixtures/typing-typeddict.pyi]
+[builtins fixtures/fine_grained.pyi]
+[out]
+==
+c.py:3: error: Unsupported operand types for + ("int" and "str")
+
 [case testAttrsUpdate1]
 [file a.py]
 import attr
