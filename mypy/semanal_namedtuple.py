@@ -8,7 +8,7 @@ from typing import Tuple, List, Dict, Mapping, Optional, Union, cast, Iterator
 from typing_extensions import Final
 
 from mypy.types import (
-    Type, TupleType, AnyType, TypeOfAny, TypeVarDef, CallableType, TypeType, TypeVarType,
+    Type, TupleType, AnyType, TypeOfAny, CallableType, TypeType, TypeVarType,
     UnboundType,
 )
 from mypy.semanal_shared import (
@@ -421,9 +421,9 @@ class NamedTupleAnalyzer:
         add_field(Var('__annotations__', ordereddictype), is_initialized_in_class=True)
         add_field(Var('__doc__', strtype), is_initialized_in_class=True)
 
-        tvd = TypeVarDef(SELF_TVAR_NAME, info.fullname + '.' + SELF_TVAR_NAME,
+        tvd = TypeVarType(SELF_TVAR_NAME, info.fullname + '.' + SELF_TVAR_NAME,
                          -1, [], info.tuple_type)
-        selftype = TypeVarType(tvd)
+        selftype = tvd
 
         def add_method(funcname: str,
                        ret: Type,

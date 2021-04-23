@@ -1,12 +1,12 @@
 from typing import Optional, Dict, Union
-from mypy.types import TypeVarLikeDef, TypeVarDef, ParamSpecDef
+from mypy.types import TypeVarLikeType, TypeVarType, ParamSpecType
 from mypy.nodes import ParamSpecExpr, TypeVarExpr, TypeVarLikeExpr, SymbolTableNode
 
 
 class TypeVarLikeScope:
     """Scope that holds bindings for type variables and parameter specifications.
 
-    Node fullname -> TypeVarLikeDef.
+    Node fullname -> TypeVarLikeType.
     """
 
     def __init__(self,
@@ -21,7 +21,7 @@ class TypeVarLikeScope:
           prohibited: Type variables that aren't strictly in scope exactly,
                       but can't be bound because they're part of an outer class's scope.
         """
-        self.scope = {}  # type: Dict[str, TypeVarLikeDef]
+        self.scope = {}  # type: Dict[str, TypeVarLikeType]
         self.parent = parent
         self.func_id = 0
         self.class_id = 0
@@ -55,7 +55,7 @@ class TypeVarLikeScope:
         """A new scope frame for binding a class. Prohibits *this* class's tvars"""
         return TypeVarLikeScope(self.get_function_scope(), True, self)
 
-    def bind_new(self, name: str, tvar_expr: TypeVarLikeExpr) -> TypeVarLikeDef:
+    def bind_new(self, name: str, tvar_expr: TypeVarLikeExpr) -> TypeVarLikeType:
         if self.is_class_scope:
             self.class_id += 1
             i = self.class_id
@@ -63,7 +63,7 @@ class TypeVarLikeScope:
             self.func_id -= 1
             i = self.func_id
         if isinstance(tvar_expr, TypeVarExpr):
-            tvar_def = TypeVarDef(
+            tvar_def = TypeVarType(
                 name,
                 tvar_expr.fullname,
                 i,
@@ -72,9 +72,9 @@ class TypeVarLikeScope:
                 variance=tvar_expr.variance,
                 line=tvar_expr.line,
                 column=tvar_expr.column
-            )  # type: TypeVarLikeDef
+            )  # type: TypeVarLikeType
         elif isinstance(tvar_expr, ParamSpecExpr):
-            tvar_def = ParamSpecDef(
+            tvar_def = ParamSpecType(
                 name,
                 tvar_expr.fullname,
                 i,
@@ -86,10 +86,10 @@ class TypeVarLikeScope:
         self.scope[tvar_expr.fullname] = tvar_def
         return tvar_def
 
-    def bind_existing(self, tvar_def: TypeVarLikeDef) -> None:
+    def bind_existing(self, tvar_def: TypeVarLikeType) -> None:
         self.scope[tvar_def.fullname] = tvar_def
 
-    def get_binding(self, item: Union[str, SymbolTableNode]) -> Optional[TypeVarLikeDef]:
+    def get_binding(self, item: Union[str, SymbolTableNode]) -> Optional[TypeVarLikeType]:
         fullname = item.fullname if isinstance(item, SymbolTableNode) else item
         assert fullname is not None
         if fullname in self.scope:

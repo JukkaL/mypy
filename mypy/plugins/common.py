@@ -7,7 +7,7 @@ from mypy.nodes import (
 from mypy.plugin import ClassDefContext, SemanticAnalyzerPluginInterface
 from mypy.semanal import set_callable_name
 from mypy.types import (
-    CallableType, Overloaded, Type, TypeVarDef, deserialize_type, get_proper_type,
+    CallableType, Overloaded, Type, TypeVarType, deserialize_type, get_proper_type,
 )
 from mypy.typevars import fill_typevars
 from mypy.util import get_unique_redefinition_name
@@ -88,7 +88,7 @@ def add_method(
         args: List[Argument],
         return_type: Type,
         self_type: Optional[Type] = None,
-        tvar_def: Optional[TypeVarDef] = None,
+        tvar_def: Optional[TypeVarType] = None,
 ) -> None:
     """
     Adds a new method to a class.
@@ -109,7 +109,7 @@ def add_method_to_class(
         args: List[Argument],
         return_type: Type,
         self_type: Optional[Type] = None,
-        tvar_def: Optional[TypeVarDef] = None,
+        tvar_def: Optional[TypeVarType] = None,
 ) -> None:
     """Adds a new method to a class definition.
     """

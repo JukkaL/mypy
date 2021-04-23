@@ -21,7 +21,7 @@ from mypy.plugins.common import (
     deserialize_and_fixup_type
 )
 from mypy.types import (
-    Type, AnyType, TypeOfAny, CallableType, NoneType, TypeVarDef, TypeVarType,
+    Type, AnyType, TypeOfAny, CallableType, NoneType, TypeVarType,
     Overloaded, UnionType, FunctionLike, get_proper_type
 )
 from mypy.typeops import make_simplified_union, map_type_from_supertype
@@ -648,16 +648,15 @@ def _add_order(ctx: 'mypy.plugin.ClassDefContext', adder: 'MethodAdder') -> None
     #    AT = TypeVar('AT')
     #    def __lt__(self: AT, other: AT) -> bool
     # This way comparisons with subclasses will work correctly.
-    tvd = TypeVarDef(SELF_TVAR_NAME, ctx.cls.info.fullname + '.' + SELF_TVAR_NAME,
+    tvd = TypeVarType(SELF_TVAR_NAME, ctx.cls.info.fullname + '.' + SELF_TVAR_NAME,
                      -1, [], object_type)
-    tvd_type = TypeVarType(tvd)
     self_tvar_expr = TypeVarExpr(SELF_TVAR_NAME, ctx.cls.info.fullname + '.' + SELF_TVAR_NAME,
                                  [], object_type)
     ctx.cls.info.names[SELF_TVAR_NAME] = SymbolTableNode(MDEF, self_tvar_expr)
 
-    args = [Argument(Var('other', tvd_type), tvd_type, None, ARG_POS)]
+    args = [Argument(Var('other', tvd), tvd, None, ARG_POS)]
     for method in ['__lt__', '__le__', '__gt__', '__ge__']:
-        adder.add_method(method, args, bool_type, self_type=tvd_type, tvd=tvd)
+        adder.add_method(method, args, bool_type, self_type=tvd, tvd=tvd)
 
 
 def _make_frozen(ctx: 'mypy.plugin.ClassDefContext', attributes: List[Attribute]) -> None:
@@ -724,7 +723,7 @@ class MethodAdder:
     def add_method(self,
                    method_name: str, args: List[Argument], ret_type: Type,
                    self_type: Optional[Type] = None,
-                   tvd: Optional[TypeVarDef] = None) -> None:
+                   tvd: Optional[TypeVarType] = None) -> None:
         """Add a method: def <method_name>(self, <args>) -> <ret_type>): ... to info.
 
         self_type: The type to use for the self argument or None to use the inferred self type.

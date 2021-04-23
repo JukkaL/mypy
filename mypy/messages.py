@@ -21,7 +21,7 @@ from mypy.erasetype import erase_type
 from mypy.errors import Errors
 from mypy.types import (
     Type, CallableType, Instance, TypeVarType, TupleType, TypedDictType, LiteralType,
-    UnionType, NoneType, AnyType, Overloaded, FunctionLike, DeletedType, TypeType, TypeVarDef,
+    UnionType, NoneType, AnyType, Overloaded, FunctionLike, DeletedType, TypeType, TypeVarType,
     UninhabitedType, TypeOfAny, UnboundType, PartialType, get_proper_type, ProperType,
     get_proper_types
 )
@@ -1877,7 +1877,7 @@ def pretty_callable(tp: CallableType) -> str:
     if tp.variables:
         tvars = []
         for tvar in tp.variables:
-            if isinstance(tvar, TypeVarDef):
+            if isinstance(tvar, TypeVarType):
                 upper_bound = get_proper_type(tvar.upper_bound)
                 if (isinstance(upper_bound, Instance) and
                         upper_bound.type.fullname != 'builtins.object'):
@@ -1889,7 +1889,7 @@ def pretty_callable(tp: CallableType) -> str:
                 else:
                     tvars.append(tvar.name)
             else:
-                # For other TypeVarLikeDefs, just use the repr
+                # For other TypeVarLikeTypes, just use the repr
                 tvars.append(repr(tvar))
         s = '[{}] {}'.format(', '.join(tvars), s)
     return 'def {}'.format(s)

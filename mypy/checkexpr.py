@@ -14,8 +14,8 @@ from mypy.typeanal import (
     make_optional_type,
 )
 from mypy.types import (
-    Type, AnyType, CallableType, Overloaded, NoneType, TypeGuardType, TypeVarDef,
-    TupleType, TypedDictType, Instance, TypeVarType, ErasedType, UnionType,
+    Type, AnyType, CallableType, Overloaded, NoneType, TypeVarType, TypeGuardType,
+    TupleType, TypedDictType, Instance, ErasedType, UnionType,
     PartialType, DeletedType, UninhabitedType, TypeType, TypeOfAny, LiteralType, LiteralValue,
     is_named_instance, FunctionLike,
     StarType, is_optional, remove_optional, is_generic_instance, get_proper_type, ProperType,
@@ -1890,8 +1890,8 @@ class ExpressionChecker(ExpressionVisitor[Type]):
         # same thing.
         #
         # This function will make sure that all instances of that TypeVar 'T'
-        # refer to the same underlying TypeVarType and TypeVarDef objects to
-        # simplify the union-ing logic below.
+        # refer to the same underlying TypeVarType objects to simplify the union-ing
+        # logic below.
         #
         # (If the user did *not* mean for 'T' to be consistently bound to the
         # same type in their overloads, well, their code is probably too
@@ -3264,13 +3264,12 @@ class ExpressionChecker(ExpressionVisitor[Type]):
         # Used for list and set expressions, as well as for tuples
         # containing star expressions that don't refer to a
         # Tuple. (Note: "lst" stands for list-set-tuple. :-)
-        tvdef = TypeVarDef('T', 'T', -1, [], self.object_type())
-        tv = TypeVarType(tvdef)
+        tvdef = TypeVarType('T', 'T', -1, [], self.object_type())
         constructor = CallableType(
-            [tv],
+            [tvdef],
             [nodes.ARG_STAR],
             [None],
-            self.chk.named_generic_type(fullname, [tv]),
+            self.chk.named_generic_type(fullname, [tvdef]),
             self.named_type('builtins.function'),
             name=tag,
             variables=[tvdef])
@@ -3422,10 +3421,8 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                     tup.column = value.column
                 args.append(tup)
         # Define type variables (used in constructors below).
-        ktdef = TypeVarDef('KT', 'KT', -1, [], self.object_type())
-        vtdef = TypeVarDef('VT', 'VT', -2, [], self.object_type())
-        kt = TypeVarType(ktdef)
-        vt = TypeVarType(vtdef)
+        ktdef = TypeVarType('KT', 'KT', -1, [], self.object_type())
+        vtdef = TypeVarType('VT', 'VT', -2, [], self.object_type())
         rv = None
         # Call dict(*args), unless it's empty and stargs is not.
         if args or not stargs:
@@ -3433,10 +3430,10 @@ class ExpressionChecker(ExpressionVisitor[Type]):
             #
             #   def <unnamed>(*v: Tuple[kt, vt]) -> Dict[kt, vt]: ...
             constructor = CallableType(
-                [TupleType([kt, vt], self.named_type('builtins.tuple'))],
+                [TupleType([ktdef, vtdef], self.named_type('builtins.tuple'))],
                 [nodes.ARG_STAR],
                 [None],
-                self.chk.named_generic_type('builtins.dict', [kt, vt]),
+                self.chk.named_generic_type('builtins.dict', [ktdef, vtdef]),
                 self.named_type('builtins.function'),
                 name='<dict>',
                 variables=[ktdef, vtdef])
@@ -3450,10 +3447,10 @@ class ExpressionChecker(ExpressionVisitor[Type]):
             for arg in stargs:
                 if rv is None:
                     constructor = CallableType(
-                        [self.chk.named_generic_type('typing.Mapping', [kt, vt])],
+                        [self.chk.named_generic_type('typing.Mapping', [ktdef, vtdef])],
                         [nodes.ARG_POS],
                         [None],
-                        self.chk.named_generic_type('builtins.dict', [kt, vt]),
+                        self.chk.named_generic_type('builtins.dict', [ktdef, vtdef]),
                         self.named_type('builtins.function'),
                         name='<list>',
                         variables=[ktdef, vtdef])
@@ -3746,8 +3743,8 @@ class ExpressionChecker(ExpressionVisitor[Type]):
 
             # Infer the type of the list comprehension by using a synthetic generic
             # callable type.
-            tvdef = TypeVarDef('T', 'T', -1, [], self.object_type())
-            tv_list = [TypeVarType(tvdef)]  # type: List[Type]
+            tvdef = TypeVarType('T', 'T', -1, [], self.object_type())
+            tv_list = [tvdef]  # type: List[Type]
             constructor = CallableType(
                 tv_list,
                 [nodes.ARG_POS],
@@ -3766,15 +3763,13 @@ class ExpressionChecker(ExpressionVisitor[Type]):
 
             # Infer the type of the list comprehension by using a synthetic generic
             # callable type.
-            ktdef = TypeVarDef('KT', 'KT', -1, [], self.object_type())
-            vtdef = TypeVarDef('VT', 'VT', -2, [], self.object_type())
-            kt = TypeVarType(ktdef)
-            vt = TypeVarType(vtdef)
+            ktdef = TypeVarType('KT', 'KT', -1, [], self.object_type())
+            vtdef = TypeVarType('VT', 'VT', -2, [], self.object_type())
             constructor = CallableType(
-                [kt, vt],
+                [ktdef, vtdef],
                 [nodes.ARG_POS, nodes.ARG_POS],
                 [None, None],
-                self.chk.named_generic_type('builtins.dict', [kt, vt]),
+                self.chk.named_generic_type('builtins.dict', [ktdef, vtdef]),
                 self.chk.named_type('builtins.function'),
                 name='<dictionary-comprehension>',
                 variables=[ktdef, vtdef])
@@ -4424,7 +4419,7 @@ def all_same_types(types: List[Type]) -> bool:
 
 
 def merge_typevars_in_callables_by_name(
-        callables: Sequence[CallableType]) -> Tuple[List[CallableType], List[TypeVarDef]]:
+        callables: Sequence[CallableType]) -> Tuple[List[CallableType], List[TypeVarType]]:
     """Takes all the typevars present in the callables and 'combines' the ones with the same name.
 
     For example, suppose we have two callables with signatures "f(x: T, y: S) -> T" and
@@ -4433,18 +4428,18 @@ def merge_typevars_in_callables_by_name(
     distinct ids.)
 
     If we pass in both callables into this function, it returns a a list containing two
-    new callables that are identical in signature, but use the same underlying TypeVarDef
-    and TypeVarType objects for T and S.
+    new callables that are identical in signature, but use the same underlying TypeVarType
+    for T and S.
 
     This is useful if we want to take the output lists and "merge" them into one callable
     in some way -- for example, when unioning together overloads.
 
-    Returns both the new list of callables and a list of all distinct TypeVarDef objects used.
+    Returns both the new list of callables and a list of all distinct TypeVarType objects used.
     """
 
     output = []  # type: List[CallableType]
     unique_typevars = {}  # type: Dict[str, TypeVarType]
-    variables = []  # type: List[TypeVarDef]
+    variables = []  # type: List[TypeVarType]
 
     for target in callables:
         if target.is_generic():
@@ -4454,9 +4449,9 @@ def merge_typevars_in_callables_by_name(
             for tvdef in target.variables:
                 name = tvdef.fullname
                 if name not in unique_typevars:
-                    # TODO(shantanu): fix for ParamSpecDef
-                    assert isinstance(tvdef, TypeVarDef)
-                    unique_typevars[name] = TypeVarType(tvdef)
+                    # TODO(shantanu): fix for ParamSpecType
+                    assert isinstance(tvdef, TypeVarType)
+                    unique_typevars[name] = tvdef
                     variables.append(tvdef)
                 rename[tvdef.id] = unique_typevars[name]
 

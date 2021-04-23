@@ -5,7 +5,7 @@ from typing_extensions import TYPE_CHECKING
 
 from mypy.types import (
     Type, Instance, AnyType, TupleType, TypedDictType, CallableType, FunctionLike,
-    TypeVarLikeDef, Overloaded, TypeVarType, UnionType, PartialType, TypeOfAny, LiteralType,
+    TypeVarLikeType, Overloaded, TypeVarType, UnionType, PartialType, TypeOfAny, LiteralType,
     DeletedType, NoneType, TypeType, has_type_vars, get_proper_type, ProperType
 )
 from mypy.nodes import (
@@ -679,7 +679,7 @@ def analyze_class_attribute_access(itype: Instance,
                                    name: str,
                                    mx: MemberContext,
                                    override_info: Optional[TypeInfo] = None,
-                                   original_vars: Optional[Sequence[TypeVarLikeDef]] = None
+                                   original_vars: Optional[Sequence[TypeVarLikeType]] = None
                                    ) -> Optional[Type]:
     """Analyze access to an attribute on a class object.
 
@@ -842,7 +842,7 @@ def analyze_enum_class_attribute_access(itype: Instance,
 def add_class_tvars(t: ProperType, isuper: Optional[Instance],
                     is_classmethod: bool,
                     original_type: Type,
-                    original_vars: Optional[Sequence[TypeVarLikeDef]] = None) -> Type:
+                    original_vars: Optional[Sequence[TypeVarLikeType]] = None) -> Type:
     """Instantiate type variables during analyze_class_attribute_access,
     e.g T and Q in the following:
 

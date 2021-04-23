@@ -11,7 +11,7 @@ from mypy.nodes import (
 from mypy.types import (
     CallableType, Instance, Overloaded, TupleType, TypedDictType,
     TypeVarType, UnboundType, UnionType, TypeVisitor, LiteralType,
-    TypeType, NOT_READY, TypeAliasType, AnyType, TypeOfAny, TypeVarDef
+    TypeType, NOT_READY, TypeAliasType, AnyType, TypeOfAny
 )
 from mypy.visitor import NodeVisitor
 from mypy.lookup import lookup_fully_qualified
@@ -184,7 +184,7 @@ class TypeFixer(TypeVisitor[None]):
         if ct.ret_type is not None:
             ct.ret_type.accept(self)
         for v in ct.variables:
-            if isinstance(v, TypeVarDef):
+            if isinstance(v, TypeVarType):
                 if v.values:
                     for val in v.values:
                         val.accept(self)

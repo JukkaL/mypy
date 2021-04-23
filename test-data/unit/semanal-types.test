@@ -188,7 +188,7 @@ MypyFile:1(
   ClassDef:5(
     A
     TypeVars(
-      t)
+      t`1)
     PassStmt:5())
   ClassDef:6(
     B
@@ -221,8 +221,8 @@ MypyFile:1(
   ClassDef:4(
     A
     TypeVars(
-      t
-      s)
+      t`1
+      s`2)
     PassStmt:4())
   ClassDef:5(
     B
@@ -284,7 +284,7 @@ MypyFile:1(
   ClassDef:4(
     d
     TypeVars(
-      t)
+      t`1)
     PassStmt:4())
   ExpressionStmt:5(
     CastExpr:5(
@@ -348,8 +348,8 @@ MypyFile:1(
   ClassDef:4(
     C
     TypeVars(
-      t
-      s)
+      t`1
+      s`2)
     PassStmt:4())
   ExpressionStmt:5(
     CastExpr:5(
@@ -450,7 +450,7 @@ MypyFile:1(
   ClassDef:3(
     A
     TypeVars(
-      t)
+      t`1)
     PassStmt:3())
   FuncDef:4(
     f
@@ -476,7 +476,7 @@ MypyFile:1(
   ClassDef:3(
     A
     TypeVars(
-      t)
+      t`1)
     PassStmt:3())
   FuncDef:4(
     f
@@ -500,7 +500,7 @@ MypyFile:1(
   ClassDef:3(
     A
     TypeVars(
-      t)
+      t`1)
     PassStmt:3())
   FuncDef:4(
     f
@@ -524,7 +524,7 @@ MypyFile:1(
   ClassDef:3(
     A
     TypeVars(
-      t)
+      t`1)
     PassStmt:3())
   FuncDef:4(
     f
@@ -603,7 +603,7 @@ MypyFile:1(
   ClassDef:5(
     c
     TypeVars(
-      t)
+      t`1)
     FuncDef:6(
       f
       Args(
@@ -632,8 +632,8 @@ MypyFile:1(
   ClassDef:6(
     c
     TypeVars(
-      t
-      s)
+      t`1
+      s`2)
     FuncDef:7(
       f
       Args(
@@ -657,12 +657,12 @@ MypyFile:1(
   ClassDef:3(
     d
     TypeVars(
-      t)
+      t`1)
     PassStmt:3())
   ClassDef:4(
     c
     TypeVars(
-      t)
+      t`1)
     BaseType(
       __main__.d[t`1])
     PassStmt:4()))
@@ -876,8 +876,8 @@ MypyFile:1(
   ClassDef:4(
     A
     TypeVars(
-      t
-      s)
+      t`1
+      s`2)
     PassStmt:4())
   AssignmentStmt:5(
     NameExpr(x [__main__.x])
@@ -902,12 +902,12 @@ MypyFile:1(
   ClassDef:4(
     B
     TypeVars(
-      s)
+      s`1)
     PassStmt:4())
   ClassDef:5(
     A
     TypeVars(
-      t)
+      t`1)
     BaseType(
       __main__.B[Any])
     PassStmt:5()))
@@ -926,7 +926,7 @@ MypyFile:1(
   ClassDef:3(
     A
     TypeVars(
-      t)
+      t`1)
     PassStmt:3())
   AssignmentStmt:4(
     NameExpr(x* [__main__.x])
@@ -955,8 +955,8 @@ MypyFile:1(
   ClassDef:4(
     A
     TypeVars(
-      t
-      s)
+      t`1
+      s`2)
     PassStmt:4())
   AssignmentStmt:5(
     NameExpr(x* [__main__.x])
@@ -1009,7 +1009,7 @@ MypyFile:1(
   ClassDef:3(
     A
     TypeVars(
-      t)
+      t`1)
     PassStmt:3())
   ExpressionStmt:4(
     CallExpr:4(
@@ -1051,7 +1051,7 @@ MypyFile:1(
   ClassDef:4(
     A
     TypeVars(
-      T)
+      T`1)
     PassStmt:4()))
 
 [case testQualifiedTypevar]
@@ -1149,7 +1149,7 @@ MypyFile:1(
   ClassDef:3(
     A
     TypeVars(
-      T)
+      T`1)
     AssignmentStmt:4(
       NameExpr(y [m])
       NameExpr(None [builtins.None])
@@ -1172,7 +1172,7 @@ MypyFile:1(
   ClassDef:3(
     A
     TypeVars(
-      _m.T)
+      _m.T`1)
     AssignmentStmt:4(
       NameExpr(a [m])
       NameExpr(None [builtins.None])
@@ -1332,7 +1332,7 @@ MypyFile:1(
   ClassDef:3(
     C
     TypeVars(
-      T in (builtins.int, builtins.str))
+      T`1)
     PassStmt:3()))
 
 [case testGenericFunctionWithBound]
@@ -1368,7 +1368,7 @@ MypyFile:1(
   ClassDef:3(
     C
     TypeVars(
-      T <: builtins.int)
+      T`1)
     PassStmt:3()))
 
 [case testSimpleDucktypeDecorator]

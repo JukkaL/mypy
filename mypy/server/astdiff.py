@@ -213,7 +213,7 @@ def snapshot_definition(node: Optional[SymbolNode],
                  #     x: C[str] <- this is invalid, and needs to be re-checked if `T` changes.
                  # An alternative would be to create both deps: <...> -> C, and <...> -> <C>,
                  # but this currently seems a bit ad hoc.
-                 tuple(snapshot_type(TypeVarType(tdef)) for tdef in node.defn.type_vars),
+                 tuple(snapshot_type(tdef) for tdef in node.defn.type_vars),
                  [snapshot_type(base) for base in node.bases],
                  snapshot_optional_type(node._promote))
         prefix = node.fullname

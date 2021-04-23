@@ -219,7 +219,7 @@ MypyFile:1(
   ClassDef:3(
     G
     TypeVars(
-      T)
+      T`1)
     PassStmt:3())
   AssignmentStmt:4(
     NameExpr(A* [__main__.A])

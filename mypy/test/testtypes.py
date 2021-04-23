@@ -10,7 +10,7 @@ from mypy.meet import meet_types, narrow_declared_type
 from mypy.sametypes import is_same_type
 from mypy.indirection import TypeIndirectionVisitor
 from mypy.types import (
-    UnboundType, AnyType, CallableType, TupleType, TypeVarDef, Type, Instance, NoneType,
+    UnboundType, AnyType, CallableType, TupleType, TypeVarType, Type, Instance, NoneType,
     Overloaded, TypeType, UnionType, UninhabitedType, TypeVarId, TypeOfAny,
     LiteralType, get_proper_type
 )
@@ -78,18 +78,18 @@ class TypesSuite(Suite):
                                    self.fx.std_tuple)), 'Tuple[X?, Any]')
 
     def test_type_variable_binding(self) -> None:
-        assert_equal(str(TypeVarDef('X', 'X', 1, [], self.fx.o)), 'X')
-        assert_equal(str(TypeVarDef('X', 'X', 1, [self.x, self.y], self.fx.o)),
-                     'X in (X?, Y?)')
+        assert_equal(str(TypeVarType('X', 'X', 1, [], self.fx.o)), 'X`1')
+        assert_equal(str(TypeVarType('X', 'X', 1, [self.x, self.y], self.fx.o)),
+                     'X`1')
 
     def test_generic_function_type(self) -> None:
         c = CallableType([self.x, self.y], [ARG_POS, ARG_POS], [None, None],
                      self.y, self.function, name=None,
-                     variables=[TypeVarDef('X', 'X', -1, [], self.fx.o)])
+                     variables=[TypeVarType('X', 'X', -1, [], self.fx.o)])
         assert_equal(str(c), 'def [X] (X?, Y?) -> Y?')
 
-        v = [TypeVarDef('Y', 'Y', -1, [], self.fx.o),
-             TypeVarDef('X', 'X', -2, [], self.fx.o)]
+        v = [TypeVarType('Y', 'Y', -1, [], self.fx.o),
+             TypeVarType('X', 'X', -2, [], self.fx.o)]
         c2 = CallableType([], [], [], NoneType(), self.function, name=None, variables=v)
         assert_equal(str(c2), 'def [Y, X] ()')
 
@@ -461,10 +461,10 @@ class TypeOpsSuite(Suite):
         argument types a1, ... an and return type r and type arguments
         vars.
         """
-        tv = []  # type: List[TypeVarDef]
+        tv = []  # type: List[TypeVarType]
         n = -1
         for v in vars:
-            tv.append(TypeVarDef(v, v, n, [], self.fx.o))
+            tv.append(TypeVarType(v, v, n, [], self.fx.o))
             n -= 1
         return CallableType(list(a[:-1]),
                             [ARG_POS] * (len(a) - 1),

@@ -79,7 +79,7 @@ MypyFile:1(
   ClassDef:4(
     A
     TypeVars(
-      T)
+      T`1)
     Decorator:5(
       Var(f)
       FuncDef:6(

@@ -916,7 +916,7 @@ class ClassDef(Statement):
     name = None  # type: str       # Name of the class without module prefix
     fullname = None  # type: Bogus[str]   # Fully qualified name of the class
     defs = None  # type: Block
-    type_vars = None  # type: List[mypy.types.TypeVarDef]
+    type_vars = None  # type: List[mypy.types.TypeVarType]
     # Base class expressions (not semantically analyzed -- can be arbitrary expressions)
     base_type_exprs = None  # type: List[Expression]
     # Special base classes like Generic[...] get moved here during semantic analysis
@@ -931,7 +931,7 @@ class ClassDef(Statement):
     def __init__(self,
                  name: str,
                  defs: 'Block',
-                 type_vars: Optional[List['mypy.types.TypeVarDef']] = None,
+                 type_vars: Optional[List['mypy.types.TypeVarType']] = None,
                  base_type_exprs: Optional[List[Expression]] = None,
                  metaclass: Optional[Expression] = None,
                  keywords: Optional[List[Tuple[str, Expression]]] = None) -> None:
@@ -966,7 +966,7 @@ class ClassDef(Statement):
         assert data['.class'] == 'ClassDef'
         res = ClassDef(data['name'],
                        Block([]),
-                       [mypy.types.TypeVarDef.deserialize(v) for v in data['type_vars']],
+                       [mypy.types.TypeVarType.deserialize(v) for v in data['type_vars']],
                        )
         res.fullname = data['fullname']
         return res

@@ -13,10 +13,10 @@ from mypy.messages import MessageBuilder, quote_type_string, format_type_bare
 from mypy.options import Options
 from mypy.types import (
     Type, UnboundType, TypeVarType, TupleType, TypedDictType, UnionType, Instance, AnyType,
-    CallableType, NoneType, ErasedType, DeletedType, TypeList, TypeVarDef, SyntheticTypeVisitor,
+    CallableType, NoneType, ErasedType, DeletedType, TypeList, SyntheticTypeVisitor,
     StarType, PartialType, EllipsisType, UninhabitedType, TypeType,
     CallableArgument, TypeQuery, union_items, TypeOfAny, LiteralType, RawExpressionType,
-    PlaceholderType, Overloaded, get_proper_type, TypeAliasType, TypeVarLikeDef, ParamSpecDef
+    PlaceholderType, Overloaded, get_proper_type, TypeAliasType, TypeVarLikeType, ParamSpecType
 )
 
 from mypy.nodes import (
@@ -220,10 +220,13 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
                           ' to define generic alias'.format(t.name), t)
                 return AnyType(TypeOfAny.from_error)
             if isinstance(sym.node, TypeVarExpr) and tvar_def is not None:
-                assert isinstance(tvar_def, TypeVarDef)
+                assert isinstance(tvar_def, TypeVarType)
                 if len(t.args) > 0:
                     self.fail('Type variable "{}" used with arguments'.format(t.name), t)
-                return TypeVarType(tvar_def, t.line)
+                return TypeVarType(
+                    tvar_def.name, tvar_def.fullname, tvar_def.id, tvar_def.values,
+                    tvar_def.upper_bound, tvar_def.variance, line=t.line, column=t.column,
+                )
             special = self.try_analyze_special_unbound_type(t, fullname)
             if special is not None:
                 return special
@@ -680,7 +683,7 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
         if sym is None:
             return None
         tvar_def = self.tvar_scope.get_binding(sym)
-        if not isinstance(tvar_def, ParamSpecDef):
+        if not isinstance(tvar_def, ParamSpecType):
             return None
 
         # TODO(shantanu): construct correct type for paramspec
@@ -914,7 +917,7 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
 
     def bind_function_type_variables(
         self, fun_type: CallableType, defn: Context
-    ) -> Sequence[TypeVarLikeDef]:
+    ) -> Sequence[TypeVarLikeType]:
         """Find the type variables of the function type and bind them in our tvar_scope"""
         if fun_type.variables:
             for var in fun_type.variables:
@@ -928,7 +931,7 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
         # Do not define a new type variable if already defined in scope.
         typevars = [(name, tvar) for name, tvar in typevars
                     if not self.is_defined_type_var(name, defn)]
-        defs = []  # type: List[TypeVarLikeDef]
+        defs = []  # type: List[TypeVarLikeType]
         for name, tvar in typevars:
             if not self.tvar_scope.allow_binding(tvar.fullname):
                 self.fail("Type variable '{}' is bound by an outer class".format(name), defn)
@@ -960,9 +963,9 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
             if nested:
                 self.nesting_level -= 1
 
-    def anal_var_def(self, var_def: TypeVarLikeDef) -> TypeVarLikeDef:
-        if isinstance(var_def, TypeVarDef):
-            return TypeVarDef(
+    def anal_var_def(self, var_def: TypeVarLikeType) -> TypeVarLikeType:
+        if isinstance(var_def, TypeVarType):
+            return TypeVarType(
                 var_def.name,
                 var_def.fullname,
                 var_def.id.raw_id,
@@ -974,7 +977,7 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
         else:
             return var_def
 
-    def anal_var_defs(self, var_defs: Sequence[TypeVarLikeDef]) -> List[TypeVarLikeDef]:
+    def anal_var_defs(self, var_defs: Sequence[TypeVarLikeType]) -> List[TypeVarLikeType]:
         return [self.anal_var_def(vd) for vd in var_defs]
 
     def named_type_with_normalized_str(self, fully_qualified_name: str) -> Instance:

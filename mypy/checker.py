@@ -32,7 +32,7 @@ from mypy.typeanal import has_any_from_unimported_type, check_for_explicit_any
 from mypy.types import (
     Type, AnyType, CallableType, FunctionLike, Overloaded, TupleType, TypedDictType,
     Instance, NoneType, strip_type, TypeType, TypeOfAny,
-    UnionType, TypeVarId, TypeVarType, PartialType, DeletedType, UninhabitedType, TypeVarDef,
+    UnionType, TypeVarId, TypeVarType, PartialType, DeletedType, UninhabitedType,
     is_named_instance, union_items, TypeQuery, LiteralType,
     is_optional, remove_optional, TypeTranslator, StarType, get_proper_type, ProperType,
     get_proper_types, is_literal_type, TypeAliasType, TypeGuardType)
@@ -1395,7 +1395,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             tvars += defn.info.defn.type_vars or []
         # TODO(shantanu): audit for paramspec
         for tvar in tvars:
-            if isinstance(tvar, TypeVarDef) and tvar.values:
+            if isinstance(tvar, TypeVarType) and tvar.values:
                 subst.append([(tvar.id, value) for value in tvar.values])
         # Make a copy of the function to check for each combination of
         # value restricted type variables. (Except when running mypyc,
@@ -5435,7 +5435,7 @@ def detach_callable(typ: CallableType) -> CallableType:
     for var in set(all_type_vars):
         if var.fullname not in used_type_var_names:
             continue
-        new_variables.append(TypeVarDef(
+        new_variables.append(TypeVarType(
             name=var.name,
             fullname=var.fullname,
             id=var.id,
