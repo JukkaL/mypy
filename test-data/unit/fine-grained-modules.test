@@ -1437,7 +1437,7 @@ x = 1
 [file b/foo.py]
 [file b/__init__.py.2]
 # Dummy change
-[builtins fixtures/bool.pyi]
+[builtins fixtures/primitives.pyi]
 [out]
 ==
 

@@ -2825,3 +2825,13 @@ from mystery import a, b as b, c as d
 [out]
 tmp/stub.pyi:1: error: Cannot find implementation or library stub for module named "mystery"
 tmp/stub.pyi:1: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+
+[case testPackagePath]
+import p
+reveal_type(p.__path__)  # N: Revealed type is "builtins.list[builtins.str]"
+p.m.__path__  # E: "object" has no attribute "__path__"
+
+[file p/__init__.py]
+from . import m as m
+[file p/m.py]
+[builtins fixtures/list.pyi]

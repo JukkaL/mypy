@@ -419,6 +419,17 @@ class SemanticAnalyzer(NodeVisitor[None],
                 else:
                     typ = UnionType([UnboundType('__builtins__.str'),
                                      UnboundType('__builtins__.unicode')])
+            elif name == '__path__':
+                if not file_node.is_package_init_file():
+                    continue
+                # Need to construct the type ourselves, to avoid issues with __builtins__.list
+                # not being subscriptable or typing.List not getting bound
+                sym = self.lookup_qualified("__builtins__.list", Context())
+                if not sym:
+                    continue
+                node = sym.node
+                assert isinstance(node, TypeInfo)
+                typ = Instance(node, [self.str_type()])
             else:
                 assert t is not None, 'type should be specified for {}'.format(name)
                 typ = UnboundType(t)

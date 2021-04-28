@@ -19,4 +19,8 @@ class bytes: pass
 class function: pass
 class ellipsis: pass
 
+from typing import Generic, Sequence, TypeVar
+_T = TypeVar('_T')
+class list(Generic[_T], Sequence[_T]): pass
+
 # Definition of None is implicit

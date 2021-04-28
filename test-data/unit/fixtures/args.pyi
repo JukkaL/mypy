@@ -1,6 +1,6 @@
 # Builtins stub used to support *args, **kwargs.
 
-from typing import TypeVar, Generic, Iterable, Tuple, Dict, Any, overload, Mapping
+from typing import TypeVar, Generic, Iterable, Sequence, Tuple, Dict, Any, overload, Mapping
 
 Tco = TypeVar('Tco', covariant=True)
 T = TypeVar('T')
@@ -21,6 +21,8 @@ class type:
 class tuple(Iterable[Tco], Generic[Tco]): pass
 
 class dict(Iterable[T], Mapping[T, S], Generic[T, S]): pass
+
+class list(Generic[T], Sequence[T]): pass
 
 class int:
     def __eq__(self, o: object) -> bool: pass

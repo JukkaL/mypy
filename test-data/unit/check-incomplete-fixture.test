@@ -12,14 +12,6 @@ import m
 m.x # E: "object" has no attribute "x"
 [file m.py]
 
-[case testListMissingFromStubs]
-from typing import List
-def f(x: List[int]) -> None: pass
-[out]
-main:1: error: Module "typing" has no attribute "List"
-main:1: note: Maybe your test fixture does not define "builtins.list"?
-main:1: note: Consider adding [builtins fixtures/list.pyi] to your test description
-
 [case testDictMissingFromStubs]
 from typing import Dict
 def f(x: Dict[int]) -> None: pass
