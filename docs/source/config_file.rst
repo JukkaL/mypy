@@ -3,19 +3,24 @@
 The mypy configuration file
 ===========================
 
-Mypy supports reading configuration settings from a file.  By default
-it uses the file ``mypy.ini`` with a fallback to ``.mypy.ini``, then ``setup.cfg`` in
-the current directory, then ``$XDG_CONFIG_HOME/mypy/config``, then
-``~/.config/mypy/config``, and finally ``.mypy.ini`` in the user home directory
-if none of them are found; the :option:`--config-file <mypy --config-file>` command-line flag can be used
-to read a different file instead (see :ref:`config-file-flag`).
+Mypy supports reading configuration settings from a file
+There are two options for doing so, doing it explicitly with the --config-file flag 
+which has highest precidence, if the flag is not set mypy will look for defaults 
+
+-Explicitly using a file 
+ The :option:`--config-file <mypy --config-file>` command-line flag can be used
+ to use a file that is present in the current working directory as config file(see :ref:`config-file-flag`).
+
+-By default
+ It first uses the file ``mypy.ini`` with a fallback to ``.mypy.ini``, then ``setup.cfg`` in
+ the current working directory, then ``$XDG_CONFIG_HOME/mypy/config``, then
+ ``~/.config/mypy/config``, and finally ``.mypy.ini`` in the user home directory
+ if none of them are found; 
 
 It is important to understand that there is no merging of configuration
-files, as it would lead to ambiguity.  The :option:`--config-file <mypy --config-file>` flag
-has the highest precedence and must be correct; otherwise mypy will report
-an error and exit.  Without command line option, mypy will look for defaults,
-but will use only one of them.  The first one to read is ``mypy.ini``,
-then ``.mypy.ini``, and finally ``setup.cfg``.
+files, as it would lead to ambiguity.Mypy will read the first config file it finds 
+according the precedence given above.If there is an error in the file mypy will report
+an error and exit and not look for other files down the precedence order.
 
 Most flags correspond closely to :ref:`command-line flags
 <command-line>` but there are some differences in flag names and some
