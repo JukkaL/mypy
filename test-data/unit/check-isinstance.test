@@ -2348,6 +2348,53 @@ if isinstance(y, B):
         reveal_type(y)    # E: Statement is unreachable
 [builtins fixtures/isinstance.pyi]
 
+[case testIsInstanceAdHocIntersectionReversed]
+# flags: --warn-unreachable
+
+from abc import abstractmethod
+from typing_extensions import Literal
+
+class A0:
+    def f(self) -> Literal[0]:
+        ...
+
+class A1:
+    def f(self) -> Literal[1]:
+        ...
+
+class A2:
+    def f(self) -> Literal[2]:
+        ...
+
+class B:
+    @abstractmethod
+    def f(self) -> Literal[1, 2]:
+        ...
+
+    def t0(self) -> None:
+        if isinstance(self, A0):        # E: Subclass of "B" and "A0" cannot exist: would have incompatible method signatures
+            x0: Literal[0] = self.f()   # E: Statement is unreachable
+
+    def t1(self) -> None:
+        if isinstance(self, A1):
+            reveal_type(self)           # N: Revealed type is '__main__.<subclass of "A1" and "B">'
+            x0: Literal[0] = self.f()   # E: Incompatible types in assignment (expression has type "Literal[1]", variable has type "Literal[0]")
+            x1: Literal[1] = self.f()
+
+    def t2(self) -> None:
+        if isinstance(self, (A0, A1)):  # E: Subclass of "B" and "A0" cannot exist: would have incompatible method signatures
+            reveal_type(self)           # N: Revealed type is '__main__.<subclass of "A1" and "B">1'
+            x0: Literal[0] = self.f()   # E: Incompatible types in assignment (expression has type "Literal[1]", variable has type "Literal[0]")
+            x1: Literal[1] = self.f()
+
+    def t3(self) -> None:
+        if isinstance(self, (A1, A2)):
+            reveal_type(self)           # N: Revealed type is 'Union[__main__.<subclass of "A1" and "B">2, __main__.<subclass of "A2" and "B">]'
+            x0: Literal[0] = self.f()   # E: Incompatible types in assignment (expression has type "Union[Literal[1], Literal[2]]", variable has type "Literal[0]")
+            x1: Literal[1] = self.f()   # E: Incompatible types in assignment (expression has type "Union[Literal[1], Literal[2]]", variable has type "Literal[1]")
+
+[builtins fixtures/isinstance.pyi]
+
 [case testIsInstanceAdHocIntersectionGenerics]
 # flags: --warn-unreachable
 from typing import Generic, TypeVar

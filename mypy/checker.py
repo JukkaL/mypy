@@ -3729,7 +3729,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         return cdef, info
 
     def intersect_instances(self,
-                            instances: Sequence[Instance],
+                            instances: Tuple[Instance, Instance],
                             ctx: Context,
                             ) -> Optional[Instance]:
         """Try creating an ad-hoc intersection of the given instances.
@@ -3757,34 +3757,50 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         curr_module = self.scope.stack[0]
         assert isinstance(curr_module, MypyFile)
 
-        base_classes = []
-        for inst in instances:
-            expanded = [inst]
-            if inst.type.is_intersection:
-                expanded = inst.type.bases
+        def _get_base_classes(instances_: Tuple[Instance, Instance]) -> List[Instance]:
+            base_classes_ = []
+            for inst in instances_:
+                expanded = [inst]
+                if inst.type.is_intersection:
+                    expanded = inst.type.bases
 
-            for expanded_inst in expanded:
-                base_classes.append(expanded_inst)
+                for expanded_inst in expanded:
+                    base_classes_.append(expanded_inst)
+            return base_classes_
 
+        def _make_fake_typeinfo_and_full_name(
+                base_classes_: List[Instance],
+                curr_module_: MypyFile,
+        ) -> Tuple[TypeInfo, str]:
+            names_list = pretty_seq([x.type.name for x in base_classes_], "and")
+            short_name = '<subclass of {}>'.format(names_list)
+            full_name_ = gen_unique_name(short_name, curr_module_.names)
+            cdef, info_ = self.make_fake_typeinfo(
+                curr_module_.fullname,
+                full_name_,
+                short_name,
+                base_classes_,
+            )
+            return info_, full_name_
+
+        old_msg = self.msg
+        new_msg = old_msg.clean_copy()
+        self.msg = new_msg
+        base_classes = _get_base_classes(instances)
         # We use the pretty_names_list for error messages but can't
         # use it for the real name that goes into the symbol table
         # because it can have dots in it.
         pretty_names_list = pretty_seq(format_type_distinctly(*base_classes, bare=True), "and")
-        names_list = pretty_seq([x.type.name for x in base_classes], "and")
-        short_name = '<subclass of {}>'.format(names_list)
-        full_name = gen_unique_name(short_name, curr_module.names)
-
-        old_msg = self.msg
-        new_msg = self.msg.clean_copy()
-        self.msg = new_msg
         try:
-            cdef, info = self.make_fake_typeinfo(
-                curr_module.fullname,
-                full_name,
-                short_name,
-                base_classes,
-            )
+            info, full_name = _make_fake_typeinfo_and_full_name(base_classes, curr_module)
             self.check_multiple_inheritance(info)
+            if new_msg.is_errors():
+                # "class A(B, C)" unsafe, now check "class A(C, B)":
+                new_msg = new_msg.clean_copy()
+                self.msg = new_msg
+                base_classes = _get_base_classes(instances[::-1])
+                info, full_name = _make_fake_typeinfo_and_full_name(base_classes, curr_module)
+                self.check_multiple_inheritance(info)
             info.is_intersection = True
         except MroError:
             if self.should_report_unreachable_issues():
@@ -5021,7 +5037,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             if not isinstance(v, Instance):
                 return yes_map, no_map
             for t in possible_target_types:
-                intersection = self.intersect_instances([v, t], expr)
+                intersection = self.intersect_instances((v, t), expr)
                 if intersection is None:
                     continue
                 out.append(intersection)
