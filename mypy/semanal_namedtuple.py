@@ -9,7 +9,7 @@ from typing_extensions import Final
 
 from mypy.types import (
     Type, TupleType, AnyType, TypeOfAny, TypeVarDef, CallableType, TypeType, TypeVarType,
-    UnboundType,
+    UnboundType, LiteralType,
 )
 from mypy.semanal_shared import (
     SemanticAnalyzerInterface, set_callable_name, calculate_tuple_fallback, PRIORITY_FALLBACKS
@@ -382,6 +382,9 @@ class NamedTupleAnalyzer:
         iterable_type = self.api.named_type_or_none('typing.Iterable', [implicit_any])
         function_type = self.api.named_type('__builtins__.function')
 
+        literals = [LiteralType(item, strtype) for item in items]  # type: List[Type]
+        match_args_type = TupleType(literals, basetuple_type)
+
         info = self.api.basic_new_typeinfo(name, fallback)
         info.is_named_tuple = True
         tuple_base = TupleType(types, fallback)
@@ -420,6 +423,7 @@ class NamedTupleAnalyzer:
         add_field(Var('_source', strtype), is_initialized_in_class=True)
         add_field(Var('__annotations__', ordereddictype), is_initialized_in_class=True)
         add_field(Var('__doc__', strtype), is_initialized_in_class=True)
+        add_field(Var('__match_args__', match_args_type), is_initialized_in_class=True)
 
         tvd = TypeVarDef(SELF_TVAR_NAME, info.fullname + '.' + SELF_TVAR_NAME,
                          -1, [], info.tuple_type)

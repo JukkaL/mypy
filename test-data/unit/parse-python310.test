@@ -1,0 +1,603 @@
+-- Test cases for parser -- Python 3.10 syntax (match statement)
+--
+-- See parse.test for a description of this file format.
+
+[case testSimpleMatch]
+match a:
+    case 1:
+      pass
+[out]
+MypyFile:1(
+  MatchStmt:1(
+    NameExpr(a)
+    Pattern(
+      ValuePattern:2(
+        IntExpr(1)))
+    Body(
+      PassStmt:3())))
+
+
+[case testTupleMatch]
+match a, b:
+    case 1:
+        pass
+[out]
+MypyFile:1(
+  MatchStmt:1(
+    TupleExpr:1(
+      NameExpr(a)
+      NameExpr(b))
+    Pattern(
+      ValuePattern:2(
+        IntExpr(1)))
+    Body(
+      PassStmt:3())))
+
+[case testMatchWithGuard]
+match a:
+    case 1 if f():
+        pass
+    case d if d > 5:
+        pass
+[out]
+MypyFile:1(
+  MatchStmt:1(
+    NameExpr(a)
+    Pattern(
+      ValuePattern:2(
+        IntExpr(1)))
+    Guard(
+      CallExpr:2(
+        NameExpr(f)
+        Args()))
+    Body(
+      PassStmt:3())
+    Pattern(
+      AsPattern:4(
+        NameExpr(d)))
+    Guard(
+      ComparisonExpr:4(
+        >
+        NameExpr(d)
+        IntExpr(5)))
+    Body(
+      PassStmt:5())))
+
+[case testAsPattern]
+match a:
+    case 1 as b:
+      pass
+[out]
+MypyFile:1(
+  MatchStmt:1(
+    NameExpr(a)
+    Pattern(
+      AsPattern:2(
+        ValuePattern:2(
+          IntExpr(1))
+        NameExpr(b)))
+    Body(
+      PassStmt:3())))
+
+
+[case testLiteralPattern]
+match a:
+  case 1:
+    pass
+  case -1:
+    pass
+  case 1+2j:
+    pass
+  case -1+2j:
+    pass
+  case 1-2j:
+    pass
+  case -1-2j:
+    pass
+  case "str":
+    pass
+  case b"bytes":
+    pass
+  case r"raw_string":
+    pass
+  case None:
+    pass
+  case True:
+    pass
+  case False:
+    pass
+[out]
+MypyFile:1(
+  MatchStmt:1(
+    NameExpr(a)
+    Pattern(
+      ValuePattern:2(
+        IntExpr(1)))
+    Body(
+      PassStmt:3())
+    Pattern(
+      ValuePattern:4(
+        UnaryExpr:4(
+          -
+          IntExpr(1))))
+    Body(
+      PassStmt:5())
+    Pattern(
+      ValuePattern:6(
+        OpExpr:6(
+          +
+          IntExpr(1)
+          ComplexExpr(2j))))
+    Body(
+      PassStmt:7())
+    Pattern(
+      ValuePattern:8(
+        OpExpr:8(
+          +
+          UnaryExpr:8(
+            -
+            IntExpr(1))
+          ComplexExpr(2j))))
+    Body(
+      PassStmt:9())
+    Pattern(
+      ValuePattern:10(
+        OpExpr:10(
+          -
+          IntExpr(1)
+          ComplexExpr(2j))))
+    Body(
+      PassStmt:11())
+    Pattern(
+      ValuePattern:12(
+        OpExpr:12(
+          -
+          UnaryExpr:12(
+            -
+            IntExpr(1))
+          ComplexExpr(2j))))
+    Body(
+      PassStmt:13())
+    Pattern(
+      ValuePattern:14(
+        StrExpr(str)))
+    Body(
+      PassStmt:15())
+    Pattern(
+      ValuePattern:16(
+        BytesExpr(bytes)))
+    Body(
+      PassStmt:17())
+    Pattern(
+      ValuePattern:18(
+        StrExpr(raw_string)))
+    Body(
+      PassStmt:19())
+    Pattern(
+      SingletonPattern:20())
+    Body(
+      PassStmt:21())
+    Pattern(
+      SingletonPattern:22(
+        True))
+    Body(
+      PassStmt:23())
+    Pattern(
+      SingletonPattern:24(
+        False))
+    Body(
+      PassStmt:25())))
+
+[case testCapturePattern]
+match a:
+    case x:
+        pass
+    case longName:
+        pass
+[out]
+MypyFile:1(
+  MatchStmt:1(
+    NameExpr(a)
+    Pattern(
+      AsPattern:2(
+        NameExpr(x)))
+    Body(
+      PassStmt:3())
+    Pattern(
+      AsPattern:4(
+        NameExpr(longName)))
+    Body(
+      PassStmt:5())))
+
+[case testWildcardPattern]
+match a:
+    case _:
+        pass
+[out]
+MypyFile:1(
+  MatchStmt:1(
+    NameExpr(a)
+    Pattern(
+      AsPattern:2())
+    Body(
+      PassStmt:3())))
+
+[case testValuePattern]
+match a:
+    case b.c:
+        pass
+    case b.c.d.e.f:
+        pass
+[out]
+MypyFile:1(
+  MatchStmt:1(
+    NameExpr(a)
+    Pattern(
+      ValuePattern:2(
+        MemberExpr:2(
+          NameExpr(b)
+          c)))
+    Body(
+      PassStmt:3())
+    Pattern(
+      ValuePattern:4(
+        MemberExpr:4(
+          MemberExpr:4(
+            MemberExpr:4(
+              MemberExpr:4(
+                NameExpr(b)
+                c)
+              d)
+            e)
+          f)))
+    Body(
+      PassStmt:5())))
+
+[case testGroupPattern]
+# This is optimized out by the compiler. It doesn't appear in the ast
+match a:
+    case (1):
+        pass
+[out]
+MypyFile:1(
+  MatchStmt:2(
+    NameExpr(a)
+    Pattern(
+      ValuePattern:3(
+        IntExpr(1)))
+    Body(
+      PassStmt:4())))
+
+[case testSequencePattern]
+match a:
+    case []:
+        pass
+    case ():
+        pass
+    case [1]:
+        pass
+    case (1,):
+        pass
+    case 1,:
+        pass
+    case [1, 2, 3]:
+        pass
+    case (1, 2, 3):
+        pass
+    case 1, 2, 3:
+        pass
+    case [1, *a, 2]:
+        pass
+    case (1, *a, 2):
+        pass
+    case 1, *a, 2:
+        pass
+    case [1, *_, 2]:
+        pass
+    case (1, *_, 2):
+        pass
+    case 1, *_, 2:
+        pass
+[out]
+MypyFile:1(
+  MatchStmt:1(
+    NameExpr(a)
+    Pattern(
+      SequencePattern:2())
+    Body(
+      PassStmt:3())
+    Pattern(
+      SequencePattern:4())
+    Body(
+      PassStmt:5())
+    Pattern(
+      SequencePattern:6(
+        ValuePattern:6(
+          IntExpr(1))))
+    Body(
+      PassStmt:7())
+    Pattern(
+      SequencePattern:8(
+        ValuePattern:8(
+          IntExpr(1))))
+    Body(
+      PassStmt:9())
+    Pattern(
+      SequencePattern:10(
+        ValuePattern:10(
+          IntExpr(1))))
+    Body(
+      PassStmt:11())
+    Pattern(
+      SequencePattern:12(
+        ValuePattern:12(
+          IntExpr(1))
+        ValuePattern:12(
+          IntExpr(2))
+        ValuePattern:12(
+          IntExpr(3))))
+    Body(
+      PassStmt:13())
+    Pattern(
+      SequencePattern:14(
+        ValuePattern:14(
+          IntExpr(1))
+        ValuePattern:14(
+          IntExpr(2))
+        ValuePattern:14(
+          IntExpr(3))))
+    Body(
+      PassStmt:15())
+    Pattern(
+      SequencePattern:16(
+        ValuePattern:16(
+          IntExpr(1))
+        ValuePattern:16(
+          IntExpr(2))
+        ValuePattern:16(
+          IntExpr(3))))
+    Body(
+      PassStmt:17())
+    Pattern(
+      SequencePattern:18(
+        ValuePattern:18(
+          IntExpr(1))
+        StarredPattern:18(
+          NameExpr(a))
+        ValuePattern:18(
+          IntExpr(2))))
+    Body(
+      PassStmt:19())
+    Pattern(
+      SequencePattern:20(
+        ValuePattern:20(
+          IntExpr(1))
+        StarredPattern:20(
+          NameExpr(a))
+        ValuePattern:20(
+          IntExpr(2))))
+    Body(
+      PassStmt:21())
+    Pattern(
+      SequencePattern:22(
+        ValuePattern:22(
+          IntExpr(1))
+        StarredPattern:22(
+          NameExpr(a))
+        ValuePattern:22(
+          IntExpr(2))))
+    Body(
+      PassStmt:23())
+    Pattern(
+      SequencePattern:24(
+        ValuePattern:24(
+          IntExpr(1))
+        StarredPattern:24()
+        ValuePattern:24(
+          IntExpr(2))))
+    Body(
+      PassStmt:25())
+    Pattern(
+      SequencePattern:26(
+        ValuePattern:26(
+          IntExpr(1))
+        StarredPattern:26()
+        ValuePattern:26(
+          IntExpr(2))))
+    Body(
+      PassStmt:27())
+    Pattern(
+      SequencePattern:28(
+        ValuePattern:28(
+          IntExpr(1))
+        StarredPattern:28()
+        ValuePattern:28(
+          IntExpr(2))))
+    Body(
+      PassStmt:29())))
+
+[case testMappingPattern]
+match a:
+    case {'k': v}:
+        pass
+    case {a.b: v}:
+        pass
+    case {1: v}:
+        pass
+    case {a.c: v}:
+        pass
+    case {'k': v1, a.b: v2, 1: v3, a.c: v4}:
+        pass
+    case {'k1': 1, 'k2': "str", 'k3': b'bytes', 'k4': None}:
+        pass
+    case {'k': v, **r}:
+        pass
+    case {**r}:
+        pass
+[out]
+MypyFile:1(
+  MatchStmt:1(
+    NameExpr(a)
+    Pattern(
+      MappingPattern:2(
+        Key(
+          StrExpr(k))
+        Value(
+          AsPattern:2(
+            NameExpr(v)))))
+    Body(
+      PassStmt:3())
+    Pattern(
+      MappingPattern:4(
+        Key(
+          MemberExpr:4(
+            NameExpr(a)
+            b))
+        Value(
+          AsPattern:4(
+            NameExpr(v)))))
+    Body(
+      PassStmt:5())
+    Pattern(
+      MappingPattern:6(
+        Key(
+          IntExpr(1))
+        Value(
+          AsPattern:6(
+            NameExpr(v)))))
+    Body(
+      PassStmt:7())
+    Pattern(
+      MappingPattern:8(
+        Key(
+          MemberExpr:8(
+            NameExpr(a)
+            c))
+        Value(
+          AsPattern:8(
+            NameExpr(v)))))
+    Body(
+      PassStmt:9())
+    Pattern(
+      MappingPattern:10(
+        Key(
+          StrExpr(k))
+        Value(
+          AsPattern:10(
+            NameExpr(v1)))
+        Key(
+          MemberExpr:10(
+            NameExpr(a)
+            b))
+        Value(
+          AsPattern:10(
+            NameExpr(v2)))
+        Key(
+          IntExpr(1))
+        Value(
+          AsPattern:10(
+            NameExpr(v3)))
+        Key(
+          MemberExpr:10(
+            NameExpr(a)
+            c))
+        Value(
+          AsPattern:10(
+            NameExpr(v4)))))
+    Body(
+      PassStmt:11())
+    Pattern(
+      MappingPattern:12(
+        Key(
+          StrExpr(k1))
+        Value(
+          ValuePattern:12(
+            IntExpr(1)))
+        Key(
+          StrExpr(k2))
+        Value(
+          ValuePattern:12(
+            StrExpr(str)))
+        Key(
+          StrExpr(k3))
+        Value(
+          ValuePattern:12(
+            BytesExpr(bytes)))
+        Key(
+          StrExpr(k4))
+        Value(
+          SingletonPattern:12())))
+    Body(
+      PassStmt:13())
+    Pattern(
+      MappingPattern:14(
+        Key(
+          StrExpr(k))
+        Value(
+          AsPattern:14(
+            NameExpr(v)))
+        Rest(
+          NameExpr(r))))
+    Body(
+      PassStmt:15())
+    Pattern(
+      MappingPattern:16(
+        Rest(
+          NameExpr(r))))
+    Body(
+      PassStmt:17())))
+
+[case testClassPattern]
+match a:
+    case A():
+        pass
+    case B(1, 2):
+        pass
+    case B(1, b=2):
+        pass
+    case B(a=1, b=2):
+        pass
+[out]
+MypyFile:1(
+  MatchStmt:1(
+    NameExpr(a)
+    Pattern(
+      ClassPattern:2(
+        NameExpr(A)))
+    Body(
+      PassStmt:3())
+    Pattern(
+      ClassPattern:4(
+        NameExpr(B)
+        Positionals(
+          ValuePattern:4(
+            IntExpr(1))
+          ValuePattern:4(
+            IntExpr(2)))))
+    Body(
+      PassStmt:5())
+    Pattern(
+      ClassPattern:6(
+        NameExpr(B)
+        Positionals(
+          ValuePattern:6(
+            IntExpr(1)))
+        Keyword(
+          b
+          ValuePattern:6(
+            IntExpr(2)))))
+    Body(
+      PassStmt:7())
+    Pattern(
+      ClassPattern:8(
+        NameExpr(B)
+        Keyword(
+          a
+          ValuePattern:8(
+            IntExpr(1)))
+        Keyword(
+          b
+          ValuePattern:8(
+            IntExpr(2)))))
+    Body(
+      PassStmt:9())))

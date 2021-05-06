@@ -92,6 +92,8 @@ STR_BYTES_PY3 = ErrorCode(
     'General')  # type: Final
 EXIT_RETURN = ErrorCode(
     'exit-return', "Warn about too general return type for '__exit__'", 'General')  # type: Final
+LITERAL_REQ = ErrorCode(
+    "literal-required", "Check that value is a literal", 'General')  # type: Final
 
 # These error codes aren't enabled by default.
 NO_UNTYPED_DEF = ErrorCode(

@@ -1,5 +1,5 @@
 # builtins stub with non-generic primitive types
-from typing import Generic, TypeVar, Sequence, Iterator, Mapping
+from typing import Generic, TypeVar, Sequence, Iterator, Mapping, Iterable
 T = TypeVar('T')
 V = TypeVar('V')
 
@@ -47,6 +47,10 @@ class list(Sequence[T]):
     def __contains__(self, other: object) -> bool: pass
     def __getitem__(self, item: int) -> T: pass
 class dict(Mapping[T, V]):
+    def __iter__(self) -> Iterator[T]: pass
+class set(Iterable[T]):
+    def __iter__(self) -> Iterator[T]: pass
+class frozenset(Iterable[T]):
     def __iter__(self) -> Iterator[T]: pass
 class function: pass
 class ellipsis: pass

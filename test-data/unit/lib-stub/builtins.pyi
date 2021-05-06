@@ -12,10 +12,12 @@ class type:
 class int:
     def __add__(self, other: int) -> int: pass
 class float: pass
+class bool(int): pass
 
 class str: pass
 class bytes: pass
 
+class tuple: pass
 class function: pass
 class ellipsis: pass
 

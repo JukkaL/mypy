@@ -2,6 +2,7 @@
 
 import itertools
 import fnmatch
+from collections import defaultdict
 from contextlib import contextmanager
 
 from typing import (
@@ -24,8 +25,7 @@ from mypy.nodes import (
     Import, ImportFrom, ImportAll, ImportBase, TypeAlias,
     ARG_POS, ARG_STAR, LITERAL_TYPE, MDEF, GDEF,
     CONTRAVARIANT, COVARIANT, INVARIANT, TypeVarExpr, AssignmentExpr,
-    is_final_node,
-    ARG_NAMED)
+    is_final_node, ARG_NAMED, MatchStmt)
 from mypy import nodes
 from mypy.literals import literal, literal_hash, Key
 from mypy.typeanal import has_any_from_unimported_type, check_for_explicit_any
@@ -45,6 +45,7 @@ import mypy.checkexpr
 from mypy.checkmember import (
     analyze_member_access, analyze_descriptor_access, type_object_type,
 )
+from mypy.checkpattern import PatternChecker
 from mypy.typeops import (
     map_type_from_supertype, bind_self, erase_to_bound, make_simplified_union,
     erase_def_to_union_or_bound, erase_to_union_or_bound, coerce_to_literal,
@@ -164,6 +165,8 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
     # Helper for type checking expressions
     expr_checker = None  # type: mypy.checkexpr.ExpressionChecker
 
+    pattern_checker = None  # type: PatternChecker
+
     tscope = None  # type: Scope
     scope = None  # type: CheckerScope
     # Stack of function return types
@@ -220,6 +223,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         self.msg = MessageBuilder(errors, modules)
         self.plugin = plugin
         self.expr_checker = mypy.checkexpr.ExpressionChecker(self, self.msg, self.plugin)
+        self.pattern_checker = PatternChecker(self, self.msg, self.plugin)
         self.tscope = Scope()
         self.scope = CheckerScope(tree)
         self.binder = ConditionalTypeBinder()
@@ -1385,6 +1389,19 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         if not is_subtype(typ, method_type):
             self.msg.invalid_signature_for_special_method(typ, context, '__setattr__')
 
+    def check_match_args(self, var: Var, typ: Type, context: Context) -> None:
+        """Check that __match_args__ is final and contains literal strings"""
+
+        if not var.is_final:
+            self.note("__match_args__ must be final for checking of match statements to work",
+                      context, code=codes.LITERAL_REQ)
+
+        typ = get_proper_type(typ)
+        if not isinstance(typ, TupleType) or \
+                not all([is_string_literal(item) for item in typ.items]):
+            self.msg.note("__match_args__ must be a tuple containing string literals for checking "
+                          "of match statements to work", context, code=codes.LITERAL_REQ)
+
     def expand_typevars(self, defn: FuncItem,
                         typ: CallableType) -> List[Tuple[FuncItem, CallableType]]:
         # TODO use generator
@@ -2068,6 +2085,10 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                             self.check_setattr_method(signature, lvalue)
                         else:
                             self.check_getattr_method(signature, lvalue, name)
+
+                if name == '__match_args__' and inferred is not None:
+                    typ = self.expr_checker.accept(rvalue)
+                    self.check_match_args(inferred, typ, lvalue)
 
             # Defer PartialType's super type checking.
             if (isinstance(lvalue, RefExpr) and
@@ -3706,6 +3727,69 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
     def visit_continue_stmt(self, s: ContinueStmt) -> None:
         self.binder.handle_continue()
         return None
+
+    def visit_match_stmt(self, s: MatchStmt) -> None:
+        with self.binder.frame_context(can_skip=False, fall_through=0):
+            subject_type = get_proper_type(self.expr_checker.accept(s.subject))
+
+            if isinstance(subject_type, DeletedType):
+                self.msg.deleted_as_rvalue(subject_type, s)
+
+            pattern_types = [self.pattern_checker.accept(p, subject_type) for p in s.patterns]
+
+            type_maps = [t.captures for t in pattern_types]  # type: List[TypeMap]
+            self.infer_names_from_type_maps(type_maps)
+
+            for pattern_type, g, b in zip(pattern_types, s.guards, s.bodies):
+                with self.binder.frame_context(can_skip=True, fall_through=2):
+                    if b.is_unreachable or pattern_type.type is None:
+                        self.push_type_map(None)
+                    else:
+                        self.binder.put(s.subject, pattern_type.type)
+                        self.push_type_map(pattern_type.captures)
+                    if g is not None:
+                        gt = get_proper_type(self.expr_checker.accept(g))
+
+                        if isinstance(gt, DeletedType):
+                            self.msg.deleted_as_rvalue(gt, s)
+
+                        if_map, _ = self.find_isinstance_check(g)
+
+                        self.push_type_map(if_map)
+                    self.accept(b)
+
+    def infer_names_from_type_maps(self, type_maps: List[TypeMap]) -> None:
+        all_captures = defaultdict(list)  # type: Dict[Var, List[Tuple[NameExpr, Type]]]
+        for tm in type_maps:
+            if tm is not None:
+                for expr, typ in tm.items():
+                    if isinstance(expr, NameExpr):
+                        node = expr.node
+                        assert isinstance(node, Var)
+                        all_captures[node].append((expr, typ))
+
+        for var, captures in all_captures.items():
+            conflict = False
+            types = []  # type: List[Type]
+            for expr, typ in captures:
+                types.append(typ)
+
+                previous_type, _, inferred = self.check_lvalue(expr)
+                if previous_type is not None:
+                    conflict = True
+                    self.check_subtype(typ, previous_type, expr,
+                                       msg=message_registry.INCOMPATIBLE_TYPES_IN_CAPTURE,
+                                       subtype_label="pattern captures type",
+                                       supertype_label="variable has type")
+                    for type_map in type_maps:
+                        if type_map is not None and expr in type_map:
+                            del type_map[expr]
+
+            if not conflict:
+                new_type = UnionType.make_union(types)
+                # Infer the union type at the first occurrence
+                first_occurrence, _ = captures[0]
+                self.infer_variable_type(var, first_occurrence, new_type, first_occurrence)
 
     def make_fake_typeinfo(self,
                            curr_module_fullname: str,
@@ -5883,6 +5967,11 @@ def is_overlapping_types_no_promote(left: Type, right: Type) -> bool:
 def is_private(node_name: str) -> bool:
     """Check if node is private to class definition."""
     return node_name.startswith('__') and not node_name.endswith('__')
+
+
+def is_string_literal(typ: Type) -> bool:
+    strs = try_getting_str_literals_from_type(typ)
+    return strs is not None and len(strs) == 1
 
 
 def has_bool_item(typ: ProperType) -> bool:

@@ -1,0 +1,204 @@
+-- Python 3.10 semantic analysis test cases.
+
+[case testCapturePattern]
+x = 1
+match x:
+  case a:
+    a
+[out]
+MypyFile:1(
+  AssignmentStmt:1(
+    NameExpr(x* [__main__.x])
+    IntExpr(1))
+  MatchStmt:2(
+    NameExpr(x [__main__.x])
+    Pattern(
+      AsPattern:3(
+        NameExpr(a* [__main__.a])))
+    Body(
+      ExpressionStmt:4(
+        NameExpr(a [__main__.a])))))
+
+[case testCapturePatternOutliving]
+x = 1
+match x:
+    case a:
+      pass
+a
+[out]
+MypyFile:1(
+  AssignmentStmt:1(
+    NameExpr(x* [__main__.x])
+    IntExpr(1))
+  MatchStmt:2(
+    NameExpr(x [__main__.x])
+    Pattern(
+      AsPattern:3(
+        NameExpr(a* [__main__.a])))
+    Body(
+      PassStmt:4()))
+  ExpressionStmt:5(
+    NameExpr(a [__main__.a])))
+
+[case testNestedCapturePatterns]
+x = 1
+match x:
+    case ([a], {'k': b}):
+        a
+        b
+[out]
+MypyFile:1(
+  AssignmentStmt:1(
+    NameExpr(x* [__main__.x])
+    IntExpr(1))
+  MatchStmt:2(
+    NameExpr(x [__main__.x])
+    Pattern(
+      SequencePattern:3(
+        SequencePattern:3(
+          AsPattern:3(
+            NameExpr(a* [__main__.a])))
+        MappingPattern:3(
+          Key(
+            StrExpr(k))
+          Value(
+            AsPattern:3(
+              NameExpr(b* [__main__.b]))))))
+    Body(
+      ExpressionStmt:4(
+        NameExpr(a [__main__.a]))
+      ExpressionStmt:5(
+        NameExpr(b [__main__.b])))))
+
+[case testMappingPatternRest]
+x = 1
+match x:
+    case {**r}:
+        r
+[out]
+MypyFile:1(
+  AssignmentStmt:1(
+    NameExpr(x* [__main__.x])
+    IntExpr(1))
+  MatchStmt:2(
+    NameExpr(x [__main__.x])
+    Pattern(
+      MappingPattern:3(
+        Rest(
+          NameExpr(r* [__main__.r]))))
+    Body(
+      ExpressionStmt:4(
+        NameExpr(r [__main__.r])))))
+
+
+[case testAsPattern]
+x = 1
+match x:
+    case 1 as a:
+        a
+[out]
+MypyFile:1(
+  AssignmentStmt:1(
+    NameExpr(x* [__main__.x])
+    IntExpr(1))
+  MatchStmt:2(
+    NameExpr(x [__main__.x])
+    Pattern(
+      AsPattern:3(
+        ValuePattern:3(
+          IntExpr(1))
+        NameExpr(a* [__main__.a])))
+    Body(
+      ExpressionStmt:4(
+        NameExpr(a [__main__.a])))))
+
+[case testGuard]
+x = 1
+a = 1
+match x:
+    case 1 if a:
+        pass
+[out]
+MypyFile:1(
+  AssignmentStmt:1(
+    NameExpr(x* [__main__.x])
+    IntExpr(1))
+  AssignmentStmt:2(
+    NameExpr(a* [__main__.a])
+    IntExpr(1))
+  MatchStmt:3(
+    NameExpr(x [__main__.x])
+    Pattern(
+      ValuePattern:4(
+        IntExpr(1)))
+    Guard(
+      NameExpr(a [__main__.a]))
+    Body(
+      PassStmt:5())))
+
+[case testCapturePatternInGuard]
+x = 1
+match x:
+  case a if a:
+    pass
+[out]
+MypyFile:1(
+  AssignmentStmt:1(
+    NameExpr(x* [__main__.x])
+    IntExpr(1))
+  MatchStmt:2(
+    NameExpr(x [__main__.x])
+    Pattern(
+      AsPattern:3(
+        NameExpr(a* [__main__.a])))
+    Guard(
+      NameExpr(a [__main__.a]))
+    Body(
+      PassStmt:4())))
+
+[case testAsPatternInGuard]
+x = 1
+match x:
+    case 1 as a if a:
+        pass
+[out]
+MypyFile:1(
+  AssignmentStmt:1(
+    NameExpr(x* [__main__.x])
+    IntExpr(1))
+  MatchStmt:2(
+    NameExpr(x [__main__.x])
+    Pattern(
+      AsPattern:3(
+        ValuePattern:3(
+          IntExpr(1))
+        NameExpr(a* [__main__.a])))
+    Guard(
+      NameExpr(a [__main__.a]))
+    Body(
+      PassStmt:4())))
+
+[case testValuePattern]
+import _a
+
+x = 1
+match x:
+    case _a.b:
+        pass
+[file _a.py]
+b = 1
+[out]
+MypyFile:1(
+  Import:1(_a)
+  AssignmentStmt:3(
+    NameExpr(x* [__main__.x])
+    IntExpr(1))
+  MatchStmt:4(
+    NameExpr(x [__main__.x])
+    Pattern(
+      ValuePattern:5(
+        MemberExpr:5(
+          NameExpr(_a)
+          b [_a.b])))
+    Body(
+      PassStmt:6())))

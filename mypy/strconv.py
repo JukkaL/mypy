@@ -4,10 +4,14 @@ import re
 import os
 
 from typing import Any, List, Tuple, Optional, Union, Sequence
+from typing_extensions import TYPE_CHECKING
 
 from mypy.util import short_type, IdMapper
 import mypy.nodes
 from mypy.visitor import NodeVisitor
+
+if TYPE_CHECKING:
+    import mypy.patterns
 
 
 class StrConv(NodeVisitor[str]):
@@ -311,6 +315,15 @@ class StrConv(NodeVisitor[str]):
     def visit_exec_stmt(self, o: 'mypy.nodes.ExecStmt') -> str:
         return self.dump([o.expr, o.globals, o.locals], o)
 
+    def visit_match_stmt(self, o: 'mypy.nodes.MatchStmt') -> str:
+        a = [o.subject]  # type: List[Any]
+        for i in range(len(o.patterns)):
+            a.append(('Pattern', [o.patterns[i]]))
+            if o.guards[i] is not None:
+                a.append(('Guard', [o.guards[i]]))
+            a.append(('Body', o.bodies[i].body))
+        return self.dump(a, o)
+
     # Expressions
 
     # Simple expressions
@@ -534,6 +547,42 @@ class StrConv(NodeVisitor[str]):
 
     def visit_temp_node(self, o: 'mypy.nodes.TempNode') -> str:
         return self.dump([o.type], o)
+
+    def visit_as_pattern(self, o: 'mypy.patterns.AsPattern') -> str:
+        return self.dump([o.pattern, o.name], o)
+
+    def visit_or_pattern(self, o: 'mypy.patterns.OrPattern') -> str:
+        return self.dump(o.patterns, o)
+
+    def visit_value_pattern(self, o: 'mypy.patterns.ValuePattern') -> str:
+        return self.dump([o.expr], o)
+
+    def visit_singleton_pattern(self, o: 'mypy.patterns.SingletonPattern') -> str:
+        return self.dump([o.value], o)
+
+    def visit_sequence_pattern(self, o: 'mypy.patterns.SequencePattern') -> str:
+        return self.dump(o.patterns, o)
+
+    def visit_starred_pattern(self, o: 'mypy.patterns.StarredPattern') -> str:
+        return self.dump([o.capture], o)
+
+    def visit_mapping_pattern(self, o: 'mypy.patterns.MappingPattern') -> str:
+        a = []  # type: List[Any]
+        for i in range(len(o.keys)):
+            a.append(('Key', [o.keys[i]]))
+            a.append(('Value', [o.values[i]]))
+        if o.rest is not None:
+            a.append(('Rest', [o.rest]))
+        return self.dump(a, o)
+
+    def visit_class_pattern(self, o: 'mypy.patterns.ClassPattern') -> str:
+        a = [o.class_ref]  # type: List[Any]
+        if len(o.positionals) > 0:
+            a.append(('Positionals', o.positionals))
+        for i in range(len(o.keyword_keys)):
+            a.append(('Keyword', [o.keyword_keys[i], o.keyword_values[i]]))
+
+        return self.dump(a, o)
 
 
 def dump_tagged(nodes: Sequence[object], tag: Optional[str], str_conv: 'StrConv') -> str:

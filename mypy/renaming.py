@@ -3,9 +3,10 @@ from typing_extensions import Final
 
 from mypy.nodes import (
     Block, AssignmentStmt, NameExpr, MypyFile, FuncDef, Lvalue, ListExpr, TupleExpr,
-    WhileStmt, ForStmt, BreakStmt, ContinueStmt, TryStmt, WithStmt, StarExpr, ImportFrom,
-    MemberExpr, IndexExpr, Import, ClassDef
+    WhileStmt, ForStmt, BreakStmt, ContinueStmt, TryStmt, WithStmt, MatchStmt, StarExpr,
+    ImportFrom, MemberExpr, IndexExpr, Import, ClassDef
 )
+from mypy.patterns import AsPattern
 from mypy.traverser import TraverserVisitor
 
 # Scope kinds
@@ -172,6 +173,22 @@ class VariableRenameVisitor(TraverserVisitor):
         s.rvalue.accept(self)
         for lvalue in s.lvalues:
             self.analyze_lvalue(lvalue)
+
+    def visit_match_stmt(self, s: MatchStmt) -> None:
+        for i in range(len(s.patterns)):
+            self.enter_block()
+            s.patterns[i].accept(self)
+            guard = s.guards[i]
+            if guard is not None:
+                guard.accept(self)
+            # We already entered a block, so visit this block's statements directly
+            for stmt in s.bodies[i].body:
+                stmt.accept(self)
+            self.leave_block()
+
+    def visit_capture_pattern(self, p: AsPattern) -> None:
+        if p.name is not None:
+            self.analyze_lvalue(p.name)
 
     def analyze_lvalue(self, lvalue: Lvalue, is_nested: bool = False) -> None:
         """Process assignment; in particular, keep track of (re)defined names.

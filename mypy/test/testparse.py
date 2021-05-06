@@ -18,6 +18,9 @@ class ParserSuite(DataSuite):
     files = ['parse.test',
              'parse-python2.test']
 
+    if sys.version_info >= (3, 10):
+        files.append('parse-python310.test')
+
     def run_case(self, testcase: DataDrivenTestCase) -> None:
         test_parser(testcase)
 
@@ -31,6 +34,8 @@ def test_parser(testcase: DataDrivenTestCase) -> None:
 
     if testcase.file.endswith('python2.test'):
         options.python_version = defaults.PYTHON2_VERSION
+    elif testcase.file.endswith('python310.test'):
+        options.python_version = (3, 10)
     else:
         options.python_version = defaults.PYTHON3_VERSION
 

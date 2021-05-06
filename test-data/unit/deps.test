@@ -1436,6 +1436,7 @@ class B(A):
 <m.A.(abstract)> -> <m.B.__init__>, m
 <m.A._DT> -> <m.B._DT>
 <m.A.__init__> -> <m.B.__init__>, m.B.__init__
+<m.A.__match_args__> -> <m.B.__match_args__>
 <m.A.__new__> -> <m.B.__new__>
 <m.A.x> -> <m.B.x>
 <m.A.y> -> <m.B.y>

@@ -3,13 +3,17 @@
 from typing import List
 from mypy_extensions import mypyc_attr
 
+from mypy.patterns import (
+    AsPattern, OrPattern, ValuePattern, SequencePattern, StarredPattern, MappingPattern,
+    ClassPattern
+)
 from mypy.visitor import NodeVisitor
 from mypy.nodes import (
     Block, MypyFile, FuncBase, FuncItem, CallExpr, ClassDef, Decorator, FuncDef,
     ExpressionStmt, AssignmentStmt, OperatorAssignmentStmt, WhileStmt,
     ForStmt, ReturnStmt, AssertStmt, DelStmt, IfStmt, RaiseStmt,
-    TryStmt, WithStmt, NameExpr, MemberExpr, OpExpr, SliceExpr, CastExpr, RevealExpr,
-    UnaryExpr, ListExpr, TupleExpr, DictExpr, SetExpr, IndexExpr, AssignmentExpr,
+    TryStmt, WithStmt, MatchStmt, NameExpr, MemberExpr, OpExpr, SliceExpr, CastExpr,
+    RevealExpr, UnaryExpr, ListExpr, TupleExpr, DictExpr, SetExpr, IndexExpr, AssignmentExpr,
     GeneratorExpr, ListComprehension, SetComprehension, DictionaryComprehension,
     ConditionalExpr, TypeApplication, ExecStmt, Import, ImportFrom,
     LambdaExpr, ComparisonExpr, OverloadedFuncDef, YieldFromExpr,
@@ -156,6 +160,15 @@ class TraverserVisitor(NodeVisitor[None]):
                 targ.accept(self)
         o.body.accept(self)
 
+    def visit_match_stmt(self, o: MatchStmt) -> None:
+        o.subject.accept(self)
+        for i in range(len(o.patterns)):
+            o.patterns[i].accept(self)
+            guard = o.guards[i]
+            if guard is not None:
+                guard.accept(self)
+            o.bodies[i].accept(self)
+
     def visit_member_expr(self, o: MemberExpr) -> None:
         o.expr.accept(self)
 
@@ -278,6 +291,42 @@ class TraverserVisitor(NodeVisitor[None]):
 
     def visit_super_expr(self, o: SuperExpr) -> None:
         o.call.accept(self)
+
+    def visit_as_pattern(self, o: AsPattern) -> None:
+        if o.pattern is not None:
+            o.pattern.accept(self)
+        if o.name is not None:
+            o.name.accept(self)
+
+    def visit_or_pattern(self, o: OrPattern) -> None:
+        for p in o.patterns:
+            p.accept(self)
+
+    def visit_value_pattern(self, o: ValuePattern) -> None:
+        o.expr.accept(self)
+
+    def visit_sequence_pattern(self, o: SequencePattern) -> None:
+        for p in o.patterns:
+            p.accept(self)
+
+    def visit_starred_patten(self, o: StarredPattern) -> None:
+        if o.capture is not None:
+            o.capture.accept(self)
+
+    def visit_mapping_pattern(self, o: MappingPattern) -> None:
+        for key in o.keys:
+            key.accept(self)
+        for value in o.values:
+            value.accept(self)
+        if o.rest is not None:
+            o.rest.accept(self)
+
+    def visit_class_pattern(self, o: ClassPattern) -> None:
+        o.class_ref.accept(self)
+        for p in o.positionals:
+            p.accept(self)
+        for v in o.keyword_values:
+            v.accept(self)
 
     def visit_import(self, o: Import) -> None:
         for a in o.assignments:

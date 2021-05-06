@@ -45,6 +45,7 @@ INCOMPATIBLE_TYPES_IN_YIELD = 'Incompatible types in "yield"'  # type: Final
 INCOMPATIBLE_TYPES_IN_YIELD_FROM = 'Incompatible types in "yield from"'  # type: Final
 INCOMPATIBLE_TYPES_IN_STR_INTERPOLATION = \
     'Incompatible types in string interpolation'  # type: Final
+INCOMPATIBLE_TYPES_IN_CAPTURE = 'Incompatible types in capture pattern'  # type: Final
 MUST_HAVE_NONE_RETURN_TYPE = 'The return type of "{}" must be None'  # type: Final
 INVALID_TUPLE_INDEX_TYPE = 'Invalid tuple index type'  # type: Final
 TUPLE_INDEX_OUT_OF_RANGE = 'Tuple index out of range'  # type: Final

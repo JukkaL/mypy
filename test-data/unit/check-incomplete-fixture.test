@@ -58,25 +58,6 @@ main:1: error: Name "isinstance" is not defined
 main:1: note: Maybe your test fixture does not define "builtins.isinstance"?
 main:1: note: Consider adding [builtins fixtures/isinstancelist.pyi] to your test description
 
-[case testTupleMissingFromStubs1]
-tuple()
-[out]
-main:1: error: Name "tuple" is not defined
-main:1: note: Maybe your test fixture does not define "builtins.tuple"?
-main:1: note: Consider adding [builtins fixtures/tuple.pyi] to your test description
-main:1: note: Did you forget to import it from "typing"? (Suggestion: "from typing import Tuple")
-
-[case testTupleMissingFromStubs2]
-tuple()
-from typing import Tuple
-x: Tuple[int, str]
-[out]
-main:1: error: Name "tuple" is not defined
-main:1: note: Maybe your test fixture does not define "builtins.tuple"?
-main:1: note: Consider adding [builtins fixtures/tuple.pyi] to your test description
-main:1: note: Did you forget to import it from "typing"? (Suggestion: "from typing import Tuple")
-main:3: error: Name "tuple" is not defined
-
 [case testClassmethodMissingFromStubs]
 class A:
     @classmethod

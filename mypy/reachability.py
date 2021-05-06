@@ -4,11 +4,12 @@ from typing import Tuple, TypeVar, Union, Optional
 from typing_extensions import Final
 
 from mypy.nodes import (
-    Expression, IfStmt, Block, AssertStmt, NameExpr, UnaryExpr, MemberExpr, OpExpr, ComparisonExpr,
-    StrExpr, UnicodeExpr, CallExpr, IntExpr, TupleExpr, IndexExpr, SliceExpr, Import, ImportFrom,
-    ImportAll, LITERAL_YES
+    Expression, IfStmt, Block, AssertStmt, MatchStmt, NameExpr, UnaryExpr, MemberExpr, OpExpr,
+    ComparisonExpr, StrExpr, UnicodeExpr, CallExpr, IntExpr, TupleExpr, IndexExpr, SliceExpr,
+    Import, ImportFrom, ImportAll, LITERAL_YES
 )
 from mypy.options import Options
+from mypy.patterns import Pattern, AsPattern, OrPattern
 from mypy.traverser import TraverserVisitor
 from mypy.literals import literal
 
@@ -60,6 +61,30 @@ def infer_reachability_of_if_statement(s: IfStmt, options: Options) -> None:
                 s.else_body = Block([])
             mark_block_unreachable(s.else_body)
             break
+
+
+def infer_reachability_of_match_statement(s: MatchStmt, options: Options) -> None:
+    for i, guard in enumerate(s.guards):
+        pattern_value = infer_pattern_value(s.patterns[i])
+
+        if guard is not None:
+            guard_value = infer_condition_value(guard, options)
+        else:
+            guard_value = ALWAYS_TRUE
+
+        if pattern_value in (ALWAYS_FALSE, MYPY_FALSE) \
+                or guard_value in (ALWAYS_FALSE, MYPY_FALSE):
+            # The case is considered always false, so we skip the case body.
+            mark_block_unreachable(s.bodies[i])
+        elif pattern_value in (ALWAYS_FALSE, MYPY_TRUE) \
+                and guard_value in (ALWAYS_TRUE, MYPY_TRUE):
+            for body in s.bodies[i + 1:]:
+                mark_block_unreachable(body)
+
+        if guard_value == MYPY_TRUE:
+            # This condition is false at runtime; this will affect
+            # import priorities.
+            mark_block_mypy_only(s.bodies[i])
 
 
 def assert_will_always_fail(s: AssertStmt, options: Options) -> bool:
@@ -115,6 +140,16 @@ def infer_condition_value(expr: Expression, options: Options) -> int:
     if negated:
         result = inverted_truth_mapping[result]
     return result
+
+
+def infer_pattern_value(pattern: Pattern) -> int:
+    if isinstance(pattern, AsPattern) and pattern.pattern is None:
+        return ALWAYS_TRUE
+    elif isinstance(pattern, OrPattern) and \
+            any(infer_pattern_value(p) == ALWAYS_TRUE for p in pattern.patterns):
+        return ALWAYS_TRUE
+    else:
+        return TRUTH_VALUE_UNKNOWN
 
 
 def consider_sys_version_info(expr: Expression, pyversion: Tuple[int, ...]) -> int:

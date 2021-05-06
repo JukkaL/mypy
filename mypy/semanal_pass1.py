@@ -2,11 +2,14 @@
 
 from mypy.nodes import (
     MypyFile, AssertStmt, IfStmt, Block, AssignmentStmt, ExpressionStmt, ReturnStmt, ForStmt,
-    Import, ImportAll, ImportFrom, ClassDef, FuncDef
+    MatchStmt, Import, ImportAll, ImportFrom, ClassDef, FuncDef
 )
 from mypy.traverser import TraverserVisitor
 from mypy.options import Options
-from mypy.reachability import infer_reachability_of_if_statement, assert_will_always_fail
+from mypy.reachability import (
+    infer_reachability_of_if_statement, assert_will_always_fail,
+    infer_reachability_of_match_statement
+)
 
 
 class SemanticAnalyzerPreAnalysis(TraverserVisitor):
@@ -101,6 +104,14 @@ class SemanticAnalyzerPreAnalysis(TraverserVisitor):
         if b.is_unreachable:
             return
         super().visit_block(b)
+
+    def visit_match_stmt(self, s: MatchStmt) -> None:
+        infer_reachability_of_match_statement(s, self.options)
+        for guard in s.guards:
+            if guard is not None:
+                guard.accept(self)
+        for body in s.bodies:
+            body.accept(self)
 
     # The remaining methods are an optimization: don't visit nested expressions
     # of common statements, since they can have no effect.

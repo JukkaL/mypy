@@ -1,0 +1,25 @@
+[case testMatchUndefinedSubject]
+import typing
+match x:
+    case _:
+        pass
+[out]
+main:2: error: Name "x" is not defined
+
+[case testNoneBindingWildcardPattern]
+import typing
+x = 1
+match x:
+    case _:
+        _
+[out]
+main:5: error: Name "_" is not defined
+
+[case testNoneBindingStarredWildcardPattern]
+import typing
+x = 1
+match x:
+    case [*_]:
+        _
+[out]
+main:5: error: Name "_" is not defined
