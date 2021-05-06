@@ -402,6 +402,22 @@ style anyway).  We can write the above code without a cast by using
            g(o + 1)        # Okay; type of o is inferred as int here
            ...
 
+Note that Mypy cannot always narrow a type based on ``isinstance()``
+used within a ternary/conditional expression, e.g.:
+
+.. code-block:: python
+
+	def f(x: AnyStr) -> bytes:
+		r = x.encode('ascii') if isinstance(x, str) else x
+		# results in 'error: "bytes" has no attribute "encode"; maybe "decode"?'
+
+		if isinstance(x, str):
+			r = x.encode('ascii')  # whereas Mypy can narrow within an if statement
+		else:
+			r = x
+		return r
+		...
+
 Type inference in mypy is designed to work well in common cases, to be
 predictable and to let the type checker give useful error
 messages. More powerful type inference strategies often have complex
