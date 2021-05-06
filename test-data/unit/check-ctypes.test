@@ -182,6 +182,6 @@ import ctypes
 intarr4 = ctypes.c_int * 4
 
 x = {"a": 1, "b": 2}
-intarr4(**x)   # E: Too many arguments for "Array"
+intarr4(**x)
 
 [builtins fixtures/floatdict.pyi]

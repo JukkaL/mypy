@@ -1584,8 +1584,8 @@ d = None # type: Dict[Any, Any]
 
 f1(**td, **d)
 f1(**d, **td)
-f2(**td, **d) # E: Too many arguments for "f2"
-f2(**d, **td) # E: Too many arguments for "f2"
+f2(**td, **d)
+f2(**d, **td)
 [builtins fixtures/dict.pyi]
 
 [case testTypedDictNonMappingMethods]

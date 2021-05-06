@@ -299,8 +299,9 @@ d = None # type: Dict[str, A]
 f(**d)
 f(x=A(), **d)
 d2 = None # type: Dict[str, B]
-f(**d2)        # E: Argument 1 to "f" has incompatible type "**Dict[str, B]"; expected "A"
-f(x=A(), **d2) # E: Argument 2 to "f" has incompatible type "**Dict[str, B]"; expected "A"
+f(**d2)         # E: Argument 1 to "f" has incompatible type "**Dict[str, B]"; expected "A"
+f(x=A(), **d2)  # E: Argument 2 to "f" has incompatible type "**Dict[str, B]"; expected "A"
+f(**{'x': B()}) # E: Argument 1 to "f" has incompatible type "**Dict[str, B]"; expected "A"
 class A: pass
 class B: pass
 [builtins fixtures/dict.pyi]
@@ -396,7 +397,7 @@ class A: pass
 from typing import Any, Dict
 def f(*args: 'A') -> None: pass
 d = None # type: Dict[Any, Any]
-f(**d) # E: Too many arguments for "f"
+f(**d)
 class A: pass
 [builtins fixtures/dict.pyi]
 
@@ -490,4 +491,12 @@ g(**d)  # E: Argument 1 to "g" has incompatible type "**Dict[str, object]"; expe
 m = {} # type: Mapping[str, object]
 f(**m)
 g(**m)  # TODO: Should be an error
+[builtins fixtures/dict.pyi]
+
+[case testPassingEmptyDictWithStars]
+def f(): pass
+def g(x=1): pass
+
+f(**{})
+g(**{})
 [builtins fixtures/dict.pyi]
