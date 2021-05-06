@@ -1,5 +1,4 @@
 """Utilities related to determining the reachability of code (in semantic analysis)."""
-
 from typing import Tuple, TypeVar, Union, Optional
 from typing_extensions import Final
 
@@ -100,7 +99,7 @@ def infer_condition_value(expr: Expression, options: Options) -> int:
     else:
         result = consider_sys_version_info(expr, pyversion)
         if result == TRUTH_VALUE_UNKNOWN:
-            result = consider_sys_platform(expr, options.platform)
+            result = consider_sys_platform(expr, options.platform,options.platform_system)
     if result == TRUTH_VALUE_UNKNOWN:
         if name == 'PY2':
             result = ALWAYS_TRUE if pyversion[0] == 2 else ALWAYS_FALSE
@@ -161,8 +160,8 @@ def consider_sys_version_info(expr: Expression, pyversion: Tuple[int, ...]) -> i
     return TRUTH_VALUE_UNKNOWN
 
 
-def consider_sys_platform(expr: Expression, platform: str) -> int:
-    """Consider whether expr is a comparison involving sys.platform.
+def consider_sys_platform(expr: Expression, platform: str, platform_system: str) -> int:
+    """Consider whether expr is a comparison involving sys.platform and platform.system()
 
     Return ALWAYS_TRUE, ALWAYS_FALSE, or TRUTH_VALUE_UNKNOWN.
     """
@@ -177,9 +176,14 @@ def consider_sys_platform(expr: Expression, platform: str) -> int:
         op = expr.operators[0]
         if op not in ('==', '!='):
             return TRUTH_VALUE_UNKNOWN
-        if not is_sys_attr(expr.operands[0], 'platform'):
-            return TRUTH_VALUE_UNKNOWN
-        right = expr.operands[1]
+        # check if either platform or platform_system is being used
+        if platform_system:
+            if not is_platform_attr(expr.operands[0], 'platform_system'):
+                return TRUTH_VALUE_UNKNOWN
+        elif platform:
+            if not is_sys_attr(expr.operands[0], 'platform'):
+                return TRUTH_VALUE_UNKNOWN
+            right = expr.operands[1]
         if not isinstance(right, (StrExpr, UnicodeExpr)):
             return TRUTH_VALUE_UNKNOWN
         return fixed_comparison(platform, op, right.value)
@@ -268,6 +272,16 @@ def is_sys_attr(expr: Expression, name: str) -> bool:
         if isinstance(expr.expr, NameExpr) and expr.expr.name == 'sys':
             # TODO: Guard against a local named sys, etc.
             # (Though later passes will still do most checking.)
+            return True
+    return False
+
+
+def is_platform_attr(expr: Expression, name: str) -> bool:
+    # Platform lib calls methods, it differs from sys lib
+    # sys.platform is of str class and platform.system is of
+    # function class
+    if isinstance(expr, MemberExpr) and expr.name == name:
+        if isinstance(expr.expr, CallExpr) and expr.expr.name == 'platform':
             return True
     return False
 

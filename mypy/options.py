@@ -2,6 +2,7 @@ from mypy.ordered_dict import OrderedDict
 import re
 import pprint
 import sys
+import platform
 
 from typing_extensions import Final, TYPE_CHECKING
 from typing import Dict, List, Mapping, Optional, Pattern, Set, Tuple, Callable, Any
@@ -74,6 +75,7 @@ class Options:
         # then mypy does not search for PEP 561 packages.
         self.python_executable = sys.executable  # type: Optional[str]
         self.platform = sys.platform
+        self.platform_system = platform.system()
         self.custom_typing_module = None  # type: Optional[str]
         self.custom_typeshed_dir = None  # type: Optional[str]
         self.mypy_path = []  # type: List[str]
