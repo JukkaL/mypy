@@ -485,7 +485,7 @@ a double underscore prefix is used. For example:
 
    T = TypeVar('T')
 
-   class Copy(Protocol):
+   class Copy(Protocol[T]):
        def __call__(self, __origin: T) -> T: ...
 
    copy_a: Callable[[T], T]
