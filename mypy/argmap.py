@@ -3,7 +3,8 @@
 from typing import List, Optional, Sequence, Callable, Set
 
 from mypy.types import (
-    Type, Instance, TupleType, AnyType, TypeOfAny, TypedDictType, get_proper_type
+    Type, Instance, TupleType, AnyType, TypeOfAny, TypedDictType, get_proper_type,
+    TypeVarType,
 )
 from mypy import nodes
 
@@ -12,8 +13,8 @@ def map_actuals_to_formals(actual_kinds: List[int],
                            actual_names: Optional[Sequence[Optional[str]]],
                            formal_kinds: List[int],
                            formal_names: Sequence[Optional[str]],
-                           actual_arg_type: Callable[[int],
-                                                     Type]) -> List[List[int]]:
+                           actual_arg_type: Callable[[int], Type],
+                           formal_types: List[Type]) -> List[List[int]]:
     """Calculate mapping between actual (caller) args and formals.
 
     The result contains a list of caller argument indexes mapping to each
@@ -93,24 +94,49 @@ def map_actuals_to_formals(actual_kinds: List[int],
                                  and formal_kinds[fi] != nodes.ARG_STAR)
                              or formal_kinds[fi] == nodes.ARG_STAR2]
         for ai in ambiguous_actual_kwargs:
-            for fi in unmatched_formals:
+            for fi in map_kwargs_to_formals(get_proper_type(actual_arg_type(ai)),
+                                            actual_kinds[ai], unmatched_formals,
+                                            formal_types, formal_names, formal_kinds):
                 formal_to_actual[fi].append(ai)
-
     return formal_to_actual
+
+
+def map_kwargs_to_formals(actual_type: Type, actual_kind: int,
+                          formals: List[int],
+                          formal_types: List[Type],
+                          formal_names: Sequence[Optional[str]],
+                          formal_kinds: List[int]) -> List[int]:
+    """Generate the mapping between the actual **kwargs and formal parameters. Any given **kwarg
+    will only map to a parameter which it is type compatible with.
+    """
+    from mypy.subtypes import is_subtype
+    mapped_formals = []  # type: List[int]
+    for fi in formals:
+        if formal_kinds[fi] == nodes.ARG_STAR:
+            continue
+        mapper = ArgTypeExpander()
+        expanded_actual_type = mapper.expand_actual_type(actual_type, actual_kind,
+                                                         formal_names[fi],
+                                                         formal_kinds[fi])
+        formal_type = formal_types[fi]
+        if is_subtype(expanded_actual_type, formal_type) or isinstance(formal_type, TypeVarType):
+            mapped_formals.append(fi)
+    return mapped_formals
 
 
 def map_formals_to_actuals(actual_kinds: List[int],
                            actual_names: Optional[Sequence[Optional[str]]],
                            formal_kinds: List[int],
                            formal_names: List[Optional[str]],
-                           actual_arg_type: Callable[[int],
-                                                     Type]) -> List[List[int]]:
+                           actual_arg_type: Callable[[int], Type],
+                           formal_types: List[Type]) -> List[List[int]]:
     """Calculate the reverse mapping of map_actuals_to_formals."""
     formal_to_actual = map_actuals_to_formals(actual_kinds,
                                               actual_names,
                                               formal_kinds,
                                               formal_names,
-                                              actual_arg_type)
+                                              actual_arg_type,
+                                              formal_types)
     # Now reverse the mapping.
     actual_to_formal = [[] for _ in actual_kinds]  # type: List[List[int]]
     for formal, actuals in enumerate(formal_to_actual):

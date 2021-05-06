@@ -158,7 +158,8 @@ class ArgUseFinder(TraverserVisitor):
 
         formal_to_actual = map_actuals_to_formals(
             o.arg_kinds, o.arg_names, typ.arg_kinds, typ.arg_names,
-            lambda n: AnyType(TypeOfAny.special_form))
+            lambda n: AnyType(TypeOfAny.special_form),
+            typ.arg_types)
 
         for i, args in enumerate(formal_to_actual):
             for arg_idx in args:

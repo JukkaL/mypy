@@ -181,7 +181,8 @@ class MapActualsToFormalsSuite(Suite):
             caller_names,
             callee_kinds,
             callee_names,
-            lambda i: AnyType(TypeOfAny.special_form))
+            lambda i: AnyType(TypeOfAny.special_form),
+            [AnyType(TypeOfAny.special_form)] * len(callee_kinds))
         assert_equal(result, expected)
 
     def assert_vararg_map(self,
@@ -195,7 +196,8 @@ class MapActualsToFormalsSuite(Suite):
             [],
             callee_kinds,
             [],
-            lambda i: vararg_type)
+            lambda i: vararg_type,
+            [AnyType(TypeOfAny.special_form)] * len(callee_kinds))
         assert_equal(result, expected)
 
 

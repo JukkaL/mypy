@@ -15,7 +15,7 @@ from typing import (
 from typing_extensions import Final
 
 from mypy.nodes import ARG_POS, ARG_NAMED, ARG_STAR, ARG_STAR2, op_methods
-from mypy.types import AnyType, TypeOfAny
+from mypy.types import AnyType, TypeOfAny, Type
 from mypy.checkexpr import map_actuals_to_formals
 
 from mypyc.ir.ops import (
@@ -446,11 +446,13 @@ class LowLevelIRBuilder:
 
         sig_arg_kinds = [arg.kind for arg in sig.args]
         sig_arg_names = [arg.name for arg in sig.args]
+        sig_arg_types = [AnyType(TypeOfAny.special_form)] * len(sig_arg_kinds)  # type: List[Type]
         formal_to_actual = map_actuals_to_formals(arg_kinds,
                                                   arg_names,
                                                   sig_arg_kinds,
                                                   sig_arg_names,
-                                                  lambda n: AnyType(TypeOfAny.special_form))
+                                                  lambda n: AnyType(TypeOfAny.special_form),
+                                                  sig_arg_types)
 
         # Flatten out the arguments, loading error values for default
         # arguments, constructing tuples/dicts for star args, and

@@ -50,7 +50,9 @@ from mypy.subtypes import is_subtype, is_proper_subtype, is_equivalent, non_meth
 from mypy import applytype
 from mypy import erasetype
 from mypy.checkmember import analyze_member_access, type_object_type
-from mypy.argmap import ArgTypeExpander, map_actuals_to_formals, map_formals_to_actuals
+from mypy.argmap import (
+    ArgTypeExpander, map_actuals_to_formals, map_formals_to_actuals, map_kwargs_to_formals
+)
 from mypy.checkstrformat import StringFormatterChecker
 from mypy.expandtype import expand_type, expand_type_by_instance, freshen_function_type_vars
 from mypy.util import split_module_names
@@ -310,8 +312,8 @@ class ExpressionChecker(ExpressionVisitor[Type]):
             formal_to_actual = map_actuals_to_formals(
                 e.arg_kinds, e.arg_names,
                 e.callee.arg_kinds, e.callee.arg_names,
-                lambda i: self.accept(e.args[i]))
-
+                lambda i: self.accept(e.args[i]),
+                [AnyType(TypeOfAny.special_form)] * len(e.callee.arg_names))
             arg_types = [join.join_type_list([self.accept(e.args[j]) for j in formal_to_actual[i]])
                          for i in range(len(e.callee.arg_kinds))]
             type_context = CallableType(arg_types, e.callee.arg_kinds, e.callee.arg_names,
@@ -754,7 +756,8 @@ class ExpressionChecker(ExpressionVisitor[Type]):
             formal_to_actual = map_actuals_to_formals(
                 arg_kinds, arg_names,
                 callee.arg_kinds, callee.arg_names,
-                lambda i: self.accept(args[i]))
+                lambda i: self.accept(args[i]),
+                callee.arg_types)
             formal_arg_exprs = [[] for _ in range(num_formals)]  # type: List[List[Expression]]
             for formal, actuals in enumerate(formal_to_actual):
                 for actual in actuals:
@@ -996,7 +999,8 @@ class ExpressionChecker(ExpressionVisitor[Type]):
         formal_to_actual = map_actuals_to_formals(
             arg_kinds, arg_names,
             callee.arg_kinds, callee.arg_names,
-            lambda i: self.accept(args[i]))
+            lambda i: self.accept(args[i]),
+            callee.arg_types)
 
         if callee.is_generic():
             callee = freshen_function_type_vars(callee)
@@ -1389,6 +1393,32 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                 ok = False
         return ok
 
+    def check_for_incompatible_kwargs(self,
+                                    callee: CallableType,
+                                    actual_types: List[Type],
+                                    actual_kinds: List[int],
+                                    context: Context,
+                                    messages: MessageBuilder,
+                                    formal_to_actual: List[List[int]]) -> None:
+        """Each **kwarg supplied to a callable should map to at least one formal
+        parameter.
+        """
+        ambiguous_kwargs = [(i, actualt, actualk)
+                            for i, (actualt, actualk) in enumerate(zip(actual_types, actual_kinds))
+                            if actualk == nodes.ARG_STAR2
+                            and not isinstance(get_proper_type(actualt), TypedDictType)]
+        for i, actualt, actualk in ambiguous_kwargs:
+            potential_formals = []  # type: List[int]
+            actual_formals = []  # type: List[int]
+            for fi in map_kwargs_to_formals(actualt, actualk, list(range(len(callee.arg_types))),
+                                            callee.arg_types, callee.arg_names, callee.arg_kinds):
+                potential_formals.append(fi)
+                if i in formal_to_actual[fi]:
+                    actual_formals.append(fi)
+            if not actual_formals:
+                messages.kwargs_has_no_compatible_parameter(callee, context, i, actualt,
+                                                            potential_formals)
+
     def check_for_extra_actual_arguments(self,
                                          callee: CallableType,
                                          actual_types: List[Type],
@@ -1463,6 +1493,8 @@ class ExpressionChecker(ExpressionVisitor[Type]):
         """
         messages = messages or self.msg
         check_arg = check_arg or self.check_arg
+        self.check_for_incompatible_kwargs(callee, arg_types, arg_kinds,
+                                           context, messages, formal_to_actual)
         # Keep track of consumed tuple *arg items.
         mapper = ArgTypeExpander()
         for i, actuals in enumerate(formal_to_actual):
@@ -1512,7 +1544,9 @@ class ExpressionChecker(ExpressionVisitor[Type]):
               isinstance(callee_type.item, Instance) and
               (callee_type.item.type.is_abstract or callee_type.item.type.is_protocol)):
             self.msg.concrete_only_call(callee_type, context)
-        elif not is_subtype(caller_type, callee_type):
+        elif not is_subtype(caller_type, callee_type) and (caller_kind != nodes.ARG_STAR2
+                                                           or isinstance(original_caller_type,
+                                                                         TypedDictType)):
             if self.chk.should_suppress_optional_error([caller_type, callee_type]):
                 return
             code = messages.incompatible_argument(n,
@@ -1668,7 +1702,8 @@ class ExpressionChecker(ExpressionVisitor[Type]):
         for typ in overload.items():
             formal_to_actual = map_actuals_to_formals(arg_kinds, arg_names,
                                                       typ.arg_kinds, typ.arg_names,
-                                                      lambda i: arg_types[i])
+                                                      lambda i: arg_types[i],
+                                                      typ.arg_types)
 
             if self.check_argument_count(typ, arg_types, arg_kinds, arg_names,
                                          formal_to_actual, None, None):
@@ -1970,7 +2005,8 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                                                   arg_names,
                                                   callee.arg_kinds,
                                                   callee.arg_names,
-                                                  lambda i: arg_types[i])
+                                                  lambda i: arg_types[i],
+                                                  callee.arg_types)
 
         if not self.check_argument_count(callee, arg_types, arg_kinds, arg_names,
                                          formal_to_actual, None, None):
@@ -4398,7 +4434,10 @@ def any_causes_overload_ambiguity(items: List[CallableType],
 
     actual_to_formal = [
         map_formals_to_actuals(
-            arg_kinds, arg_names, item.arg_kinds, item.arg_names, lambda i: arg_types[i])
+            arg_kinds, arg_names,
+            item.arg_kinds, item.arg_names,
+            lambda i: arg_types[i],
+            item.arg_types)
         for item in items
     ]
 

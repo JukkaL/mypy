@@ -633,6 +633,29 @@ class MessageBuilder:
         msg = 'Too many arguments' + for_function(callee)
         self.fail(msg, context, code=codes.CALL_ARG)
 
+    def kwargs_has_no_compatible_parameter(self, callee: CallableType, context: Context,
+                                           kwargs_index: int, kwargs_type: Type,
+                                           formals: List[int]) -> None:
+        callee_name = callable_name(callee)
+        kwargs_type_str = format_type(kwargs_type)
+        argument_number = kwargs_index + 1
+        if formals:
+            formal_names = ', '.join(('"' + name + '"')
+                                     if name
+                                     else 'parameter {}'.format(fi)
+                                     for fi, name in enumerate(callee.arg_names[fi]
+                                                               for fi in formals))
+            msg = ('Argument {} in call to {} with type {} cannot unpack into any expected '
+                   'parameters; {} in use'.
+                   format(argument_number, callee_name, kwargs_type_str, formal_names))
+        else:
+            msg = ('Argument {} in call to {} cannot unpack into any parameters; '
+                   'no parameter accepts type {}'.
+                   format(argument_number,
+                          callee_name,
+                          kwargs_type_str))
+        self.fail(msg, context, code=codes.CALL_ARG)
+
     def too_many_arguments_from_typed_dict(self,
                                            callee: CallableType,
                                            arg_type: TypedDictType,

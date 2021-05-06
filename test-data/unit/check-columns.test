@@ -72,7 +72,9 @@ def g(**x: int) -> None: pass
 a = ['']
 f(*a)  # E:4: Argument 1 to "f" has incompatible type "*List[str]"; expected "int"
 b = {'x': 'y'}
-g(**b) # E:5: Argument 1 to "g" has incompatible type "**Dict[str, str]"; expected "int"
+# TODO: "too many arguments" error will not appear after #9629 is merged
+g(**b) # E:1: Too many arguments for "g" \
+       # E:1: Argument 1 in call to "g" cannot unpack into any parameters; no parameter accepts type "Dict[str, str]"
 [builtins fixtures/dict.pyi]
 
 [case testColumnsMultipleStatementsPerLine]

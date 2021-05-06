@@ -2217,7 +2217,8 @@ kw2 = {'x': ''}
 d2 = dict(it, **kw2)
 d2() # E: "Dict[str, object]" not callable
 
-d3 = dict(it, **kw2) # type: Dict[str, int] # E: Argument 2 to "dict" has incompatible type "**Dict[str, str]"; expected "int"
+d3 = dict(it, **kw2) # type: Dict[str, int] \
+                     # E: Argument 2 in call to "dict" cannot unpack into any parameters; no parameter accepts type "Dict[str, str]"
 [builtins fixtures/dict.pyi]
 
 [case testDictFromIterableAndStarStarArgs2]

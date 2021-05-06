@@ -299,8 +299,11 @@ d = None # type: Dict[str, A]
 f(**d)
 f(x=A(), **d)
 d2 = None # type: Dict[str, B]
-f(**d2)        # E: Argument 1 to "f" has incompatible type "**Dict[str, B]"; expected "A"
-f(x=A(), **d2) # E: Argument 2 to "f" has incompatible type "**Dict[str, B]"; expected "A"
+# TODO: "too many arguments" errors will not appear after #9629 is merged
+f(**d2)        # E: Too many arguments for "f" \
+               # E: Argument 1 in call to "f" cannot unpack into any parameters; no parameter accepts type "Dict[str, B]"
+f(x=A(), **d2) # E: Too many arguments for "f" \
+               # E: Argument 2 in call to "f" cannot unpack into any parameters; no parameter accepts type "Dict[str, B]"
 class A: pass
 class B: pass
 [builtins fixtures/dict.pyi]
@@ -363,7 +366,7 @@ def f(a: 'A', b: 'B') -> None: pass
 d = None # type: Dict[str, Any]
 f(**d)
 d2 = None # type: Dict[str, A]
-f(**d2) # E: Argument 1 to "f" has incompatible type "**Dict[str, A]"; expected "B"
+f(**d2) # E: Too few arguments for "f"
 class A: pass
 class B: pass
 [builtins fixtures/dict.pyi]
@@ -396,7 +399,8 @@ class A: pass
 from typing import Any, Dict
 def f(*args: 'A') -> None: pass
 d = None # type: Dict[Any, Any]
-f(**d) # E: Too many arguments for "f"
+f(**d) # E: Too many arguments for "f" \
+       # E: Argument 1 in call to "f" cannot unpack into any parameters; no parameter accepts type "Dict[Any, Any]"
 class A: pass
 [builtins fixtures/dict.pyi]
 
@@ -440,7 +444,10 @@ f(**a) # okay
 
 b = {'': ''}
 f(b) # E: Argument 1 to "f" has incompatible type "Dict[str, str]"; expected "int"
-f(**b) # E: Argument 1 to "f" has incompatible type "**Dict[str, str]"; expected "int"
+# TODO: "too many arguments" error will not appear after #9629 is merged
+f(**b) # E: Too many arguments for "f" \
+       # E: Too few arguments for "f" \
+       # E: Argument 1 in call to "f" cannot unpack into any parameters; no parameter accepts type "Dict[str, str]"
 
 c = {0: 0}
 f(**c) # E: Keywords must be strings
@@ -449,6 +456,76 @@ f(**c) # E: Keywords must be strings
 [case testCallStar2WithStar]
 def f(**k): pass
 f(*(1, 2))  # E: Too many arguments for "f"
+[builtins fixtures/dict.pyi]
+
+[case testCallKwargsDifferentTypes]
+from typing import Dict
+class A: pass
+class B: pass
+class C: pass
+
+ad = None # type: Dict[str, A]
+bd = None # type: Dict[str, B]
+cd = None # type: Dict[str, C]
+
+# TODO: "too many arguments" errors will not appear after #9629 is merged
+
+def f1(a: A, b: B): pass
+f1(**ad, **bd)
+f1(**bd, **ad)
+f1(a=A(), **ad, **bd) # E: Too many arguments for "f1" \
+                      # E: Argument 2 in call to "f1" with type "Dict[str, A]" cannot unpack into any expected parameters; "a" in use
+f1(b=B(), **ad, **bd) # E: Too many arguments for "f1" \
+                      # E: Argument 3 in call to "f1" with type "Dict[str, B]" cannot unpack into any expected parameters; "b" in use
+f1(a=A(), b=B(), **ad, **bd) # E: Too many arguments for "f1" \
+                             # E: Argument 3 in call to "f1" with type "Dict[str, A]" cannot unpack into any expected parameters; "a" in use \
+                             # E: Argument 4 in call to "f1" with type "Dict[str, B]" cannot unpack into any expected parameters; "b" in use
+f1(**ad) # E: Too few arguments for "f1"
+f1(b=B(), **ad)
+f1(**bd) # E: Too few arguments for "f1"
+f1(A(), **bd)
+f1(**ad, **bd, **cd) # E: Too many arguments for "f1" \
+                     # E: Argument 3 in call to "f1" cannot unpack into any parameters; no parameter accepts type "Dict[str, C]"
+
+def f2(a: A = A(), b: B = B()): pass
+f2(**ad, **bd)
+f2(**bd, **ad)
+f2(a=A(), **ad, **bd) # E: Too many arguments for "f2" \
+                      # E: Argument 2 in call to "f2" with type "Dict[str, A]" cannot unpack into any expected parameters; "a" in use
+f2(b=B(), **ad, **bd) # E: Too many arguments for "f2" \
+                      # E: Argument 3 in call to "f2" with type "Dict[str, B]" cannot unpack into any expected parameters; "b" in use
+f2(a=A(), b=B(), **ad, **bd) # E: Too many arguments for "f2" \
+                             # E: Argument 3 in call to "f2" with type "Dict[str, A]" cannot unpack into any expected parameters; "a" in use \
+                             # E: Argument 4 in call to "f2" with type "Dict[str, B]" cannot unpack into any expected parameters; "b" in use
+f2(**ad)
+f2(A(), **ad) # E: Too many arguments for "f2" \
+              # E: Argument 2 in call to "f2" with type "Dict[str, A]" cannot unpack into any expected parameters; "a" in use
+f2(**bd)
+f2(b=B(), **bd) # E: Too many arguments for "f2" \
+                # E: Argument 2 in call to "f2" with type "Dict[str, B]" cannot unpack into any expected parameters; "b" in use
+f2(**ad, **bd, **cd)  # E: Too many arguments for "f2" \
+                      # E: Argument 3 in call to "f2" cannot unpack into any parameters; no parameter accepts type "Dict[str, C]"
+f2(**cd) # E: Too many arguments for "f2" \
+         # E: Argument 1 in call to "f2" cannot unpack into any parameters; no parameter accepts type "Dict[str, C]"
+
+def f3(a: A = A(), **bs: B): pass
+f3(**ad, **bd)
+f3(**bd, **ad)
+
+f3(a=A(), **ad, **bd) # E: Too many arguments for "f3" \
+                      # E: Argument 2 in call to "f3" with type "Dict[str, A]" cannot unpack into any expected parameters; "a" in use
+f3(b=B(), **ad, **bd)
+f3(a=A(), b=B(), **ad, **bd) # E: Too many arguments for "f3" \
+                             # E: Argument 3 in call to "f3" with type "Dict[str, A]" cannot unpack into any expected parameters; "a" in use
+f3(**ad)
+f3(A(), **ad) # E: Too many arguments for "f3" \
+              # E: Argument 2 in call to "f3" with type "Dict[str, A]" cannot unpack into any expected parameters; "a" in use
+f3(**bd)
+f3(b=B(), **bd)
+f3(**ad, **bd, **cd) # E: Too many arguments for "f3" \
+                     # E: Argument 3 in call to "f3" cannot unpack into any parameters; no parameter accepts type "Dict[str, C]"
+f3(**cd) # E: Too many arguments for "f3" \
+         # E: Argument 1 in call to "f3" cannot unpack into any parameters; no parameter accepts type "Dict[str, C]"
 [builtins fixtures/dict.pyi]
 
 [case testUnexpectedMethodKwargInNestedClass]
@@ -485,7 +562,7 @@ def g(arg: int = 0, **kwargs: object) -> None:
 
 d = {} # type: Dict[str, object]
 f(**d)
-g(**d)  # E: Argument 1 to "g" has incompatible type "**Dict[str, object]"; expected "int"
+g(**d)
 
 m = {} # type: Mapping[str, object]
 f(**m)

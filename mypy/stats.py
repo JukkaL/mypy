@@ -250,7 +250,8 @@ class StatisticsVisitor(TraverserVisitor):
             o.arg_names,
             callee.arg_kinds,
             callee.arg_names,
-            lambda n: typemap[o.args[n]])
+            lambda n: typemap[o.args[n]],
+            callee.arg_types)
         for formals in actual_to_formal:
             for n in formals:
                 formal = get_proper_type(callee.arg_types[n])
