@@ -1679,6 +1679,16 @@ def f(x: T) -> str:
 
 [builtins fixtures/tuple.pyi]
 
+[case testAssignMultipleTypeVars]
+from typing import Generic, TypeVar
+
+T = TypeVar("T", int, str)
+S = TypeVar("S", int, None)
+
+class A(Generic[T, S]):
+    def func(self, arg: S):
+        self.attr = arg
+
 
 -- Subtyping generic callables
 -- ---------------------------
