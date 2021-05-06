@@ -271,13 +271,28 @@ class TypeAliasType(Type):
 
 
 class TypeGuardType(Type):
-    """Only used by find_instance_check() etc."""
+    """Only used by find_isinstance_check() etc."""
     def __init__(self, type_guard: Type):
         super().__init__(line=type_guard.line, column=type_guard.column)
         self.type_guard = type_guard
 
     def __repr__(self) -> str:
         return "TypeGuard({})".format(self.type_guard)
+
+
+class RequiredType(Type):
+    """Required[T] or NotRequired[T]. Only usable at top-level of a TypedDict definition."""
+
+    def __init__(self, item: Type, *, required: bool) -> None:
+        super().__init__(line=item.line, column=item.column)
+        self.item = item
+        self.required = required
+
+    def __repr__(self) -> str:
+        if self.required:
+            return "Required[{}]".format(self.item)
+        else:
+            return "NotRequired[{}]".format(self.item)
 
 
 class ProperType(Type):

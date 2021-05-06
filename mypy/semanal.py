@@ -4878,6 +4878,7 @@ class SemanticAnalyzer(NodeVisitor[None],
                       allow_tuple_literal: bool = False,
                       allow_unbound_tvars: bool = False,
                       allow_placeholder: bool = False,
+                      allow_required: bool = False,
                       report_invalid_types: bool = True) -> TypeAnalyser:
         if tvar_scope is None:
             tvar_scope = self.tvar_scope
@@ -4890,7 +4891,8 @@ class SemanticAnalyzer(NodeVisitor[None],
                             allow_tuple_literal=allow_tuple_literal,
                             report_invalid_types=report_invalid_types,
                             allow_unnormalized=self.is_stub_file,
-                            allow_placeholder=allow_placeholder)
+                            allow_placeholder=allow_placeholder,
+                            allow_required=allow_required)
         tpan.in_dynamic_func = bool(self.function_stack and self.function_stack[-1].is_dynamic())
         tpan.global_scope = not self.type and not self.function_stack
         return tpan
@@ -4901,6 +4903,7 @@ class SemanticAnalyzer(NodeVisitor[None],
                   allow_tuple_literal: bool = False,
                   allow_unbound_tvars: bool = False,
                   allow_placeholder: bool = False,
+                  allow_required: bool = False,
                   report_invalid_types: bool = True,
                   third_pass: bool = False) -> Optional[Type]:
         """Semantically analyze a type.
@@ -4927,6 +4930,7 @@ class SemanticAnalyzer(NodeVisitor[None],
                                allow_unbound_tvars=allow_unbound_tvars,
                                allow_tuple_literal=allow_tuple_literal,
                                allow_placeholder=allow_placeholder,
+                               allow_required=allow_required,
                                report_invalid_types=report_invalid_types)
         tag = self.track_incomplete_refs()
         typ = typ.accept(a)

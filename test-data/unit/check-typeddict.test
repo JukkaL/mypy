@@ -2109,3 +2109,129 @@ from mypy_extensions import TypedDict
 Foo = TypedDict('Foo', {'camelCaseKey': str})
 value: Foo = {}  # E: Missing key "camelCaseKey" for TypedDict "Foo"
 [builtins fixtures/dict.pyi]
+
+
+-- Required[]
+
+[case testDoesRecognizeRequiredInTypedDictWithClass]
+from typing import TypedDict
+from typing import Required
+class Movie(TypedDict, total=False):
+    title: Required[str]
+    year: int
+m = Movie(title='The Matrix')
+m = Movie()  # E: Missing key "title" for TypedDict "Movie"
+[typing fixtures/typing-typeddict.pyi]
+
+[case testDoesRecognizeRequiredInTypedDictWithAssignment]
+from typing import TypedDict
+from typing import Required
+Movie = TypedDict('Movie', {
+    'title': Required[str],
+    'year': int,
+}, total=False)
+m = Movie(title='The Matrix')
+m = Movie()  # E: Missing key "title" for TypedDict "Movie"
+[typing fixtures/typing-typeddict.pyi]
+
+[case testDoesDisallowRequiredOutsideOfTypedDict]
+from typing import Required
+x: Required[int] = 42  # E: Required[] can be only used in a TypedDict definition
+[typing fixtures/typing-typeddict.pyi]
+
+[case testDoesOnlyAllowRequiredInsideTypedDictAtTopLevel]
+from typing import TypedDict
+from typing import Union
+from typing import Required
+Movie = TypedDict('Movie', {
+    'title': Union[
+        Required[str],  # E: Required[] can be only used in a TypedDict definition
+        bytes
+    ],
+    'year': int,
+}, total=False)
+[typing fixtures/typing-typeddict.pyi]
+
+[case testDoesDisallowRequiredInsideRequired]
+from typing import TypedDict
+from typing import Union
+from typing import Required
+Movie = TypedDict('Movie', {
+    'title': Required[Union[
+        Required[str],  # E: Required[] can be only used in a TypedDict definition
+        bytes
+    ]],
+    'year': int,
+}, total=False)
+[typing fixtures/typing-typeddict.pyi]
+
+[case testRequiredOnlyAllowsOneItem]
+from typing import TypedDict
+from typing import Required
+class Movie(TypedDict, total=False):
+    title: Required[str, bytes]  # E: Required[] must have exactly one type argument
+    year: int
+[typing fixtures/typing-typeddict.pyi]
+
+
+-- NotRequired[]
+
+[case testDoesRecognizeNotRequiredInTypedDictWithClass]
+from typing import TypedDict
+from typing import NotRequired
+class Movie(TypedDict):
+    title: str
+    year: NotRequired[int]
+m = Movie(title='The Matrix')
+m = Movie()  # E: Missing key "title" for TypedDict "Movie"
+[typing fixtures/typing-typeddict.pyi]
+
+[case testDoesRecognizeNotRequiredInTypedDictWithAssignment]
+from typing import TypedDict
+from typing import NotRequired
+Movie = TypedDict('Movie', {
+    'title': str,
+    'year': NotRequired[int],
+})
+m = Movie(title='The Matrix')
+m = Movie()  # E: Missing key "title" for TypedDict "Movie"
+[typing fixtures/typing-typeddict.pyi]
+
+[case testDoesDisallowNotRequiredOutsideOfTypedDict]
+from typing import NotRequired
+x: NotRequired[int] = 42  # E: NotRequired[] can be only used in a TypedDict definition
+[typing fixtures/typing-typeddict.pyi]
+
+[case testDoesOnlyAllowNotRequiredInsideTypedDictAtTopLevel]
+from typing import TypedDict
+from typing import Union
+from typing import NotRequired
+Movie = TypedDict('Movie', {
+    'title': Union[
+        NotRequired[str],  # E: NotRequired[] can be only used in a TypedDict definition
+        bytes
+    ],
+    'year': int,
+})
+[typing fixtures/typing-typeddict.pyi]
+
+[case testDoesDisallowNotRequiredInsideNotRequired]
+from typing import TypedDict
+from typing import Union
+from typing import NotRequired
+Movie = TypedDict('Movie', {
+    'title': NotRequired[Union[
+        NotRequired[str],  # E: NotRequired[] can be only used in a TypedDict definition
+        bytes
+    ]],
+    'year': int,
+})
+[typing fixtures/typing-typeddict.pyi]
+
+[case testNotRequiredOnlyAllowsOneItem]
+from typing import TypedDict
+from typing import NotRequired
+class Movie(TypedDict):
+    title: NotRequired[str, bytes]  # E: NotRequired[] must have exactly one type argument
+    year: int
+[typing fixtures/typing-typeddict.pyi]
