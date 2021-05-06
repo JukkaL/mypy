@@ -171,6 +171,10 @@ def test_module(module_name: str) -> Iterator[Error]:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             runtime = importlib.import_module(module_name)
+            # Also run the equivalent of `from module import *`
+            # This could have the additional effect of loading not-yet-loaded submodules
+            # mentioned in __all__
+            __import__(module_name, fromlist=["*"])
     except Exception as e:
         yield Error([module_name], "failed to import: {}".format(e), stub, MISSING)
         return
@@ -210,15 +214,15 @@ def verify_mypyfile(
     to_check = set(
         m
         for m, o in stub.names.items()
+        # TODO: change `o.module_public` to `not o.module_hidden`
         if o.module_public and (not m.startswith("_") or hasattr(runtime, m))
     )
     runtime_public_contents = [
         m
         for m in dir(runtime)
         if not m.startswith("_")
-        # Ensure that the object's module is `runtime`, e.g. so that we don't pick up reexported
-        # modules and infinitely recurse. Unfortunately, there's no way to detect an explicit
-        # reexport missing from the stubs (that isn't specified in __all__)
+        # Ensure that the object's module is `runtime`, since in the absence of __all__ we don't
+        # have a good way to detect re-exports at runtime.
         and getattr(getattr(runtime, m), "__module__", None) == runtime.__name__
     ]
     # Check all things declared in module's __all__, falling back to runtime_public_contents
@@ -226,8 +230,12 @@ def verify_mypyfile(
     to_check.difference_update({"__file__", "__doc__", "__name__", "__builtins__", "__package__"})
 
     for entry in sorted(to_check):
+        stub_entry = stub.names[entry].node if entry in stub.names else MISSING
+        if isinstance(stub_entry, nodes.MypyFile):
+            # Don't recursively check exported modules, since that leads to infinite recursion
+            continue
         yield from verify(
-            stub.names[entry].node if entry in stub.names else MISSING,
+            stub_entry,
             getattr(runtime, entry, MISSING),
             object_path + [entry],
         )
