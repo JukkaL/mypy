@@ -710,7 +710,9 @@ class ASTConverter:
                 arg_type = TypeConverter(self.errors, line=arg.lineno).visit(annotation)
             else:
                 arg_type = self.translate_type_comment(arg, type_comment)
-        return Argument(Var(arg.arg), arg_type, self.visit(default), kind)
+        argument = Argument(Var(arg.arg), arg_type, self.visit(default), kind)
+        argument.set_line(arg.lineno)
+        return argument
 
     def fail_arg(self, msg: str, arg: ast3.arg) -> None:
         self.fail(msg, arg.lineno, arg.col_offset)

@@ -640,8 +640,6 @@ class FuncItem(FuncBase):
                  column: Optional[int] = None,
                  end_line: Optional[int] = None) -> None:
         super().set_line(target, column, end_line)
-        for arg in self.arguments:
-            arg.set_line(self.line, self.column, self.end_line)
 
     def is_dynamic(self) -> bool:
         return self.type is None
