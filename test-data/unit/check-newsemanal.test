@@ -2090,6 +2090,24 @@ from enum import Enum
 A = Enum('A', ['x', 'y'])
 A = Enum('A', ['z', 't'])  # E: Name "A" already defined on line 3
 
+[case testNewAnalyzerEnumAcceptStringLiteral]
+from enum import Enum
+from typing_extensions import Literal
+
+x: Literal['ANT BEE CAT DOG'] = 'ANT BEE CAT DOG'
+Animal = Enum('Animal', x)
+
+[builtins fixtures/tuple.pyi]
+
+[case testNewAnalyzerEnumAcceptsFinalValue]
+from enum import Enum
+from typing_extensions import Final
+
+x: Final['str'] = 'ANT BEE CAT DOG'
+Animal = Enum('Animal', x)
+
+[builtins fixtures/tuple.pyi]
+
 [case testNewAnalyzerNewTypeRedefinition]
 from typing import NewType
 

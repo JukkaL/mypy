@@ -12,6 +12,7 @@ from mypy.nodes import (
 )
 from mypy.semanal_shared import SemanticAnalyzerInterface
 from mypy.options import Options
+from mypy.types import get_proper_type, LiteralType
 
 
 class EnumCallAnalyzer:
@@ -161,6 +162,25 @@ class EnumCallAnalyzer:
                         "%s() with dict literal requires string literals" % class_name, call)
                 items.append(key.value)
                 values.append(value)
+        elif isinstance(args[1], RefExpr) and isinstance(args[1].node, Var):
+            proper_type = get_proper_type(args[1].node.type)
+            if (
+                proper_type is not None
+                and isinstance(proper_type, LiteralType)
+                and isinstance(proper_type.value, str)
+            ):
+                fields = proper_type.value
+                for field in fields.replace(',', ' ').split():
+                    items.append(field)
+            elif args[1].node.is_final and isinstance(args[1].node.final_value, str):
+                fields = args[1].node.final_value
+                for field in fields.replace(',', ' ').split():
+                    items.append(field)
+            else:
+                return self.fail_enum_call_arg(
+                    "%s() expects a string, tuple, list or dict literal as the second argument" %
+                    class_name,
+                    call)
         else:
             # TODO: Allow dict(x=1, y=2) as a substitute for {'x': 1, 'y': 2}?
             return self.fail_enum_call_arg(
