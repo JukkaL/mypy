@@ -2214,13 +2214,28 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                 # will be reported for types incompatible with __contains__().
                 # See testCustomContainsCheckStrictEquality for an example.
                 cont_type = self.chk.analyze_container_item_type(right_type)
+                iter_type = right_type
+                changed_expr = right
+                proper_right_type = get_proper_type(right_type)
+                if (local_errors.is_errors() and
+                        isinstance(proper_right_type, UnionType)):
+                    typs = []  # type: List[Type]
+                    for item in proper_right_type.relevant_items():
+                        temp_errors = self.msg.copy()
+                        temp_errors.disable_count = 0
+                        self.check_method_call_by_name(
+                            '__contains__', item, [left], [ARG_POS], e, temp_errors)
+                        if temp_errors.is_errors():
+                            typs.append(item)
+                    iter_type = UnionType.make_union(typs)
+                    changed_expr = TempNode(iter_type)
                 if isinstance(right_type, PartialType):
                     # We don't really know if this is an error or not, so just shut up.
                     pass
                 elif (local_errors.is_errors() and
                     # is_valid_var_arg is True for any Iterable
-                        self.is_valid_var_arg(right_type)):
-                    _, itertype = self.chk.analyze_iterable_item_type(right)
+                        self.is_valid_var_arg(iter_type)):
+                    _, itertype = self.chk.analyze_iterable_item_type(changed_expr)
                     method_type = CallableType(
                         [left_type],
                         [nodes.ARG_POS],

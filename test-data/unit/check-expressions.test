@@ -406,6 +406,15 @@ class D(Iterable[A]):
     def __iter__(self) -> Iterator[A]: pass
 [builtins fixtures/bool.pyi]
 
+[case testInOperatorUnion]
+from typing import Iterable, Union, Container
+u: Union[Iterable[str], Container[str], Iterable[str]]
+'x' in u
+
+w: Union[Container[str], int]
+'x' in w   # E: Unsupported right operand type for in ("Union[Container[str], int]")
+[typing fixtures/typing-full.pyi]
+
 [case testNotInOperator]
 from typing import Iterator, Iterable, Any
 a, b, c, d, e = None, None, None, None, None # type: (A, B, bool, D, Any)
