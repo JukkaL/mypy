@@ -423,8 +423,7 @@ section of the command line docs.
     :type: boolean
     :default: False
 
-    Disallows defining functions without type annotations or with incomplete type
-    annotations.
+    Disallows defining functions without type annotations.
 
 .. confval:: disallow_incomplete_defs
 

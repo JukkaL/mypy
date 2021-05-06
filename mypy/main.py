@@ -542,8 +542,7 @@ def process_options(args: List[str],
                         " from functions with type annotations",
                         group=untyped_group)
     add_invertible_flag('--disallow-untyped-defs', default=False, strict_flag=True,
-                        help="Disallow defining functions without type annotations"
-                        " or with incomplete type annotations",
+                        help="Disallow defining functions without type annotations",
                         group=untyped_group)
     add_invertible_flag('--disallow-incomplete-defs', default=False, strict_flag=True,
                         help="Disallow defining functions with incomplete type annotations",
