@@ -181,6 +181,18 @@ imports.
     all modules. For more information on what the other options do,
     see :ref:`Following imports <follow-imports>`.
 
+.. option:: --follow-imports-for-stubs
+
+    This flag will cause mypy to respect the ``--follow-imports``
+    setting even for stub (``.pyi``) files.
+
+    Used in conjunction with ``--follow-imports=skip``, this can be used
+    to suppress the import of modules from ``typeshed``, replacing them
+    with ``Any``.
+
+    Used in conjunction with ``--follow-imports=error``, this can be used
+    to make any use of a ``typeshed`` module an error.
+
 .. option:: --python-executable EXECUTABLE
 
     This flag will have mypy collect type information from :pep:`561`
