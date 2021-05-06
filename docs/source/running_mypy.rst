@@ -475,7 +475,7 @@ This is computed from the following items:
 
 .. note::
 
-    You cannot point to a :pep:`561` package via the ``MYPYPATH``, it must be
+    You cannot point to a stub-only package via the ``MYPYPATH``, it must be
     installed (see :ref:`PEP 561 support <installed-packages>`)
 
 Second, mypy searches for stub files in addition to regular Python files
