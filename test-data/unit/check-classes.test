@@ -6190,6 +6190,90 @@ class B:
 class C(A, B): pass
 [out]
 
+[case testBinaryMagicMethods]
+# flags: --warn-return-any
+# See also check-warnings.test [case testReturnAnyForNotImplementedInBinaryMagicMethods]
+from typing import Any
+class A:
+    def __init__(self, x: Any) -> None:
+        self.x = x
+    def __abs__(self) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __bool__(self) -> bool: return NotImplemented  # E: Returning Any from function declared to return "bool"
+    def __call__(self, *args, **kwargs) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __ceil__(self) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __complex__(self) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __del__(self) -> None: return NotImplemented  # E: Returning Any from function declared to return "None"
+    def __delattr__(self, other: Any) -> None: return NotImplemented  # E: Returning Any from function declared to return "None"
+    def __delete__(self, other: Any) -> None: return NotImplemented  # E: Returning Any from function declared to return "None"
+    def __delitem__(self, other: Any) -> None: return NotImplemented  # E: Returning Any from function declared to return "None"
+    def __dir__(self, other: Any) -> Sequence_str: return NotImplemented  # E: Returning Any from function declared to return "Sequence_str"
+    def __enter__(self, other: Any) -> None: return NotImplemented  # E: Returning Any from function declared to return "None"
+    def __exit__(self, other: Any) -> None: return NotImplemented  # E: Returning Any from function declared to return "None"
+    def __float__(self) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __floor__(self) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __get__(self, instance: Any, other: Any) -> str: return NotImplemented  # E: Returning Any from function declared to return "str"
+    def __getitem__(self, other: Any) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __int__(self) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __index__(self) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __inv__(self) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __invert__(self) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __neg__(self) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __not__(self) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __pos__(self) -> 'A': return NotImplemented  # E: Returning Any from function declared to return "A"
+    def __setitem__(self, other: Any) -> None: return NotImplemented  # E: Returning Any from function declared to return "None"
+
+    def __add__(self, other: Any) -> 'A': return NotImplemented
+    def __and__(self, other: Any) -> 'A': return NotImplemented
+    def __concat__(self, other: Any) -> 'A': return NotImplemented
+    def __contains__(self, other: Any) -> 'A': return NotImplemented
+    def __eq__(self, other: Any) -> bool: return NotImplemented
+    def __floordiv__(self, other: Any) -> 'A': return NotImplemented
+    def __ge__(self, other: Any) -> bool: return NotImplemented
+    def __gt__(self, other: Any) -> bool: return NotImplemented
+    def __iadd__(self, other: Any) -> 'A': return NotImplemented
+    def __iand__(self, other: Any) -> 'A': return NotImplemented
+    def __iconcat__(self, other: Any) -> 'A': return NotImplemented
+    def __ifloordiv__(self, other: Any) -> 'A': return NotImplemented
+    def __ilshift__(self, other: Any) -> 'A': return NotImplemented
+    def __imatmul__(self, other: Any) -> 'A': return NotImplemented
+    def __imod__(self, other: Any) -> 'A': return NotImplemented
+    def __imul__(self, other: Any) -> 'A': return NotImplemented
+    def __ior__(self, other: Any) -> 'A': return NotImplemented
+    def __ipow__(self, other: Any) -> 'A': return NotImplemented
+    def __irshift__(self, other: Any) -> 'A': return NotImplemented
+    def __isub__(self, other: Any) -> 'A': return NotImplemented
+    def __itruediv__(self, other: Any) -> 'A': return NotImplemented
+    def __ixor__(self, other: Any) -> 'A': return NotImplemented
+    def __le__(self, other: Any) -> bool: return NotImplemented
+    def __lshift__(self, other: Any) -> 'A': return NotImplemented
+    def __lt__(self, other: Any) -> bool: return NotImplemented
+    def __matmul__(self, other: Any) -> 'A': return NotImplemented
+    def __mod__(self, other: Any) -> 'A': return NotImplemented
+    def __mul__(self, other: Any) -> 'A': return NotImplemented
+    def __ne__(self, other: Any) -> bool: return NotImplemented
+    def __or__(self, other: Any) -> 'A': return NotImplemented
+    def __pow__(self, other: Any) -> 'A': return NotImplemented
+    def __rshift__(self, other: Any) -> 'A': return NotImplemented
+    def __sub__(self, other: Any) -> 'A': return NotImplemented
+    def __truediv__(self, other: Any) -> 'A': return NotImplemented
+    def __xor__(self, other: Any) -> 'A': return NotImplemented
+    # The "reverse" methods:
+    def __radd__(self, other: Any) -> 'A': return NotImplemented
+    def __rsub__(self, other: Any) -> 'A': return NotImplemented
+    def __rmul__(self, other: Any) -> 'A': return NotImplemented
+    def __rmatmul__(self, other: Any) -> 'A': return NotImplemented
+    def __rtruediv__(self, other: Any) -> 'A': return NotImplemented
+    def __rfloordiv__(self, other: Any) -> 'A': return NotImplemented
+    def __rmod__(self, other: Any) -> 'A': return NotImplemented
+    def __rdivmod__(self, other: Any) -> 'A': return NotImplemented
+    def __rpow__(self, other: Any) -> 'A': return NotImplemented
+    def __rlshift__(self, other: Any) -> 'A': return NotImplemented
+    def __rrshift__(self, other: Any) -> 'A': return NotImplemented
+    def __rand__(self, other: Any) -> 'A': return NotImplemented
+    def __rxor__(self, other: Any) -> 'A': return NotImplemented
+    def __ror__(self, other: Any) -> 'A': return NotImplemented
+[builtins fixtures/notimplemented.pyi]
+
 [case testAttributeDefOrder1]
 import a
 
