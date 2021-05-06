@@ -6,6 +6,8 @@ from typing import Optional, Dict, List, cast, Tuple, Iterable
 from typing_extensions import Final
 
 import mypy.plugin  # To avoid circular imports.
+from mypy.constraints import infer_constraints, SUBTYPE_OF
+from mypy.expandtype import expand_type
 from mypy.exprtotype import expr_to_unanalyzed_type, TypeTranslationError
 from mypy.fixup import lookup_qualified_stnode
 from mypy.nodes import (
@@ -20,6 +22,7 @@ from mypy.plugins.common import (
     _get_argument, _get_bool_argument, _get_decorator_bool_argument, add_method,
     deserialize_and_fixup_type
 )
+from mypy.solve import solve_constraints
 from mypy.types import (
     Type, AnyType, TypeOfAny, CallableType, NoneType, TypeVarDef, TypeVarType,
     Overloaded, UnionType, FunctionLike, get_proper_type
@@ -67,6 +70,43 @@ class Converter:
         self.is_attr_converters_optional = is_attr_converters_optional
 
 
+def expand_arg_type(
+        callable_type: CallableType,
+        target_type: Optional[Type],
+) -> Type:
+    # The result is based on the type of the first argument of the callable
+    arg_type = get_proper_type(callable_type.arg_types[0])
+    ret_type = get_proper_type(callable_type.ret_type)
+    target_type = get_proper_type(target_type)
+    if target_type is None:
+        target_type = AnyType(TypeOfAny.unannotated)
+
+    if ret_type == target_type or isinstance(ret_type, AnyType):
+        # If the callable has the exact same return type as the target
+        # we can directly return the type of the first argument.
+        # This is also the case if the return type is `Any`.
+        return arg_type
+
+    # Find the constraints on the type vars given that the result must be a
+    # subtype of the target type.
+    constraints = infer_constraints(ret_type, target_type, SUBTYPE_OF)
+    # When this code gets run, callable_type.variables has not yet been
+    # properly initialized, so we instead simply construct a set of all unique
+    # type var ids in the constraints
+    type_var_ids = list({const.type_var for const in constraints})
+    # Now we get the best solutions for these constraints
+    solutions = solve_constraints(type_var_ids, constraints)
+    type_map = {
+        tid: sol
+        for tid, sol in zip(type_var_ids, solutions)
+        if sol is not None
+    }
+
+    # Now we can use these solutions to expand the generic arg type into a
+    # concrete type
+    return expand_type(arg_type, type_map)
+
+
 class Attribute:
     """The value of an attr.ib() call."""
 
@@ -107,10 +147,11 @@ class Attribute:
             elif converter and converter.type:
                 converter_type = converter.type
 
+            orig_type = init_type
             init_type = None
             converter_type = get_proper_type(converter_type)
             if isinstance(converter_type, CallableType) and converter_type.arg_types:
-                init_type = ctx.api.anal_type(converter_type.arg_types[0])
+                init_type = ctx.api.anal_type(expand_arg_type(converter_type, orig_type))
             elif isinstance(converter_type, Overloaded):
                 types = []  # type: List[Type]
                 for item in converter_type.items():
@@ -120,7 +161,7 @@ class Attribute:
                         continue
                     if num_arg_types > 1 and any(kind == ARG_POS for kind in item.arg_kinds[1:]):
                         continue
-                    types.append(item.arg_types[0])
+                    types.append(expand_arg_type(item, orig_type))
                 # Make a union of all the valid types.
                 if types:
                     args = make_simplified_union(types)

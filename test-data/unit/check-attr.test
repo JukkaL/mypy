@@ -857,6 +857,43 @@ reveal_type(A)  # N: Revealed type is "def (x: builtins.int) -> __main__.A"
 reveal_type(A(15).x)  # N: Revealed type is "builtins.str"
 [builtins fixtures/list.pyi]
 
+[case testAttrsUsingTupleConverter]
+from typing import Tuple
+import attr
+
+@attr.s
+class C:
+    t: Tuple[int, ...] = attr.ib(converter=tuple)
+
+o = C([1, 2, 3])
+o = C(['a'])  # E: List item 0 has incompatible type "str"; expected "int"
+[builtins fixtures/attr.pyi]
+
+[case testAttrsUsingListConverter]
+from typing import List
+import attr
+
+@attr.s
+class C:
+    t: List[int] = attr.ib(converter=list)
+
+o = C([1, 2, 3])
+o = C(['a'])  # E: List item 0 has incompatible type "str"; expected "int"
+[builtins fixtures/list.pyi]
+
+[case testAttrsUsingDictConverter]
+from typing import Dict
+import attr
+
+@attr.s
+class C(object):
+    values = attr.ib(type=Dict[str, int], converter=dict)
+
+
+C(values=[('a', 1), ('b', 2)])
+C(values=[(1, 'a')])  # E: List item 0 has incompatible type "Tuple[int, str]"; expected "Tuple[str, int]"
+[builtins fixtures/dict.pyi]
+
 [case testAttrsUsingConverterWithTypes]
 from typing import overload
 import attr
