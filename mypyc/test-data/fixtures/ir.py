@@ -239,6 +239,7 @@ class StopIteration(Exception):
 
 def any(i: Iterable[T]) -> bool: pass
 def all(i: Iterable[T]) -> bool: pass
+def sum(i: Iterable[T]) -> int: pass
 def reversed(object: Sequence[T]) -> Iterator[T]: ...
 def id(o: object) -> int: pass
 # This type is obviously wrong but the test stubs don't have Sized anymore

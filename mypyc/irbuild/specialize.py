@@ -14,7 +14,16 @@ See comment below for more documentation.
 
 from typing import Callable, Optional, Dict, Tuple
 
-from mypy.nodes import CallExpr, RefExpr, MemberExpr, TupleExpr, GeneratorExpr, ARG_POS
+from mypy.nodes import (
+    ARG_NAMED,
+    ARG_POS,
+    CallExpr,
+    GeneratorExpr,
+    IntExpr,
+    MemberExpr,
+    RefExpr,
+    TupleExpr,
+)
 from mypy.types import AnyType, TypeOfAny
 
 from mypyc.ir.ops import (
@@ -141,7 +150,6 @@ def translate_set_from_generator_call(
 @specialize_function('builtins.tuple')
 @specialize_function('builtins.frozenset')
 @specialize_function('builtins.dict')
-@specialize_function('builtins.sum')
 @specialize_function('builtins.min')
 @specialize_function('builtins.max')
 @specialize_function('builtins.sorted')
@@ -222,6 +230,43 @@ def any_all_helper(builder: IRBuilder,
 
     comprehension_helper(builder, loop_params, gen_inner_stmts, gen.line)
     builder.goto_and_activate(exit_block)
+
+    return retval
+
+
+@specialize_function('builtins.sum')
+def translate_sum_call(builder: IRBuilder, expr: CallExpr, callee: RefExpr) -> Optional[Value]:
+    # specialized implementation is used if:
+    # - only one or two arguments given (if not, sum() has been given invalid arguments)
+    # - first argument is a Generator (there is no benefit to optimizing the performance of eg.
+    #   sum([1, 2, 3]), so non-Generator Iterables are not handled)
+    if not (len(expr.args) in (1, 2)
+            and expr.arg_kinds[0] == ARG_POS
+            and isinstance(expr.args[0], GeneratorExpr)):
+        return None
+
+    gen_expr = expr.args[0]
+    target_type = builder.node_type(expr)
+
+    # handle 'start' argument, if given
+    if len(expr.args) == 2:
+        # ensure call to sum() was properly constructed
+        if not expr.arg_kinds[1] in (ARG_POS, ARG_NAMED):
+            return None
+        start_expr = expr.args[1]
+    else:
+        start_expr = IntExpr(0)
+
+    retval = Register(target_type)
+    builder.assign(retval, builder.coerce(builder.accept(start_expr), target_type, -1), -1)
+
+    loop_params = list(zip(gen_expr.indices, gen_expr.sequences, gen_expr.condlists))
+
+    def gen_inner_stmts() -> None:
+        call_expr = builder.accept(gen_expr.left_expr)
+        builder.assign(retval, builder.binary_op(retval, call_expr, '+', -1), -1)
+
+    comprehension_helper(builder, loop_params, gen_inner_stmts, gen_expr.line)
 
     return retval
 
