@@ -197,6 +197,20 @@ including imports or docstrings) has the effect of ignoring the *entire* module.
 
     foo.bar()
 
+Ignoring a single class or function
+-----------------------------------
+
+A ``@typing.no_type_check`` decorator added to a class, method or function has the
+effect of ignoring that class, method or function.
+
+.. code-block:: python
+
+    import typing
+    
+    @typing.no_type_check
+    def foo() -> str:
+       return None  # No error!
+
 Unexpected errors about 'None' and/or 'Optional' types
 ------------------------------------------------------
 
