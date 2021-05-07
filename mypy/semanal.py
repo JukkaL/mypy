@@ -93,7 +93,7 @@ from mypy.types import (
     TypeTranslator, TypeOfAny, TypeType, NoneType, PlaceholderType, TPDICT_NAMES, ProperType,
     get_proper_type, get_proper_types, TypeAliasType)
 from mypy.typeops import function_type
-from mypy.type_visitor import TypeQuery
+from mypy.type_visitor import TypeQueryBool
 from mypy.nodes import implicit_module_attrs
 from mypy.typeanal import (
     TypeAnalyser, analyze_type_alias, no_subscript_builtin_alias,
@@ -5012,9 +5012,9 @@ class SemanticAnalyzer(NodeVisitor[None],
         return flag in self.future_import_flags
 
 
-class HasPlaceholders(TypeQuery[bool]):
+class HasPlaceholders(TypeQueryBool):
     def __init__(self) -> None:
-        super().__init__(any)
+        super().__init__(TypeQueryBool.STRATEGY_ANY)
 
     def visit_placeholder_type(self, t: PlaceholderType) -> bool:
         return True

@@ -14,8 +14,8 @@ from mypy.options import Options
 from mypy.types import (
     Type, UnboundType, TypeVarType, TupleType, TypedDictType, UnionType, Instance, AnyType,
     CallableType, NoneType, ErasedType, DeletedType, TypeList, TypeVarDef, SyntheticTypeVisitor,
-    StarType, PartialType, EllipsisType, UninhabitedType, TypeType,
-    CallableArgument, TypeQuery, union_items, TypeOfAny, LiteralType, RawExpressionType,
+    StarType, PartialType, EllipsisType, UninhabitedType, TypeType, CallableArgument,
+    TypeQuery, TypeQueryBool, union_items, TypeOfAny, LiteralType, RawExpressionType,
     PlaceholderType, Overloaded, get_proper_type, TypeAliasType, TypeVarLikeDef, ParamSpecDef
 )
 
@@ -1239,9 +1239,9 @@ def has_explicit_any(t: Type) -> bool:
     return t.accept(HasExplicitAny())
 
 
-class HasExplicitAny(TypeQuery[bool]):
+class HasExplicitAny(TypeQueryBool):
     def __init__(self) -> None:
-        super().__init__(any)
+        super().__init__(TypeQueryBool.STRATEGY_ANY)
 
     def visit_any(self, t: AnyType) -> bool:
         return t.type_of_any == TypeOfAny.explicit
@@ -1260,9 +1260,9 @@ def has_any_from_unimported_type(t: Type) -> bool:
     return t.accept(HasAnyFromUnimportedType())
 
 
-class HasAnyFromUnimportedType(TypeQuery[bool]):
+class HasAnyFromUnimportedType(TypeQueryBool):
     def __init__(self) -> None:
-        super().__init__(any)
+        super().__init__(TypeQueryBool.STRATEGY_ANY)
 
     def visit_any(self, t: AnyType) -> bool:
         return t.type_of_any == TypeOfAny.from_unimported_type

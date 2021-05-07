@@ -6,7 +6,7 @@ from typing_extensions import Final
 from mypy.types import (
     CallableType, Type, TypeVisitor, UnboundType, AnyType, NoneType, TypeVarType, Instance,
     TupleType, TypedDictType, UnionType, Overloaded, ErasedType, PartialType, DeletedType,
-    UninhabitedType, TypeType, TypeVarId, TypeQuery, is_named_instance, TypeOfAny, LiteralType,
+    UninhabitedType, TypeType, TypeVarId, TypeQueryBool, is_named_instance, TypeOfAny, LiteralType,
     ProperType, get_proper_type, TypeAliasType
 )
 from mypy.maptype import map_instance_to_supertype
@@ -255,9 +255,9 @@ def is_complete_type(typ: Type) -> bool:
     return typ.accept(CompleteTypeVisitor())
 
 
-class CompleteTypeVisitor(TypeQuery[bool]):
+class CompleteTypeVisitor(TypeQueryBool):
     def __init__(self) -> None:
-        super().__init__(all)
+        super().__init__(TypeQueryBool.STRATEGY_ALL)
 
     def visit_uninhabited_type(self, t: UninhabitedType) -> bool:
         return False

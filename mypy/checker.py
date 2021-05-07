@@ -33,7 +33,7 @@ from mypy.types import (
     Type, AnyType, CallableType, FunctionLike, Overloaded, TupleType, TypedDictType,
     Instance, NoneType, strip_type, TypeType, TypeOfAny,
     UnionType, TypeVarId, TypeVarType, PartialType, DeletedType, UninhabitedType, TypeVarDef,
-    is_named_instance, union_items, TypeQuery, LiteralType,
+    is_named_instance, union_items, TypeQueryBool, LiteralType,
     is_optional, remove_optional, TypeTranslator, StarType, get_proper_type, ProperType,
     get_proper_types, is_literal_type, TypeAliasType, TypeGuardType)
 from mypy.sametypes import is_same_type
@@ -5535,11 +5535,11 @@ def is_valid_inferred_type(typ: Type) -> bool:
     return not typ.accept(NothingSeeker())
 
 
-class NothingSeeker(TypeQuery[bool]):
+class NothingSeeker(TypeQueryBool):
     """Find any <nothing> types resulting from failed (ambiguous) type inference."""
 
     def __init__(self) -> None:
-        super().__init__(any)
+        super().__init__(TypeQueryBool.STRATEGY_ANY)
 
     def visit_uninhabited_type(self, t: UninhabitedType) -> bool:
         return t.ambiguous

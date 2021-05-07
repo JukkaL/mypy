@@ -2013,6 +2013,7 @@ from mypy.type_visitor import (  # noqa
     SyntheticTypeVisitor as SyntheticTypeVisitor,
     TypeTranslator as TypeTranslator,
     TypeQuery as TypeQuery,
+    TypeQueryBool as TypeQueryBool
 )
 
 
@@ -2301,9 +2302,9 @@ def replace_alias_tvars(tp: Type, vars: List[str], subs: List[Type],
     return new_tp
 
 
-class HasTypeVars(TypeQuery[bool]):
+class HasTypeVars(TypeQueryBool):
     def __init__(self) -> None:
-        super().__init__(any)
+        super().__init__(TypeQueryBool.STRATEGY_ANY)
 
     def visit_type_var(self, t: TypeVarType) -> bool:
         return True

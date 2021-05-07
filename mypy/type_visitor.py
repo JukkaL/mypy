@@ -14,6 +14,7 @@ other modules refer to them.
 from abc import abstractmethod
 from mypy.ordered_dict import OrderedDict
 from typing import Generic, TypeVar, cast, Any, List, Callable, Iterable, Optional, Set, Sequence
+from typing_extensions import Final
 from mypy_extensions import trait, mypyc_attr
 
 T = TypeVar('T')
@@ -249,7 +250,8 @@ class TypeQuery(SyntheticTypeVisitor[T]):
     """Visitor for performing queries of types.
 
     strategy is used to combine results for a series of types,
-    common use cases involve a boolean query using `any` or `all`.
+    For cases involving a boolean query using `any` or `all`, the specialized
+    TypeQueryBool is used.
 
     Note: this visitor keeps an internal state (tracks type aliases to avoid
     recursion), so it should *never* be re-used for querying different types,
@@ -351,3 +353,120 @@ class TypeQuery(SyntheticTypeVisitor[T]):
                 self.seen_aliases.add(t)
             res.append(t.accept(self))
         return self.strategy(res)
+
+
+@mypyc_attr(allow_interpreted_subclasses=True)
+class TypeQueryBool(SyntheticTypeVisitor[bool]):
+    """Specialized visitor for boolean strategies
+
+    strategy is used to combine results for a series of types,
+    Cases involve a boolean query using `any` or `all`.
+
+    Note: this visitor keeps an internal state (tracks type aliases to avoid
+    recursion), so it should *never* be re-used for querying different types,
+    create a new visitor instance instead.
+
+    # TODO: check that we don't have existing violations of this rule.
+    """
+    STRATEGY_ANY = 0  # type: Final
+    STRATEGY_ALL = 1  # type: Final
+
+    def __init__(self, strategy: int) -> None:
+        self.strategy = strategy
+        # Keep track of the type aliases already visited. This is needed to avoid
+        # infinite recursion on types like A = Union[int, List[A]].
+        self.seen_aliases = set()  # type: Set[TypeAliasType]
+
+    def bool_strategy_empty(self) -> bool:
+        if self.strategy == TypeQueryBool.STRATEGY_ALL:
+            return True
+        return False
+
+    def visit_unbound_type(self, t: UnboundType) -> bool:
+        return self.query_types(t.args)
+
+    def visit_type_list(self, t: TypeList) -> bool:
+        return self.query_types(t.items)
+
+    def visit_callable_argument(self, t: CallableArgument) -> bool:
+        return t.typ.accept(self)
+
+    def visit_any(self, t: AnyType) -> bool:
+        return self.bool_strategy_empty()
+
+    def visit_uninhabited_type(self, t: UninhabitedType) -> bool:
+        return self.bool_strategy_empty()
+
+    def visit_none_type(self, t: NoneType) -> bool:
+        return self.bool_strategy_empty()
+
+    def visit_erased_type(self, t: ErasedType) -> bool:
+        return self.bool_strategy_empty()
+
+    def visit_deleted_type(self, t: DeletedType) -> bool:
+        return self.bool_strategy_empty()
+
+    def visit_type_var(self, t: TypeVarType) -> bool:
+        return self.query_types([t.upper_bound] + t.values)
+
+    def visit_partial_type(self, t: PartialType) -> bool:
+        return self.bool_strategy_empty()
+
+    def visit_instance(self, t: Instance) -> bool:
+        return self.query_types(t.args)
+
+    def visit_callable_type(self, t: CallableType) -> bool:
+        # FIX generics
+        return self.query_types(t.arg_types + [t.ret_type])
+
+    def visit_tuple_type(self, t: TupleType) -> bool:
+        return self.query_types(t.items)
+
+    def visit_typeddict_type(self, t: TypedDictType) -> bool:
+        return self.query_types(t.items.values())
+
+    def visit_raw_expression_type(self, t: RawExpressionType) -> bool:
+        return self.bool_strategy_empty()
+
+    def visit_literal_type(self, t: LiteralType) -> bool:
+        return self.bool_strategy_empty()
+
+    def visit_star_type(self, t: StarType) -> bool:
+        return t.type.accept(self)
+
+    def visit_union_type(self, t: UnionType) -> bool:
+        return self.query_types(t.items)
+
+    def visit_overloaded(self, t: Overloaded) -> bool:
+        return self.query_types(t.items())
+
+    def visit_type_type(self, t: TypeType) -> bool:
+        return t.item.accept(self)
+
+    def visit_ellipsis_type(self, t: EllipsisType) -> bool:
+        return self.bool_strategy_empty()
+
+    def visit_placeholder_type(self, t: PlaceholderType) -> bool:
+        return self.query_types(t.args)
+
+    def visit_type_alias_type(self, t: TypeAliasType) -> bool:
+        return get_proper_type(t).accept(self)
+
+    def query_types(self, types: Iterable[Type]) -> bool:
+        """Perform a query for a list of types.
+
+        Use the strategy to combine the results.
+        Skip type aliases already visited types to avoid infinite recursion.
+        """
+        for t in types:
+            if isinstance(t, TypeAliasType):
+                # Avoid infinite recursion for recursive type aliases.
+                if t in self.seen_aliases:
+                    continue
+                self.seen_aliases.add(t)
+            res = t.accept(self)
+            if res and self.strategy == TypeQueryBool.STRATEGY_ANY:
+                return True
+            elif not res and self.strategy == TypeQueryBool.STRATEGY_ALL:
+                return False
+        return self.strategy == TypeQueryBool.STRATEGY_ALL

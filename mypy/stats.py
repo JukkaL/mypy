@@ -11,7 +11,7 @@ from typing_extensions import Final
 from mypy.traverser import TraverserVisitor
 from mypy.typeanal import collect_all_inner_types
 from mypy.types import (
-    Type, AnyType, Instance, FunctionLike, TupleType, TypeVarType, TypeQuery, CallableType,
+    Type, AnyType, Instance, FunctionLike, TupleType, TypeVarType, TypeQueryBool, CallableType,
     TypeOfAny, get_proper_type, get_proper_types
 )
 from mypy import nodes
@@ -423,9 +423,9 @@ def is_imprecise(t: Type) -> bool:
     return t.accept(HasAnyQuery())
 
 
-class HasAnyQuery(TypeQuery[bool]):
+class HasAnyQuery(TypeQueryBool):
     def __init__(self) -> None:
-        super().__init__(any)
+        super().__init__(TypeQueryBool.STRATEGY_ANY)
 
     def visit_any(self, t: AnyType) -> bool:
         return not is_special_form_any(t)
