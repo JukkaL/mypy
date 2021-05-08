@@ -1940,6 +1940,17 @@ reveal_type(list(c for c in C))  # N: Revealed type is "builtins.list[__main__.C
 reveal_type(list(C))  # N: Revealed type is "builtins.list[__main__.C*]"
 [builtins fixtures/list.pyi]
 
+[case testIterableGetItemOnClass]
+class A:
+    def __getitem__(self, x: int) -> int: pass
+
+class B:
+    def __getitem__(self, x: str) -> str: pass
+
+reveal_type(list(a for a in A()))  # N: Revealed type is "builtins.list[builtins.int*]"
+list(b for b in B())  # E: "B" has no attribute "__iter__" (not iterable)
+[builtins fixtures/list.pyi]
+
 [case testClassesGetattrWithProtocols]
 from typing import Protocol
 
