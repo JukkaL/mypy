@@ -1305,3 +1305,36 @@ async def f_malformed_2() -> int:
 
 [typing fixtures/typing-full.pyi]
 [builtins fixtures/tuple.pyi]
+
+[case testUnreachableUntypedFunction]
+# flags: --warn-unreachable
+
+def test_untyped_fn(obj):
+    assert obj.prop is True
+
+    obj.update(prop=False)
+    obj.reload()
+
+    assert obj.prop is False
+    reveal_type(obj.prop)
+
+def test_typed_fn(obj) -> None:
+    assert obj.prop is True
+
+    obj.update(prop=False)
+    obj.reload()
+
+    assert obj.prop is False
+    reveal_type(obj.prop)  # E: Statement is unreachable
+
+[case testUnreachableCheckedUntypedFunction]
+# flags: --warn-unreachable --check-untyped-defs
+
+def test_untyped_fn(obj):
+    assert obj.prop is True
+
+    obj.update(prop=False)
+    obj.reload()
+
+    assert obj.prop is False
+    reveal_type(obj.prop)  # E: Statement is unreachable

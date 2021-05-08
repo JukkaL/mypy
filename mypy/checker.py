@@ -1975,7 +1975,8 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             self.accept(s)
 
     def should_report_unreachable_issues(self) -> bool:
-        return (self.options.warn_unreachable
+        return (self.in_checked_function()
+                and self.options.warn_unreachable
                 and not self.binder.is_unreachable_warning_suppressed())
 
     def is_raising_or_empty(self, s: Statement) -> bool:
