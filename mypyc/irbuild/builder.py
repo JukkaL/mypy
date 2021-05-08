@@ -579,7 +579,8 @@ class IRBuilder:
         # This may be the whole lvalue list if there is no starred value
         split_idx = target.star_idx if target.star_idx is not None else len(target.items)
 
-        # Assign values before the first starred value
+        # Read values before the first starred value
+        values = []
         for litem in target.items[:split_idx]:
             ritem = self.call_c(next_op, [iterator], line)
             error_block, ok_block = BasicBlock(), BasicBlock()
@@ -592,9 +593,13 @@ class IRBuilder:
 
             self.activate_block(ok_block)
 
+            values.append(ritem)
+
+        # Assign read values to target lvalues
+        for litem, ritem in zip(target.items[:split_idx], values):
             self.assign(litem, ritem, line)
 
-        # Assign the starred value and all values after it
+        # Read the starred value and all values after it
         if target.star_idx is not None:
             post_star_vals = target.items[split_idx + 1:]
             iter_list = self.call_c(to_list, [iterator], line)
@@ -612,8 +617,13 @@ class IRBuilder:
 
             self.activate_block(ok_block)
 
+            values = []
             for litem in reversed(post_star_vals):
                 ritem = self.call_c(list_pop_last, [iter_list], line)
+                values.append(ritem)
+
+            # Assign the read values to target lvalues
+            for litem, ritem in zip(reversed(post_star_vals), values):
                 self.assign(litem, ritem, line)
 
             # Assign the starred value

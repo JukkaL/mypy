@@ -521,9 +521,9 @@ L0:
 def from_any(a):
     a, r0, r1 :: object
     r2 :: bool
-    x, r3 :: object
+    r3 :: object
     r4 :: bool
-    y, r5 :: object
+    x, y, r5 :: object
     r6 :: bool
 L0:
     r0 = PyObject_GetIter(a)
@@ -533,13 +533,13 @@ L1:
     r2 = raise ValueError('not enough values to unpack')
     unreachable
 L2:
-    x = r1
     r3 = PyIter_Next(r0)
     if is_error(r3) goto L3 else goto L4
 L3:
     r4 = raise ValueError('not enough values to unpack')
     unreachable
 L4:
+    x = r1
     y = r3
     r5 = PyIter_Next(r0)
     if is_error(r5) goto L6 else goto L5
@@ -577,9 +577,9 @@ L0:
 def from_any(a):
     a, r0, r1 :: object
     r2 :: bool
-    r3, x :: int
-    r4 :: object
-    r5 :: bool
+    r3 :: object
+    r4 :: bool
+    r5, x :: int
     y, r6 :: object
     r7 :: bool
 L0:
@@ -590,21 +590,106 @@ L1:
     r2 = raise ValueError('not enough values to unpack')
     unreachable
 L2:
-    r3 = unbox(int, r1)
-    x = r3
-    r4 = PyIter_Next(r0)
-    if is_error(r4) goto L3 else goto L4
+    r3 = PyIter_Next(r0)
+    if is_error(r3) goto L3 else goto L4
 L3:
-    r5 = raise ValueError('not enough values to unpack')
+    r4 = raise ValueError('not enough values to unpack')
     unreachable
 L4:
-    y = r4
+    r5 = unbox(int, r1)
+    x = r5
+    y = r3
     r6 = PyIter_Next(r0)
     if is_error(r6) goto L6 else goto L5
 L5:
     r7 = raise ValueError('too many values to unpack')
     unreachable
 L6:
+    return 1
+
+[case testStarUnpack]
+from typing import Any, List, Iterator
+
+it: Iterator = iter(['x', 'y', 'z1', 'z2', 'z3', 'u', 'w'])
+
+def f(a: Any) -> None:
+    a.x, a.y, *a.z, a.u, a.w = it
+[out]
+def f(a):
+    a :: object
+    r0 :: dict
+    r1 :: str
+    r2, r3, r4 :: object
+    r5 :: bool
+    r6 :: object
+    r7 :: bool
+    r8 :: str
+    r9 :: int32
+    r10 :: bit
+    r11 :: str
+    r12 :: int32
+    r13 :: bit
+    r14 :: list
+    r15 :: ptr
+    r16 :: native_int
+    r17 :: short_int
+    r18 :: bit
+    r19 :: bool
+    r20, r21 :: object
+    r22 :: str
+    r23 :: int32
+    r24 :: bit
+    r25 :: str
+    r26 :: int32
+    r27 :: bit
+    r28 :: str
+    r29 :: int32
+    r30 :: bit
+L0:
+    r0 = __main__.globals :: static
+    r1 = 'it'
+    r2 = CPyDict_GetItem(r0, r1)
+    r3 = PyObject_GetIter(r2)
+    r4 = PyIter_Next(r3)
+    if is_error(r4) goto L1 else goto L2
+L1:
+    r5 = raise ValueError('not enough values to unpack')
+    unreachable
+L2:
+    r6 = PyIter_Next(r3)
+    if is_error(r6) goto L3 else goto L4
+L3:
+    r7 = raise ValueError('not enough values to unpack')
+    unreachable
+L4:
+    r8 = 'x'
+    r9 = PyObject_SetAttr(a, r8, r4)
+    r10 = r9 >= 0 :: signed
+    r11 = 'y'
+    r12 = PyObject_SetAttr(a, r11, r6)
+    r13 = r12 >= 0 :: signed
+    r14 = PySequence_List(r3)
+    r15 = get_element_ptr r14 ob_size :: PyVarObject
+    r16 = load_mem r15 :: native_int*
+    keep_alive r14
+    r17 = r16 << 1
+    r18 = 4 <= r17 :: signed
+    if r18 goto L6 else goto L5 :: bool
+L5:
+    r19 = raise ValueError('not enough values to unpack')
+    unreachable
+L6:
+    r20 = CPyList_PopLast(r14)
+    r21 = CPyList_PopLast(r14)
+    r22 = 'w'
+    r23 = PyObject_SetAttr(a, r22, r20)
+    r24 = r23 >= 0 :: signed
+    r25 = 'u'
+    r26 = PyObject_SetAttr(a, r25, r21)
+    r27 = r26 >= 0 :: signed
+    r28 = 'z'
+    r29 = PyObject_SetAttr(a, r28, r14)
+    r30 = r29 >= 0 :: signed
     return 1
 
 [case testMultiAssignmentNested]
