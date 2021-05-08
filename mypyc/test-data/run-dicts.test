@@ -1,4 +1,4 @@
-# Dict test cases (compile and run)
+# Test cases for dicts (compile and run)
 
 [case testDictStuff]
 from typing import Dict, Any, List, Set, Tuple

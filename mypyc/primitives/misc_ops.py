@@ -15,6 +15,12 @@ load_address_op(
     type=object_rprimitive,
     src='PyBool_Type')
 
+# Get the 'range' type object.
+load_address_op(
+    name='builtins.range',
+    type=object_rprimitive,
+    src='PyRange_Type')
+
 # Get the boxed Python 'None' object
 none_object_op = load_address_op(
     name='Py_None',

@@ -1,4 +1,4 @@
-# Test cases for "for" and "while" loops (compile and run)
+# Test cases for "range" objects, "for" and "while" loops (compile and run)
 
 [case testFor]
 from typing import List, Tuple
@@ -452,3 +452,34 @@ def bar(x: Optional[str]) -> None:
 [file driver.py]
 from native import bar
 bar(None)
+
+[case testRangeObject]
+from typing import Any
+
+def f(x: range) -> int:
+    sum = 0
+    for i in x:
+        sum += i
+    return sum
+
+def test_range_object() -> None:
+    r1 = range(4, 12, 2)
+    tmp_list = [x for x in r1]
+    assert tmp_list == [4, 6, 8, 10]
+    assert f(r1) == 28
+    r2: Any = range(10)
+    assert f(r2) == 45
+    r3: Any = 'x'
+    try:
+        f(r3)
+    except TypeError as e:
+        assert "range object expected; got str" in str(e)
+    try:
+        ff: Any = f
+        ff(r3)
+    except TypeError as e:
+        assert "range object expected; got str" in str(e)
+    try:
+        r4 = range(4, 12, 0)
+    except ValueError as e:
+        assert "range() arg 3 must not be zero" in str(e)

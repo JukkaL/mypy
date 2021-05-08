@@ -3649,3 +3649,71 @@ L0:
     r2 = r1 >= 0 :: signed
     r3 = truncate r1: int32 to builtins.bool
     return r3
+
+[case testRangeObject]
+def range_object() -> None:
+    r = range(4, 12, 2)
+    sum = 0
+    for i in r:
+        sum += i
+
+def range_in_loop() -> None:
+    sum = 0
+    for i in range(4, 12, 2):
+        sum += i
+[out]
+def range_object():
+    r0, r1, r2, r3, r4 :: object
+    r5, r :: range
+    sum :: int
+    r6, r7 :: object
+    r8, i, r9 :: int
+    r10 :: bit
+L0:
+    r0 = load_address PyRange_Type
+    r1 = box(short_int, 8)
+    r2 = box(short_int, 24)
+    r3 = box(short_int, 4)
+    r4 = PyObject_CallFunctionObjArgs(r0, r1, r2, r3, 0)
+    r5 = cast(range, r4)
+    r = r5
+    sum = 0
+    r6 = PyObject_GetIter(r)
+L1:
+    r7 = PyIter_Next(r6)
+    if is_error(r7) goto L4 else goto L2
+L2:
+    r8 = unbox(int, r7)
+    i = r8
+    r9 = CPyTagged_Add(sum, i)
+    sum = r9
+L3:
+    goto L1
+L4:
+    r10 = CPy_NoErrOccured()
+L5:
+    return 1
+def range_in_loop():
+    sum :: int
+    r0 :: short_int
+    i :: int
+    r1 :: bit
+    r2 :: int
+    r3 :: short_int
+L0:
+    sum = 0
+    r0 = 8
+    i = r0
+L1:
+    r1 = r0 < 24 :: signed
+    if r1 goto L2 else goto L4 :: bool
+L2:
+    r2 = CPyTagged_Add(sum, i)
+    sum = r2
+L3:
+    r3 = r0 + 4
+    r0 = r3
+    i = r3
+    goto L1
+L4:
+    return 1

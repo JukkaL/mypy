@@ -1,3 +1,5 @@
+# Test cases for floats (compile and run)
+
 [case testStrToFloat]
 def str_to_float(x: str) -> float:
     return float(x)
