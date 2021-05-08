@@ -354,3 +354,6 @@ def test() -> None:
     source_d = [True, False]
     d = [not x for x in source_d]
     assert d == [False, True]
+    source_e = [0, 1, 2]
+    e = list((x ** 2) for x in (y + 2 for y in source_e))
+    assert e == [4, 9, 16]
