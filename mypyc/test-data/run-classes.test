@@ -868,6 +868,27 @@ b(B())
 2 10
 2 3
 
+[case testOverloadedProtocol]
+from typing import Generic, TypeVar, Callable, overload, Union
+from typing_extensions import Protocol
+
+class M(Protocol):
+    @overload
+    def func(self, s: int) -> None:
+      ...
+
+    @overload
+    def func(self, s: Callable[[int],None]) -> None:
+      ...
+
+[file driver.py]
+from native import M
+
+print("Hi")
+
+[out]
+Hi
+
 [case testMethodOverrideDefault2]
 class A:
     def foo(self, *, x: int = 0) -> None:
