@@ -1470,3 +1470,29 @@ x9, y9, x10, y10, z5 = *points2, 1, *points2 # E: Contiguous iterable with same 
 [case testAssignEmptyBogus]
 () = 1  # E: "Literal[1]?" object is not iterable
 [builtins fixtures/tuple.pyi]
+
+[case testSingleUndefinedTypeAndTuple]
+from typing import Tuple
+
+class Foo:
+    ...
+
+class Bar(aaaaaaaaaa):  # E: Name "aaaaaaaaaa" is not defined
+    ...
+
+class FooBarTuple(Tuple[Foo, Bar]):
+    ...
+[builtins fixtures/tuple.pyi]
+
+[case testMultipleUndefinedTypeAndTuple]
+from typing import Tuple
+
+class Foo(aaaaaaaaaa):  # E: Name "aaaaaaaaaa" is not defined
+    ...
+
+class Bar(aaaaaaaaaa):  # E: Name "aaaaaaaaaa" is not defined
+    ...
+
+class FooBarTuple(Tuple[Foo, Bar]):
+    ...
+[builtins fixtures/tuple.pyi]
