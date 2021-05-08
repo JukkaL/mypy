@@ -104,7 +104,7 @@ from mypy.exprtotype import expr_to_unanalyzed_type, TypeTranslationError
 from mypy.options import Options
 from mypy.plugin import (
     Plugin, ClassDefContext, SemanticAnalyzerPluginInterface,
-    DynamicClassDefContext
+    DynamicClassDefContext, FunctionDecoratorContext
 )
 from mypy.util import correct_relative_import, unmangle, module_prefix, is_typeshed_file
 from mypy.scope import Scope
@@ -1026,6 +1026,8 @@ class SemanticAnalyzer(NodeVisitor[None],
                     removed.append(i)
                 else:
                     self.fail("@final cannot be used with non-method functions", d)
+            if self.apply_decorator_plugin_hooks(d, dec):
+                removed.append(i)
         for i in reversed(removed):
             del dec.decorators[i]
         if (not dec.is_overload or dec.var.is_property) and self.type:
@@ -1040,6 +1042,31 @@ class SemanticAnalyzer(NodeVisitor[None],
                                            context: Context) -> None:
         if not self.type or self.is_func_scope():
             self.fail("'%s' used with a non-method" % decorator, context)
+
+    def apply_decorator_plugin_hooks(self, node: Expression, dec: Decorator) -> bool:
+        # TODO: Remove duplicate code
+        def get_fullname(expr: Expression) -> Optional[str]:
+            if isinstance(expr, CallExpr):
+                return get_fullname(expr.callee)
+            elif isinstance(expr, IndexExpr):
+                return get_fullname(expr.base)
+            elif isinstance(expr, RefExpr):
+                if expr.fullname:
+                    return expr.fullname
+                # If we don't have a fullname look it up. This happens because base classes are
+                # analyzed in a different manner (see exprtotype.py) and therefore those AST
+                # nodes will not have full names.
+                sym = self.lookup_type_node(expr)
+                if sym:
+                    return sym.fullname
+            return None
+
+        decorator_name = get_fullname(node)
+        if decorator_name:
+            hook = self.plugin.get_function_decorator_hook(decorator_name)
+            if hook:
+                return hook(FunctionDecoratorContext(node, dec, self))
+        return False
 
     #
     # Classes

@@ -124,7 +124,7 @@ from typing import Any, Callable, List, Tuple, Optional, NamedTuple, TypeVar, Di
 from mypy_extensions import trait, mypyc_attr
 
 from mypy.nodes import (
-    Expression, Context, ClassDef, SymbolTableNode, MypyFile, CallExpr
+    Expression, Context, ClassDef, SymbolTableNode, MypyFile, CallExpr, Decorator
 )
 from mypy.tvar_scope import TypeVarLikeScope
 from mypy.types import Type, Instance, CallableType, TypeList, UnboundType, ProperType
@@ -454,6 +454,16 @@ DynamicClassDefContext = NamedTuple(
     ])
 
 
+# A context for a decorator hook, that modifies the function definition
+FunctionDecoratorContext = NamedTuple(
+    'FunctionDecoratorContext', [
+        ('decorator', Expression),
+        ('decoratedFunction', Decorator),
+        ('api', SemanticAnalyzerPluginInterface)
+    ]
+)
+
+
 @mypyc_attr(allow_interpreted_subclasses=True)
 class Plugin(CommonPluginApi):
     """Base class of all type checker plugins.
@@ -705,6 +715,18 @@ class Plugin(CommonPluginApi):
         """
         return None
 
+    def get_function_decorator_hook(self, fullname: str
+                                    ) -> Optional[Callable[[FunctionDecoratorContext], bool]]:
+        """Update function definition for given function decorators
+
+        The plugin can modify a function _in place_.
+
+        The hook is called with full names of all function decorators.
+
+        Return true if the decorator has been handled and should be removed
+        """
+        return None
+
 
 T = TypeVar('T')
 
@@ -786,6 +808,10 @@ class ChainedPlugin(Plugin):
     def get_dynamic_class_hook(self, fullname: str
                                ) -> Optional[Callable[[DynamicClassDefContext], None]]:
         return self._find_hook(lambda plugin: plugin.get_dynamic_class_hook(fullname))
+
+    def get_function_decorator_hook(self, fullname: str
+                                    ) -> Optional[Callable[[FunctionDecoratorContext], bool]]:
+        return self._find_hook(lambda plugin: plugin.get_function_decorator_hook(fullname))
 
     def _find_hook(self, lookup: Callable[[Plugin], T]) -> Optional[T]:
         for plugin in self._plugins:
