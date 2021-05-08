@@ -472,6 +472,10 @@ void CPy_AddTraceback(const char *filename, const char *funcname, int line, PyOb
 #define CPy_TRASHCAN_END(op) Py_TRASHCAN_SAFE_END(op)
 #endif
 
+// floating point operations
+
+PyObject PyFloat_Add(float left, float right );
+
 // Tweaked version of _PyArg_Parser in CPython
 typedef struct CPyArg_Parser {
     const char *format;
