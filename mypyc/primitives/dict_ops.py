@@ -245,3 +245,12 @@ dict_size_op = custom_op(
     return_type=c_pyssize_t_rprimitive,
     c_function_name='PyDict_Size',
     error_kind=ERR_NEVER)
+    
+    
+    dict_set_default = custom_op(
+    arg_time=[int_rprimitive, list_rprimitive ],
+    return_type = dict_rprimitive,
+    c_function_name ='CPyDict_SetDefault_list'
+    error_kind = ERR_NEVER)
+    
+    

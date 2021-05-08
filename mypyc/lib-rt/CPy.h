@@ -363,6 +363,7 @@ PyObject *CPyDict_GetValuesIter(PyObject *dict);
 tuple_T3CIO CPyDict_NextKey(PyObject *dict_or_iter, CPyTagged offset);
 tuple_T3CIO CPyDict_NextValue(PyObject *dict_or_iter, CPyTagged offset);
 tuple_T4CIOO CPyDict_NextItem(PyObject *dict_or_iter, CPyTagged offset);
+PyObject*CPyDict_SetDefault_list(CPyTagged x, PyList_Type l )
 
 // Check that dictionary didn't change size during iteration.
 static inline char CPyDict_CheckSize(PyObject *dict, CPyTagged size) {

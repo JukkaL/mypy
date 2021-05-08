@@ -396,3 +396,22 @@ tuple_T4CIOO CPyDict_NextItem(PyObject *dict_or_iter, CPyTagged offset) {
     Py_INCREF(ret.f3);
     return ret;
 }
+
+PyObject*CPyDict_SetDefault_list(CPyTagged x,  PyList_Type l ){ 
+
+    int v;
+    v = int CPyDict_Contains(PyObject* k, CPyTagged* x){
+
+        if(v ==1){
+            return k;
+        }
+        else if(v==0){
+        return PyObject* CPyDict_SetDefault(PyObject* k, CPyTagged* x, NULL);
+        }
+        else{
+            return CPyError_OutOfMemory();
+        }
+    }
+
+
+}
