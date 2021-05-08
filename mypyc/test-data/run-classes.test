@@ -1636,3 +1636,56 @@ from native import A, B, C
 a = A()
 b = B()
 c = C()
+
+[case testAttrOverrides]
+from typing import Any
+
+class Proxy:
+    def __setattr__(self, name:str, value: Any) -> None:
+        print("__setattr__")
+
+    def __getattr__(self, name:str) -> Any:
+        print("__getattr__")
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        print("__setitem__")
+
+    def __getitem__(self, key: Any) -> Any:
+        print("__getitem__")
+
+p = Proxy()
+p.a = 5
+a = p.b
+x = p[2]
+p[1] = 5
+
+y = p["object"]
+p[p] = "Hello"
+print()
+
+[file driver.py]
+from native import Proxy
+
+p = Proxy()
+p.a = 5
+a = p.b
+x = p[2]
+p[1] = 5
+
+y = p["object"]
+p[p] = "Hello"
+
+[out]
+__setattr__
+__getattr__
+__getitem__
+__setitem__
+__getitem__
+__setitem__
+
+__setattr__
+__getattr__
+__getitem__
+__setitem__
+__getitem__
+__setitem__

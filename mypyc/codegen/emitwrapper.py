@@ -271,6 +271,70 @@ def generate_dunder_wrapper(cl: ClassIR, fn: FuncIR, emitter: Emitter) -> str:
     return name
 
 
+def generate_setattr_wrapper(cl: ClassIR, fn: FuncIR, emitter: Emitter) -> str:
+    """Generates a wrapper for native __setattr__ methods to be able to fit into
+    the tp_setattro protocol slot. This specifically means that the function
+    raises an exception and returns -1 on failure, 0 on success
+    """
+    input_args = ', '.join('PyObject *obj_{}'.format(arg.name) for arg in fn.args)
+    name = '{}{}{}'.format(NATIVE_PREFIX, fn.name, cl.name_prefix(emitter.names))
+    emitter.emit_line('static int {name}({input_args}) {{'.format(
+        name=name,
+        input_args=input_args
+    ))
+
+    error_code = 'return -1;'
+    arg_names = [arg.name for arg in fn.args]
+    for arg_name, arg in zip(arg_names, fn.args):
+        # Suppress the argument check for *args/**kwargs, since we know it must be right.
+        typ = arg.type if arg.kind not in (ARG_STAR, ARG_STAR2) else object_rprimitive
+        generate_arg_check(arg_name, typ, emitter, error_code)
+    native_args = ', '.join('arg_{}'.format(arg) for arg in arg_names)
+    assert fn.ret_type.is_unboxed
+    emitter.emit_line('{}retval = {}{}({});'.format(emitter.ctype_spaced(fn.ret_type),
+                                                    NATIVE_PREFIX,
+                                                    fn.cname(emitter.names),
+                                                    native_args))
+    emitter.emit_error_check('retval', fn.ret_type, error_code)
+    emitter.emit_line('return 0;')
+
+    emitter.emit_line('}')
+
+    return name
+
+
+def generate_mp_setitem_wrapper(cl: ClassIR, fn: FuncIR, emitter: Emitter) -> str:
+    """Generates a wrapper for native __setitem__ methods to be able to fit into
+    the mp_ass_subscript protocol slot. This specifically means that the function
+    raises an exception and returns -1 on failure, 0 on success
+    """
+    input_args = ', '.join('PyObject *obj_{}'.format(arg.name) for arg in fn.args)
+    name = '{}{}{}_mp'.format(NATIVE_PREFIX, fn.name, cl.name_prefix(emitter.names))
+    emitter.emit_line('static int {name}({input_args}) {{'.format(
+        name=name,
+        input_args=input_args
+    ))
+
+    error_code = 'return -1;'
+    arg_names = [arg.name for arg in fn.args]
+    for arg_name, arg in zip(arg_names, fn.args):
+        # Suppress the argument check for *args/**kwargs, since we know it must be right.
+        typ = arg.type if arg.kind not in (ARG_STAR, ARG_STAR2) else object_rprimitive
+        generate_arg_check(arg_name, typ, emitter, error_code)
+    native_args = ', '.join('arg_{}'.format(arg) for arg in arg_names)
+    assert fn.ret_type.is_unboxed
+    emitter.emit_line('{}retval = {}{}({});'.format(emitter.ctype_spaced(fn.ret_type),
+                                                    NATIVE_PREFIX,
+                                                    fn.cname(emitter.names),
+                                                    native_args))
+    emitter.emit_error_check('retval', fn.ret_type, error_code)
+    emitter.emit_line('return 0;')
+
+    emitter.emit_line('}')
+
+    return name
+
+
 RICHCOMPARE_OPS = {
     '__lt__': 'Py_LT',
     '__gt__': 'Py_GT',

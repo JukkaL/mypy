@@ -9,7 +9,8 @@ from mypyc.codegen.emit import Emitter, HeaderDeclaration
 from mypyc.codegen.emitfunc import native_function_header
 from mypyc.codegen.emitwrapper import (
     generate_dunder_wrapper, generate_hash_wrapper, generate_richcompare_wrapper,
-    generate_bool_wrapper, generate_get_wrapper,
+    generate_bool_wrapper, generate_get_wrapper, generate_setattr_wrapper,
+    generate_mp_setitem_wrapper
 )
 from mypyc.ir.rtypes import RType, RTuple, object_rprimitive
 from mypyc.ir.func_ir import FuncIR, FuncDecl, FUNC_STATICMETHOD, FUNC_CLASSMETHOD
@@ -42,10 +43,13 @@ SLOT_DEFS = {
     '__iter__': ('tp_iter', native_slot),
     '__hash__': ('tp_hash', generate_hash_wrapper),
     '__get__': ('tp_descr_get', generate_get_wrapper),
+    '__getattr__': ('tp_getattro', native_slot),
+    '__setattr__': ('tp_setattro', generate_setattr_wrapper)
 }  # type: SlotTable
 
 AS_MAPPING_SLOT_DEFS = {
     '__getitem__': ('mp_subscript', generate_dunder_wrapper),
+    '__setitem__': ('mp_ass_subscript', generate_mp_setitem_wrapper)
 }  # type: SlotTable
 
 AS_NUMBER_SLOT_DEFS = {
