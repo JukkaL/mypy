@@ -1723,7 +1723,10 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             self.binder = ConditionalTypeBinder()
             with self.binder.top_frame_context():
                 with self.scope.push_class(defn.info):
-                    self.accept(defn.defs)
+                    if not any(refers_to_fullname(decorator,
+                                                  'typing.no_type_check')
+                               for decorator in defn.decorators):
+                        self.accept(defn.defs)
             self.binder = old_binder
             if not (defn.info.typeddict_type or defn.info.tuple_type or defn.info.is_enum):
                 # If it is not a normal class (not a special form) check class keywords.
@@ -1736,6 +1739,8 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                 sig = type_object_type(defn.info, self.named_type)  # type: Type
                 # Decorators are applied in reverse order.
                 for decorator in reversed(defn.decorators):
+                    if refers_to_fullname(decorator, 'typing.no_type_check'):
+                        continue
                     if (isinstance(decorator, CallExpr)
                             and isinstance(decorator.analyzed, PromoteExpr)):
                         # _promote is a special type checking related construct.

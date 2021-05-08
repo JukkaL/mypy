@@ -388,6 +388,15 @@ class A:
 class B(A):  # E: Missing positional argument "x" in call to "__init_subclass__" of "A"
     def __init_subclass__(cls) -> None: pass
 
+[case testNoTypeCheckDecoratorOnClass]
+import typing
+
+@typing.no_type_check
+class A:
+    def f(self) -> None:
+        1 + 'x'
+[typing fixtures/typing-medium.pyi]
+
 [case testOverrideWithDecorator]
 from typing import Callable
 
