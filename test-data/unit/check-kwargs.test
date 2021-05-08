@@ -491,3 +491,35 @@ m = {} # type: Mapping[str, object]
 f(**m)
 g(**m)  # TODO: Should be an error
 [builtins fixtures/dict.pyi]
+
+
+[case testGivingArgumentAsPositionalAndKeywordArg3]
+from typing import Mapping, Any, Union
+from typing_extensions import Literal
+def f(a=None, b=None, **kwargs) -> None: pass
+def g(a: int, b: int) -> None: pass # N: "g" defined here
+def h(a: int, b: int, **kwargs) -> None: pass
+
+s = {3: 2} # type: Mapping[Literal[3], int]
+f(**s) # E: Keywords must be strings
+
+t = {'b':2} # type: Mapping[Literal['b'], int]
+f(**t)
+h(**t)
+
+u = {'b':2} # type: Mapping[Literal['c'], int] \
+# E: Dict entry 0 has incompatible type "Literal['b']": "int"; expected "Literal['c']": "int"
+f(**u)
+
+v = {'a':2, 'b':1} # type: Mapping[Literal['a','b'], int]
+f(**v)
+
+w = {'c':2} # type: Mapping[Literal['d'], int] \
+# E: Dict entry 0 has incompatible type "Literal['c']": "int"; expected "Literal['d']": "int"
+f(**w)
+
+x = {'c':1, 'd': 2} # type: Mapping[Literal['c','d'], int]
+g(**x) # E: Unexpected keyword argument "c" for "g"
+h(**x) # E: Missing positional arguments "a", "b" in call to "h"
+
+[builtins fixtures/dict.pyi]
