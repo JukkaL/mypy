@@ -15,6 +15,11 @@ load_address_op(
     type=object_rprimitive,
     src='PyBool_Type')
 
+load_address_op(
+    name='builtins.filter',
+    type=object_rprimitive,
+    src='PyFilter_Type'
+)
 # Get the boxed Python 'None' object
 none_object_op = load_address_op(
     name='Py_None',
@@ -32,6 +37,7 @@ not_implemented_op = load_address_op(
     name='builtins.NotImplemented',
     type=object_rprimitive,
     src='_Py_NotImplementedStruct')
+
 
 # id(obj)
 function_op(

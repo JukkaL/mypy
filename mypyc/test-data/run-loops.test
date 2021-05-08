@@ -452,3 +452,19 @@ def bar(x: Optional[str]) -> None:
 [file driver.py]
 from native import bar
 bar(None)
+
+[case testFilterObject]
+vars = (
+    ("a", 'lol'),
+    ("b", 'asdf'),
+    ("lol", "test"),
+    ("an int", 10),
+)
+
+filter_vars = (
+    ("a", 'lol'),
+    ("an int", 10),
+)
+
+assert sum(filter(lambda x: x % 2, range(10))) == 25
+assert tuple(filter(lambda x: x[0].startswith("a"), vars)) ==  filter_vars

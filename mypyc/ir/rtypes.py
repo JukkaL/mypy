@@ -324,6 +324,9 @@ str_rprimitive = RPrimitive('builtins.str', is_unboxed=False, is_refcounted=True
 tuple_rprimitive = RPrimitive('builtins.tuple', is_unboxed=False,
                               is_refcounted=True)  # type: Final
 
+filter_rpimitive = RPrimitive('builtins.filter', is_unboxed=False,
+                              is_refcounted=True)  # type: Final
+
 
 def is_tagged(rtype: RType) -> bool:
     return rtype is int_rprimitive or rtype is short_int_rprimitive
@@ -399,6 +402,10 @@ def is_str_rprimitive(rtype: RType) -> bool:
 
 def is_tuple_rprimitive(rtype: RType) -> bool:
     return isinstance(rtype, RPrimitive) and rtype.name == 'builtins.tuple'
+
+
+def is_filter_rprimitive(rtype: RType) -> bool:
+    return isinstance(rtype, RPrimitive) and rtype.name == 'builtins.filter'
 
 
 def is_sequence_rprimitive(rtype: RType) -> bool:

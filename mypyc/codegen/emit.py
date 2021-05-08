@@ -10,7 +10,7 @@ from mypyc.common import (
 )
 from mypyc.ir.ops import BasicBlock, Value
 from mypyc.ir.rtypes import (
-    RType, RTuple, RInstance, RUnion, RPrimitive,
+    RType, RTuple, RInstance, RUnion, RPrimitive, is_filter_rprimitive,
     is_float_rprimitive, is_bool_rprimitive, is_int_rprimitive, is_short_int_rprimitive,
     is_list_rprimitive, is_dict_rprimitive, is_set_rprimitive, is_tuple_rprimitive,
     is_none_rprimitive, is_object_rprimitive, object_rprimitive, is_str_rprimitive,
@@ -411,7 +411,7 @@ class Emitter:
         # TODO: Verify refcount handling.
         if (is_list_rprimitive(typ) or is_dict_rprimitive(typ) or is_set_rprimitive(typ)
                 or is_float_rprimitive(typ) or is_str_rprimitive(typ) or is_int_rprimitive(typ)
-                or is_bool_rprimitive(typ)):
+                or is_bool_rprimitive(typ) or is_filter_rprimitive(typ)):
             if declare_dest:
                 self.emit_line('PyObject *{};'.format(dest))
             if is_list_rprimitive(typ):
@@ -428,6 +428,8 @@ class Emitter:
                 prefix = 'PyLong'
             elif is_bool_rprimitive(typ) or is_bit_rprimitive(typ):
                 prefix = 'PyBool'
+            elif is_filter_rprimitive(typ):
+                prefix = 'PyIter'
             else:
                 assert False, 'unexpected primitive type'
             check = '({}_Check({}))'

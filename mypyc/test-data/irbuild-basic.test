@@ -3649,3 +3649,76 @@ L0:
     r2 = r1 >= 0 :: signed
     r3 = truncate r1: int32 to builtins.bool
     return r3
+
+[case testFilterObject]
+def filter_func(x: int)->bool:
+    return x % 2 == 0
+
+def filter_object()->None:
+    f = filter(filter_func, range(10))
+    sum = 0
+    for i in f:
+        sum += i
+
+[out]
+def filter_func(x):
+    x, r0 :: int
+    r1 :: native_int
+    r2, r3 :: bit
+    r4 :: bool
+    r5 :: bit
+L0:
+    r0 = CPyTagged_Remainder(x, 4)
+    r1 = r0 & 1
+    r2 = r1 == 0
+    if r2 goto L1 else goto L2 :: bool
+L1:
+    r3 = r0 == 0
+    r4 = r3
+    goto L3
+L2:
+    r5 = CPyTagged_IsEq_(r0, 0)
+    r4 = r5
+L3:
+    return r4
+def filter_object():
+    r0 :: dict
+    r1 :: str
+    r2, r3 :: object
+    r4 :: str
+    r5, r6, r7, r8, r9 :: object
+    r10, f :: filter
+    sum :: int
+    r11, r12 :: object
+    r13, i, r14 :: int
+    r15 :: bit
+L0:
+    r0 = __main__.globals :: static
+    r1 = 'filter_func'
+    r2 = CPyDict_GetItem(r0, r1)
+    r3 = builtins :: module
+    r4 = 'range'
+    r5 = CPyObject_GetAttr(r3, r4)
+    r6 = box(short_int, 20)
+    r7 = PyObject_CallFunctionObjArgs(r5, r6, 0)
+    r8 = load_address PyFilter_Type
+    r9 = PyObject_CallFunctionObjArgs(r8, r2, r7, 0)
+    r10 = cast(filter, r9)
+    f = r10
+    sum = 0
+    r11 = PyObject_GetIter(f)
+L1:
+    r12 = PyIter_Next(r11)
+    if is_error(r12) goto L4 else goto L2
+L2:
+    r13 = unbox(int, r12)
+    i = r13
+    r14 = CPyTagged_Add(sum, i)
+    sum = r14
+L3:
+    goto L1
+L4:
+    r15 = CPy_NoErrOccured()
+L5:
+    return 1
+
