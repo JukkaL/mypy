@@ -33,7 +33,6 @@ include build-requirements.txt
 include test-requirements.txt
 include mypy_self_check.ini
 prune misc
-include misc/proper_plugin.py
 graft test-data
 include conftest.py
 include runtests.py
