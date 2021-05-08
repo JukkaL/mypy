@@ -11,12 +11,14 @@ implementation simple.
 """
 
 import re
+import string
 
 from typing import (
     cast, List, Tuple, Dict, Callable, Union, Optional, Pattern, Match, Set, Any
 )
 from typing_extensions import Final, TYPE_CHECKING
 
+from mypy.traverser import TraverserVisitor
 from mypy.types import (
     Type, AnyType, TupleType, Instance, UnionType, TypeOfAny, get_proper_type, TypeVarType,
     LiteralType, get_proper_types
@@ -161,6 +163,32 @@ class ConversionSpecifier:
 
     def has_star(self) -> bool:
         return self.width == '*' or self.precision == '*'
+
+
+class LineNumChanger(TraverserVisitor):
+    def __init__(self, line: int, end_line: Optional[int], column: int) -> None:
+        self.line = line
+        self.end_line = end_line
+        self.column = column
+
+    def set_context_info(self, ctx: Context) -> None:
+        ctx.line = self.line
+        ctx.end_line = self.end_line
+        ctx.column = self.column
+
+    def visit_index_expr(self, expr: IndexExpr) -> None:
+        self.set_context_info(expr)
+        super().visit_index_expr(expr)
+
+    def visit_member_expr(self, o: MemberExpr) -> None:
+        self.set_context_info(o)
+        super().visit_member_expr(o)
+
+    def visit_int_expr(self, o: IntExpr) -> None:
+        self.set_context_info(o)
+
+    def visit_str_expr(self, o: StrExpr) -> None:
+        self.set_context_info(o)
 
 
 class StringFormatterChecker:
@@ -518,7 +546,26 @@ class StringFormatterChecker:
 
         # This is a bit of a dirty trick, but it looks like this is the simplest way.
         temp_errors = self.msg.clean_copy().errors
-        dummy = DUMMY_FIELD_NAME + spec.field[len(spec.key):]
+
+        try:
+            first_obj, split_fields = string._string.formatter_field_name_split(
+                spec.field[len(spec.key):])
+            split_fields_str = []
+            for is_attr, field in split_fields:
+                if is_attr:
+                    field_str = "." + str(field)
+                elif isinstance(field, int):
+                    field_str = '[{}]'.format(field)
+                else:
+                    field_str = '["{}"]'.format(field.replace('"', '\\"'))
+                split_fields_str.append(field_str)
+        except ValueError:
+            self.msg.fail('Only index and member expressions are allowed in'
+                          ' format field accessors; got "{}"'.format(spec.field),
+                          ctx, code=codes.STRING_FORMATTING)
+            return TempNode(AnyType(TypeOfAny.from_error))
+
+        dummy = DUMMY_FIELD_NAME + first_obj + ''.join(split_fields_str)
         temp_ast = parse(dummy, fnam='<format>', module=None,
                          options=self.chk.options, errors=temp_errors)  # type: Node
         if temp_errors.is_errors():
@@ -536,8 +583,7 @@ class StringFormatterChecker:
 
         # Check if there are any other errors (like missing members).
         # TODO: fix column to point to actual start of the format specifier _within_ string.
-        temp_ast.line = ctx.line
-        temp_ast.column = ctx.column
+        temp_ast.accept(LineNumChanger(ctx.line, ctx.end_line, ctx.column))
         self.exprchk.accept(temp_ast)
         return temp_ast
 
@@ -564,15 +610,13 @@ class StringFormatterChecker:
             node = temp_ast.expr
         else:
             node = temp_ast.base
-            if not isinstance(temp_ast.index, (NameExpr, IntExpr)):
+            if not isinstance(temp_ast.index, (StrExpr, IntExpr)):
                 assert spec.key, "Call this method only after auto-generating keys!"
                 assert spec.field
                 self.msg.fail('Invalid index expression in format field'
                               ' accessor "{}"'.format(spec.field[len(spec.key):]), ctx,
                               code=codes.STRING_FORMATTING)
                 return False
-            if isinstance(temp_ast.index, NameExpr):
-                temp_ast.index = StrExpr(temp_ast.index.name)
         if isinstance(node, NameExpr) and node.name == DUMMY_FIELD_NAME:
             # Replace it with the actual replacement expression.
             assert isinstance(temp_ast, (IndexExpr, MemberExpr))  # XXX: this is redundant
