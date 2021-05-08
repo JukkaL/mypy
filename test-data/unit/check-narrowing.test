@@ -1030,6 +1030,167 @@ else:
 
 [builtins fixtures/primitives.pyi]
 
+[case testNarrowingLenItemAndLenCompare]
+from typing import Tuple, Union, Any
+
+x: Any
+if len(x) == x:
+    reveal_type(x) # N: Revealed type is "Any"
+[builtins fixtures/len.pyi]
+
+[case testNarrowingLenTuple]
+from typing import Tuple, Union
+
+VarTuple = Union[Tuple[int, int], Tuple[int, int, int]]
+
+def make_tuple() -> VarTuple:
+    return (1, 1)
+
+x = make_tuple()
+a = b = c = 0
+if len(x) == 3:
+    a, b, c = x
+else:
+    a, b = x
+
+if len(x) != 3:
+    a, b = x
+else:
+    a, b, c = x
+[builtins fixtures/len.pyi]
+
+[case testNarrowingLenVariantLengthTuple]
+from typing import Tuple, Union
+
+def make_tuple() -> Tuple[int, ...]:
+    return (1, 1)
+
+x = make_tuple()
+
+if len(x) == 3:
+    reveal_type(x) # N: Revealed type is "Tuple[builtins.int, builtins.int, builtins.int]"
+else:
+    reveal_type(x) # N: Revealed type is "builtins.tuple[builtins.int]"
+
+if len(x) != 3:
+    reveal_type(x) # N: Revealed type is "builtins.tuple[builtins.int]"
+else:
+    reveal_type(x) # N: Revealed type is "Tuple[builtins.int, builtins.int, builtins.int]"
+[builtins fixtures/len.pyi]
+
+[case testNarrowingLenTypeUnaffected]
+from typing import Tuple, Union, List, Any
+
+def make() -> Union[str, List[int]]:
+    return ""
+
+x = make()
+
+if len(x) == 3:
+    reveal_type(x) # N: Revealed type is "Union[builtins.str, builtins.list[builtins.int]]"
+else:
+    reveal_type(x) # N: Revealed type is "Union[builtins.str, builtins.list[builtins.int]]"
+[builtins fixtures/len.pyi]
+
+[case testNarrowingLenAnyListElseNotAffected]
+from typing import Any
+def f(self, value: Any) -> Any:
+    if isinstance(value, list) and len(value) == 0:
+        reveal_type(value) # N: Revealed type is "builtins.list[Any]"
+        return value
+    reveal_type(value) # N: Revealed type is "Any"
+    return None
+[builtins fixtures/len.pyi]
+
+[case testNarrowingLenLiteral]
+from typing import Tuple, Union
+from typing_extensions import Literal
+
+def make() -> Literal['a', 'bb', 'cc', 'd']:
+    return "a"
+
+x = make()
+
+if len(x) == 2:
+    reveal_type(x) # N: Revealed type is "Union[Literal['bb'], Literal['cc']]"
+else:
+    reveal_type(x) # N: Revealed type is "Union[Literal['a'], Literal['d']]"
+[builtins fixtures/len.pyi]
+
+[case testNarrowingLenMultiple]
+from typing import Tuple, Union
+
+VarTuple = Union[Tuple[int, int], Tuple[int, int, int]]
+
+def make_tuple() -> VarTuple:
+    return (1, 1)
+
+x = make_tuple()
+y = make_tuple()
+if len(x) == len(y) == 3:
+    reveal_type(x) # N: Revealed type is "Tuple[builtins.int, builtins.int, builtins.int]"
+    reveal_type(y) # N: Revealed type is "Tuple[builtins.int, builtins.int, builtins.int]"
+[builtins fixtures/len.pyi]
+
+[case testNarrowingLenFinal]
+from typing import Tuple, Union
+from typing_extensions import Final
+
+VarTuple = Union[Tuple[int, int], Tuple[int, int, int]]
+
+def make_tuple() -> VarTuple:
+    return (1, 1)
+
+x = make_tuple()
+fin: Final = 3
+if len(x) == fin:
+    reveal_type(x) # N: Revealed type is "Tuple[builtins.int, builtins.int, builtins.int]"
+[builtins fixtures/len.pyi]
+
+[case testNarrowingLenBiggerThan]
+from typing import Tuple, Union
+
+VarTuple = Union[Tuple[int], Tuple[int, int], Tuple[int, int, int]]
+
+def make_tuple() -> VarTuple:
+    return (1, 1)
+
+x = make_tuple()
+if len(x) > 1:
+    reveal_type(x) # N: Revealed type is "Union[Tuple[builtins.int, builtins.int], Tuple[builtins.int, builtins.int, builtins.int]]"
+else:
+    reveal_type(x) # N: Revealed type is "Tuple[builtins.int]"
+
+if len(x) < 2:
+    reveal_type(x) # N: Revealed type is "Tuple[builtins.int]"
+else:
+    reveal_type(x) # N: Revealed type is "Union[Tuple[builtins.int, builtins.int], Tuple[builtins.int, builtins.int, builtins.int]]"
+
+if len(x) >= 2:
+    reveal_type(x) # N: Revealed type is "Union[Tuple[builtins.int, builtins.int], Tuple[builtins.int, builtins.int, builtins.int]]"
+else:
+    reveal_type(x) # N: Revealed type is "Tuple[builtins.int]"
+
+if len(x) <= 2:
+    reveal_type(x) # N: Revealed type is "Union[Tuple[builtins.int], Tuple[builtins.int, builtins.int]]"
+else:
+    reveal_type(x) # N: Revealed type is "Tuple[builtins.int, builtins.int, builtins.int]"
+[builtins fixtures/len.pyi]
+
+[case testNarrowingLenBiggerThanVariantTuple]
+from typing import Tuple
+
+VarTuple = Tuple[int, ...]
+
+def make_tuple() -> VarTuple:
+    return (1, 1)
+
+x = make_tuple()
+if len(x) < 3:
+    reveal_type(x) # N: Revealed type is "builtins.tuple[builtins.int]"
+else:
+    reveal_type(x) # N: Revealed type is "builtins.tuple[builtins.int]"
+[builtins fixtures/len.pyi]
 [case testNarrowingTypedDictUsingEnumLiteral]
 # flags: --python-version 3.6
 from typing import Union
