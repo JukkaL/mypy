@@ -1470,3 +1470,29 @@ x9, y9, x10, y10, z5 = *points2, 1, *points2 # E: Contiguous iterable with same 
 [case testAssignEmptyBogus]
 () = 1  # E: "Literal[1]?" object is not iterable
 [builtins fixtures/tuple.pyi]
+
+[case testMultiplyTupleByIntegerLiteral]
+from typing import Tuple
+t = ('',) * 2
+reveal_type(t)  # N: Revealed type is "Tuple[builtins.str, builtins.str]"
+t2 = ('',) * -1
+reveal_type(t2)  # N: Revealed type is "Tuple[]"
+t3 = ('', 1) * 2
+reveal_type(t3)  # N: Revealed type is "Tuple[builtins.str, builtins.int, builtins.str, builtins.int]"
+def f() -> Tuple[str, ...]:
+    return ('', )
+reveal_type(f() * 2)  # N: Revealed type is "builtins.tuple[builtins.str*]"
+[builtins fixtures/tuple.pyi]
+
+[case testMultiplyTupleByIntegerLiteralReverse]
+from typing import Tuple
+t = 2 * ('',)
+reveal_type(t)  # N: Revealed type is "Tuple[builtins.str, builtins.str]"
+t2 = -1 * ('',)
+reveal_type(t2)  # N: Revealed type is "Tuple[]"
+t3 = 2 * ('', 1)
+reveal_type(t3)  # N: Revealed type is "Tuple[builtins.str, builtins.int, builtins.str, builtins.int]"
+def f() -> Tuple[str, ...]:
+    return ('', )
+reveal_type(2 * f())  # N: Revealed type is "builtins.tuple[builtins.str*]"
+[builtins fixtures/tuple.pyi]

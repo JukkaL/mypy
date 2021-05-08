@@ -10,7 +10,8 @@ from mypy.plugin import (
 from mypy.plugins.common import try_getting_str_literals
 from mypy.types import (
     Type, Instance, AnyType, TypeOfAny, CallableType, NoneType, TypedDictType,
-    TypeVarDef, TypeVarType, TPDICT_FB_NAMES, get_proper_type, LiteralType
+    TypeVarDef, TypeVarType, TPDICT_FB_NAMES, get_proper_type, LiteralType,
+    TupleType
 )
 from mypy.subtypes import is_subtype
 from mypy.typeops import make_simplified_union
@@ -60,6 +61,8 @@ class DefaultPlugin(Plugin):
             return int_pow_callback
         elif fullname == 'builtins.int.__neg__':
             return int_neg_callback
+        elif fullname in ('builtins.tuple.__mul__', 'builtins.tuple.__rmul__'):
+            return tuple_mul_callback
         elif fullname in set(n + '.setdefault' for n in TPDICT_FB_NAMES):
             return typed_dict_setdefault_callback
         elif fullname in set(n + '.pop' for n in TPDICT_FB_NAMES):
@@ -462,4 +465,25 @@ def int_neg_callback(ctx: MethodContext) -> Type:
         fallback = ctx.type.fallback
         if isinstance(value, int):
             return LiteralType(value=-value, fallback=fallback)
+    return ctx.default_return_type
+
+
+def tuple_mul_callback(ctx: MethodContext) -> Type:
+    """Infer a more precise return type for tuple.__mul__ and tuple.__rmul__.
+
+    This is used to return a specific sized tuple if multiplied by Literal int
+    """
+    if not isinstance(ctx.type, TupleType):
+        return ctx.default_return_type
+
+    arg_type = ctx.arg_types[0][0]
+    if isinstance(arg_type, Instance) and arg_type.last_known_value is not None:
+        value = arg_type.last_known_value.value
+        if isinstance(value, int):
+            return ctx.type.copy_modified(items=ctx.type.items * value)
+    elif isinstance(ctx.type, LiteralType):
+        value = arg_type.value
+        if isinstance(value, int):
+            return ctx.type.copy_modified(items=ctx.type.items * value)
+
     return ctx.default_return_type

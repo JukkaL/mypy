@@ -1672,7 +1672,7 @@ def f(x: T) -> str:
 [case testTypeVarReversibleOperatorTuple]
 from typing import TypeVar, Tuple
 class A(Tuple[int, int]):
-    def __mul__(cls, other: Tuple[int, int]) -> str: return ""
+    def __mul__(cls, other: Tuple[int, int]) -> str: return "" # type: ignore # overriding default __mul__
 T = TypeVar("T", bound=A)
 def f(x: T) -> str:
     return reveal_type(x * (1, 2) )  # N: Revealed type is "builtins.str"
