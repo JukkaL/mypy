@@ -3867,7 +3867,7 @@ class ExpressionChecker(ExpressionVisitor[Type]):
 
         return res
 
-    def analyze_cond_branch(self, map: Optional[Dict[Expression, Type]],
+    def analyze_cond_branch(self, map: 'mypy.checker.TypeMap',
                             node: Expression, context: Optional[Type],
                             allow_none_return: bool = False) -> Type:
         with self.chk.binder.frame_context(can_skip=True, fall_through=0):

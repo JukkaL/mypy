@@ -115,14 +115,7 @@ FineGrainedDeferredNode = NamedTuple(
 # particular truth value. A value of None means that the condition can
 # never have that truth value.
 
-# NB: The keys of this dict are nodes in the original source program,
-# which are compared by reference equality--effectively, being *the
-# same* expression of the program, not just two identical expressions
-# (such as two references to the same variable). TODO: it would
-# probably be better to have the dict keyed by the nodes' literal_hash
-# field instead.
-
-TypeMap = Optional[Dict[Expression, Type]]
+TypeMap = Optional[Dict[Key, Type]]
 
 # An object that represents either a precise type or a type with an upper bound;
 # it is important for correct type inference with isinstance.
@@ -3927,7 +3920,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             # We don't know how properly make the type callable.
             return [typ], [typ]
 
-    def conditional_callable_type_map(self, expr: Expression,
+    def conditional_callable_type_map(self, lhash: Key,
                                       current_type: Optional[Type],
                                       ) -> Tuple[TypeMap, TypeMap]:
         """Takes in an expression and the current type of the expression.
@@ -3947,9 +3940,9 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                                                             unsound_partition=False)
 
         if len(callables) and len(uncallables):
-            callable_map = {expr: UnionType.make_union(callables)} if len(callables) else None
+            callable_map = {lhash: UnionType.make_union(callables)} if len(callables) else None
             uncallable_map = {
-                expr: UnionType.make_union(uncallables)} if len(uncallables) else None
+                lhash: UnionType.make_union(uncallables)} if len(uncallables) else None
             return callable_map, uncallable_map
 
         elif len(callables):
@@ -4080,8 +4073,10 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                 if len(node.args) != 1:  # the error will be reported elsewhere
                     return {}, {}
                 if literal(expr) == LITERAL_TYPE:
+                    lhash = literal_hash(expr)
+                    assert lhash is not None
                     vartype = type_map[expr]
-                    return self.conditional_callable_type_map(expr, vartype)
+                    return self.conditional_callable_type_map(lhash, vartype)
             elif isinstance(node.callee, RefExpr):
                 if node.callee.type_guard is not None:
                     # TODO: Follow keyword args or *args, **kwargs
@@ -4089,7 +4084,9 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                         self.fail("Type guard requires positional argument", node)
                         return {}, {}
                     if literal(expr) == LITERAL_TYPE:
-                        return {expr: TypeGuardType(node.callee.type_guard)}, {}
+                        lhash = literal_hash(expr)
+                        assert lhash is not None
+                        return {lhash: TypeGuardType(node.callee.type_guard)}, {}
         elif isinstance(node, ComparisonExpr):
             # Step 1: Obtain the types of each operand and whether or not we can
             # narrow their types. (For example, we shouldn't try narrowing the
@@ -4222,7 +4219,9 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                             and collection_item_type.type.fullname == 'builtins.object'):
                         continue
                     if is_overlapping_erased_types(item_type, collection_item_type):
-                        if_map, else_map = {operands[left_index]: remove_optional(item_type)}, {}
+                        lhash = literal_hash(operands[left_index])
+                        assert lhash is not None
+                        if_map, else_map = {lhash: remove_optional(item_type)}, {}
                     else:
                         continue
                 else:
@@ -4243,7 +4242,8 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             vartype = type_map[node]
             if_type = true_only(vartype)  # type: Type
             else_type = false_only(vartype)  # type: Type
-            ref = node  # type: Expression
+            ref = literal_hash(node)
+            assert ref is not None
             if_map = ({ref: if_type} if not isinstance(get_proper_type(if_type), UninhabitedType)
                       else None)
             else_map = ({ref: else_type} if not isinstance(get_proper_type(else_type),
@@ -4303,25 +4303,25 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         if new_types is None:
             return None
         output_map = {}
-        for expr, expr_type in new_types.items():
+        for lhash, expr_type in new_types.items():
             # The original inferred type should always be present in the output map, of course
-            output_map[expr] = expr_type
+            output_map[lhash] = expr_type
 
             # Next, try using this information to refine the parent types, if applicable.
-            new_mapping = self.refine_parent_types(existing_types, expr, expr_type)
-            for parent_expr, proposed_parent_type in new_mapping.items():
+            new_mapping = self.refine_parent_types(existing_types, lhash, expr_type)
+            for parent_lhash, proposed_parent_type in new_mapping.items():
                 # We don't try inferring anything if we've already inferred something for
                 # the parent expression.
                 # TODO: Consider picking the narrower type instead of always discarding this?
-                if parent_expr in new_types:
+                if parent_lhash in new_types:
                     continue
-                output_map[parent_expr] = proposed_parent_type
+                output_map[parent_lhash] = proposed_parent_type
         return output_map
 
     def refine_parent_types(self,
                             existing_types: Mapping[Expression, Type],
-                            expr: Expression,
-                            expr_type: Type) -> Mapping[Expression, Type]:
+                            lhash: Key,
+                            expr_type: Type) -> Mapping[Key, Type]:
         """Checks if the given expr is a 'lookup operation' into a union and iteratively refines
         the parent types based on the 'expr_type'.
 
@@ -4331,7 +4331,11 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         For more details about what a 'lookup operation' is and how we use the expr_type to refine
         the parent types of lookup_expr, see the docstring in 'propagate_up_typemap_info'.
         """
-        output = {}  # type: Dict[Expression, Type]
+        output = {}  # type: Dict[Key, Type]
+
+        lhash_to_expr = {literal_hash(expr): expr for expr in existing_types}
+        if None in lhash_to_expr:
+            del lhash_to_expr[None]
 
         # Note: parent_expr and parent_type are progressively refined as we crawl up the
         # parent lookup chain.
@@ -4340,10 +4344,10 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             # "lookup" some key in the parent type. If so, save the parent type
             # and create function that will try replaying the same lookup
             # operation against arbitrary types.
-            if isinstance(expr, MemberExpr):
-                parent_expr = expr.expr
-                parent_type = existing_types.get(parent_expr)
-                member_name = expr.name
+            if lhash[0] == 'Member' and lhash[1] is not None:
+                parent_lhash = lhash[1]
+                parent_type = existing_types.get(lhash_to_expr.get(parent_lhash, Expression()))
+                member_name = lhash[2]
 
                 def replay_lookup(new_parent_type: ProperType) -> Optional[Type]:
                     msg_copy = self.msg.clean_copy()
@@ -4351,7 +4355,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                     member_type = analyze_member_access(
                         name=member_name,
                         typ=new_parent_type,
-                        context=parent_expr,
+                        context=Context(),
                         is_lvalue=False,
                         is_super=False,
                         is_operator=False,
@@ -4364,11 +4368,11 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                         return None
                     else:
                         return member_type
-            elif isinstance(expr, IndexExpr):
-                parent_expr = expr.base
-                parent_type = existing_types.get(parent_expr)
+            elif lhash[0] == 'Index':
+                parent_lhash = lhash[1]
+                parent_type = existing_types.get(lhash_to_expr[parent_lhash])
 
-                index_type = existing_types.get(expr.index)
+                index_type = existing_types.get(lhash_to_expr[lhash[2]])
                 if index_type is None:
                     return output
 
@@ -4436,8 +4440,8 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             if not new_parent_types:
                 return output
 
-            expr = parent_expr
-            expr_type = output[parent_expr] = make_simplified_union(new_parent_types)
+            lhash = parent_lhash
+            expr_type = output[parent_lhash] = make_simplified_union(new_parent_types)
 
         return output
 
@@ -4595,7 +4599,9 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             if not is_optional(expr_type):
                 continue
             if any(is_overlapping_erased_types(expr_type, t) for t in non_optional_types):
-                if_map[operands[i]] = remove_optional(expr_type)
+                lhash = literal_hash(operands[i])
+                assert lhash is not None
+                if_map[lhash] = remove_optional(expr_type)
 
         return if_map, {}
 
@@ -4949,8 +4955,8 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         if type_map is None:
             self.binder.unreachable()
         else:
-            for expr, type in type_map.items():
-                self.binder.put(expr, type)
+            for lhash, type in type_map.items():
+                self.binder.put(lhash, type)
 
     def infer_issubclass_maps(self, node: CallExpr,
                               expr: Expression,
@@ -5028,7 +5034,9 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         if len(out) == 0:
             return None, {}
         new_yes_type = make_simplified_union(out)
-        return {expr: new_yes_type}, {}
+        lhash = literal_hash(expr)
+        assert lhash is not None
+        return {lhash: new_yes_type}, {}
 
     def is_writable_attribute(self, node: Node) -> bool:
         """Check if an attribute is writable"""
@@ -5055,12 +5063,14 @@ def conditional_type_map(expr: Expression,
     if proposed_type_ranges:
         proposed_items = [type_range.item for type_range in proposed_type_ranges]
         proposed_type = make_simplified_union(proposed_items)
+        lhash = literal_hash(expr)
+        assert lhash is not None
         if current_type:
             if isinstance(proposed_type, AnyType):
                 # We don't really know much about the proposed type, so we shouldn't
                 # attempt to narrow anything. Instead, we broaden the expr to Any to
                 # avoid false positives
-                return {expr: proposed_type}, {}
+                return {lhash: proposed_type}, {}
             elif (not any(type_range.is_upper_bound for type_range in proposed_type_ranges)
                and is_proper_subtype(current_type, proposed_type)):
                 # Expression is always of one of the types in proposed_type_ranges
@@ -5075,9 +5085,9 @@ def conditional_type_map(expr: Expression,
                                           for type_range in proposed_type_ranges
                                           if not type_range.is_upper_bound])
                 remaining_type = restrict_subtype_away(current_type, proposed_precise_type)
-                return {expr: proposed_type}, {expr: remaining_type}
+                return {lhash: proposed_type}, {lhash: remaining_type}
         else:
-            return {expr: proposed_type}, {}
+            return {lhash: proposed_type}, {}
     else:
         # An isinstance check, but we don't understand the type
         return {}, {}
@@ -5204,9 +5214,9 @@ def and_conditional_maps(m1: TypeMap, m2: TypeMap) -> TypeMap:
     # arbitrarily give precedence to m2. (In the future, we could use
     # an intersection type.)
     result = m2.copy()
-    m2_keys = set(literal_hash(n2) for n2 in m2)
+    m2_keys = set(n2 for n2 in m2)
     for n1 in m1:
-        if literal_hash(n1) not in m2_keys:
+        if n1 not in m2_keys:
             result[n1] = m1[n1]
     return result
 
@@ -5225,10 +5235,10 @@ def or_conditional_maps(m1: TypeMap, m2: TypeMap) -> TypeMap:
     # expressions whose type is refined by both conditions. (We do not
     # learn anything about expressions whose type is refined by only
     # one condition.)
-    result = {}  # type: Dict[Expression, Type]
+    result = {}  # type: Dict[Key, Type]
     for n1 in m1:
         for n2 in m2:
-            if literal_hash(n1) == literal_hash(n2):
+            if n1 == n2:
                 result[n1] = make_simplified_union([m1[n1], m2[n2]])
     return result
 
@@ -5272,10 +5282,10 @@ def reduce_conditional_maps(type_maps: List[Tuple[TypeMap, TypeMap]],
 
 
 def convert_to_typetype(type_map: TypeMap) -> TypeMap:
-    converted_type_map = {}  # type: Dict[Expression, Type]
+    converted_type_map = {}  # type: Dict[Key, Type]
     if type_map is None:
         return None
-    for expr, typ in type_map.items():
+    for lhash, typ in type_map.items():
         t = typ
         if isinstance(t, TypeVarType):
             t = t.upper_bound
@@ -5283,7 +5293,7 @@ def convert_to_typetype(type_map: TypeMap) -> TypeMap:
         if not isinstance(get_proper_type(t), (UnionType, Instance)):
             # unknown type; error was likely reported earlier
             return {}
-        converted_type_map[expr] = TypeType.make_normalized(typ)
+        converted_type_map[lhash] = TypeType.make_normalized(typ)
     return converted_type_map
 
 

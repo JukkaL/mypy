@@ -127,17 +127,13 @@ class ConditionalTypeBinder:
                 return self.frames[i].types[key]
         return None
 
-    def put(self, expr: Expression, typ: Type) -> None:
-        if not isinstance(expr, (IndexExpr, MemberExpr, NameExpr)):
+    def put(self, lhash: Key, typ: Type) -> None:
+        if lhash[0] not in ('Var', 'Member', 'Index'):
             return
-        if not literal(expr):
-            return
-        key = literal_hash(expr)
-        assert key is not None, 'Internal error: binder tried to put non-literal'
-        if key not in self.declarations:
-            self.declarations[key] = get_declaration(expr)
-            self._add_dependencies(key)
-        self._put(key, typ)
+        if lhash not in self.declarations:
+            self.declarations[lhash] = get_declaration_from_literal(lhash)
+            self._add_dependencies(lhash)
+        self._put(lhash, typ)
 
     def unreachable(self) -> None:
         self.frames[-1].unreachable = True
@@ -265,6 +261,8 @@ class ConditionalTypeBinder:
             return None
         if not literal(expr):
             return
+        lhash = literal_hash(expr)
+        assert lhash is not None
         self.invalidate_dependencies(expr)
 
         if declared_type is None:
@@ -287,7 +285,7 @@ class ConditionalTypeBinder:
             # Instead, since we narrowed type from Any in a recent frame (probably an
             # isinstance check), but now it is reassigned, we broaden back
             # to Any (which is the most recent enclosing type)
-            self.put(expr, enclosing_type)
+            self.put(lhash, enclosing_type)
         # As a special case, when assigning Any to a variable with a
         # declared Optional type that has been narrowed to None,
         # replace all the Nones in the declared Union type with Any.
@@ -302,16 +300,16 @@ class ConditionalTypeBinder:
             # Replace any Nones in the union type with Any
             new_items = [type if isinstance(get_proper_type(item), NoneType) else item
                          for item in declared_type.items]
-            self.put(expr, UnionType(new_items))
+            self.put(lhash, UnionType(new_items))
         elif (isinstance(type, AnyType)
               and not (isinstance(declared_type, UnionType)
                        and any(isinstance(get_proper_type(item), AnyType)
                                for item in declared_type.items))):
             # Assigning an Any value doesn't affect the type to avoid false negatives, unless
             # there is an Any item in a declared union type.
-            self.put(expr, declared_type)
+            self.put(lhash, declared_type)
         else:
-            self.put(expr, type)
+            self.put(lhash, type)
 
         for i in self.try_frames:
             # XXX This should probably not copy the entire frame, but
@@ -429,3 +427,17 @@ def get_declaration(expr: BindableExpression) -> Optional[Type]:
         if not isinstance(type, PartialType):
             return type
     return None
+
+
+def get_declaration_from_literal(lhash: Key) -> Optional[Type]:
+    if lhash[0] == 'Var' and isinstance(lhash[1], Var):
+        typ = get_proper_type(lhash[1].type)
+    elif lhash[0] == 'Member' and isinstance(lhash[2], Var):
+        typ = get_proper_type(lhash[2].type)
+    else:
+        return None
+
+    if not isinstance(type, PartialType):
+        return typ
+    else:
+        return None
