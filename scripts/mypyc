@@ -17,8 +17,11 @@ import subprocess
 import sys
 import tempfile
 import time
+import argparse
+from typing import Dict, List
+from typing_extensions import Final
+import shutil
 
-base_path = os.path.join(os.path.dirname(__file__), '..')
 
 setup_format = """\
 from distutils.core import setup
@@ -27,21 +30,73 @@ from mypyc.build import mypycify
 setup(name='mypyc_output',
       ext_modules=mypycify({}, opt_level="{}"),
 )
-"""
+"""  # type: Final
 
-def main() -> None:
-    build_dir = 'build'  # can this be overridden??
+
+MODE_BUILD = 'build'  # type: Final
+MODE_RUN = 'run'  # type: Final
+MODE_CLEAN = 'clean'  # type: Final
+
+mode_mapping = {
+    'build': MODE_BUILD,
+    'run': MODE_RUN,
+    'clean': MODE_CLEAN
+}  # type: Dict[str, str]
+
+
+class Options:
+    def __init__(self) -> None:
+        self.files = []  # type: List[str]
+        self.build_dir = ''  # type: str
+        self.mode = MODE_BUILD  # type: str
+        self.opt_level = '3'  # type: str
+
+
+def parse_options() -> Options:
+    options = Options()
+    # keep default mypyc configs
+    options.opt_level = os.getenv("MYPYC_OPT_LEVEL", '3')
+    options.build_dir = 'build'  # can this be overridden??
+
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(help='mypyc subcommand', dest='subcommand')
+    subparsers.required = True
+
+    # create subparsers
+    build_parser = subparsers.add_parser('build', help='compile python files')
+    run_parser = subparsers.add_parser('run', help='compile and run a single python file')
+    clean_parser = subparsers.add_parser('clean', help='clean build directory')
+
+    # construct build subcommand's extra param
+    build_parser.add_argument(metavar='files', nargs='+', dest='files',
+                        help="Compile given files")
+
+    # construct run subcommand's extra param
+    run_parser.add_argument('file', type=str, help="Compile and run given file")
+
+
+    args = parser.parse_args()
+    options.mode = mode_mapping[args.subcommand]
+
+    if options.mode == MODE_BUILD:
+        options.files = args.files
+    elif options.mode == MODE_RUN:
+        options.files = [args.file]
+    else:
+        options.files = []
+    return options
+
+
+def mypyc_compile(build_dir: str,
+                  paths: List[str],
+                  opt_level: str) -> int:
     try:
         os.mkdir(build_dir)
     except FileExistsError:
         pass
-
-    opt_level = os.getenv("MYPYC_OPT_LEVEL", '3')
-
     setup_file = os.path.join(build_dir, 'setup.py')
     with open(setup_file, 'w') as f:
-        f.write(setup_format.format(sys.argv[1:], opt_level))
-
+        f.write(setup_format.format(paths, opt_level))
     # We don't use run_setup (like we do in the test suite) because it throws
     # away the error code from distutils, and we don't care about the slight
     # performance loss here.
@@ -49,7 +104,70 @@ def main() -> None:
     base_path = os.path.join(os.path.dirname(__file__), '..')
     env['PYTHONPATH'] = base_path + os.pathsep + env.get('PYTHONPATH', '')
     cmd = subprocess.run([sys.executable, setup_file, 'build_ext', '--inplace'], env=env)
+    return cmd.returncode
+
+
+def mypyc_build(options: Options) -> None:
+    if len(options.files) < 1:
+        sys.exit("no source files provided")
+    returncode = mypyc_compile(options.build_dir, options.files, options.opt_level)
+    sys.exit(returncode)
+
+
+def mypyc_run(options: Options) -> None:
+    if len(options.files) < 1:
+        sys.exit("no source file provided")
+    returncode = mypyc_compile(options.build_dir, options.files[0:1], options.opt_level)
+    if returncode != 0:
+        sys.exit(returncode)
+    module_name = os.path.basename(options.files[0])
+    module_name = os.path.splitext(module_name)[0]
+    import_command = "import {}".format(module_name)
+    # TODO: well this is dumb, we'd come up with a better way
+    env = os.environ.copy()
+    base_path = os.path.join(os.path.dirname(__file__), '..')
+    env['PYTHONPATH'] = base_path + os.pathsep + env.get('PYTHONPATH', '')
+    # TODO: How do we guarantee that we run the compiled version when both .py and .so files
+    # are in the same directory?
+    cmd = subprocess.run([sys.executable, '-c', import_command], env=env)
     sys.exit(cmd.returncode)
+
+
+def mypyc_clean(options: Options) -> None:
+    if os.path.exists(options.build_dir):
+        files = []
+        directories = []
+        # TODO: this simply hardcodes what generates now
+        # a better solution is to use some configuration files
+        # maybe use a `.mypyc_cache` folder to store them
+        with os.scandir(options.build_dir) as entries:
+            for entry in entries:
+                if entry.is_dir() and entry.path.find("temp") != -1:
+                    directories.append(entry.path)
+                if entry.is_file() and (entry.path.endswith('.c') or entry.path.endswith('.h')
+                                        or entry.path.find('ops.txt') != -1):
+                    files.append(entry.path)
+        for file in files:
+            try:
+                os.remove(file)
+            except OSError as e:
+                print('Error "{}" occurred when removing {}'.format(e.strerror, file))
+        for directory in directories:
+            shutil.rmtree(directory)
+        sys.exit(0)
+    else:
+        sys.exit("Build directory '{}' does not exists".format(options.build_dir))
+
+
+def main() -> None:
+    options = parse_options()
+    if options.mode == MODE_BUILD:
+        mypyc_build(options)
+    elif options.mode == MODE_RUN:
+        mypyc_run(options)
+    elif options.mode == MODE_CLEAN:
+        mypyc_clean(options)
+
 
 if __name__ == '__main__':
     main()
