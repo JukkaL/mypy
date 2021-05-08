@@ -783,3 +783,74 @@ reveal_type(dynamic_signature(1))  # N: Revealed type is "builtins.int"
 [file mypy.ini]
 \[mypy]
 plugins=<ROOT>/test-data/unit/plugins/function_sig_hook.py
+
+[case testClassAttrPluginClassVar]
+# flags: --config-file tmp/mypy.ini
+
+from typing import Type
+
+class Cls:
+    attr = 'test'
+    unchanged = 'test'
+
+reveal_type(Cls().attr)  # N: Revealed type is "builtins.str"
+reveal_type(Cls.attr)  # N: Revealed type is "builtins.int"
+reveal_type(Cls.unchanged)  # N: Revealed type is "builtins.str"
+x: Type[Cls]
+reveal_type(x.attr)  # N: Revealed type is "builtins.int"
+[file mypy.ini]
+\[mypy]
+plugins=<ROOT>/test-data/unit/plugins/class_attr_hook.py
+
+[case testClassAttrPluginMethod]
+# flags: --config-file tmp/mypy.ini
+
+class Cls:
+    def attr(self) -> None:
+        pass
+
+reveal_type(Cls.attr)  # N: Revealed type is "builtins.int"
+[file mypy.ini]
+\[mypy]
+plugins=<ROOT>/test-data/unit/plugins/class_attr_hook.py
+
+[case testClassAttrPluginEnum]
+# flags: --config-file tmp/mypy.ini
+
+import enum
+
+class Cls(enum.Enum):
+    attr = 'test'
+
+reveal_type(Cls.attr)  # N: Revealed type is "builtins.int"
+[file mypy.ini]
+\[mypy]
+plugins=<ROOT>/test-data/unit/plugins/class_attr_hook.py
+
+[case testClassAttrPluginMetaclass]
+# flags: --config-file tmp/mypy.ini
+
+from typing import Any, Type
+class M(type):
+    attr = 'test'
+
+B: Any
+class Cls(B, metaclass=M):
+    pass
+
+reveal_type(Cls.attr) # N: Revealed type is "builtins.int"
+[file mypy.ini]
+\[mypy]
+plugins=<ROOT>/test-data/unit/plugins/class_attr_hook.py
+
+[case testClassAttrPluginPartialType]
+# flags: --config-file tmp/mypy.ini
+
+class Cls:
+    attr = None
+    def f(self) -> int:
+        return Cls.attr + 1
+
+[file mypy.ini]
+\[mypy]
+plugins=<ROOT>/test-data/unit/plugins/class_attr_hook.py

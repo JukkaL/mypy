@@ -616,10 +616,10 @@ class Plugin(CommonPluginApi):
 
     def get_attribute_hook(self, fullname: str
                            ) -> Optional[Callable[[AttributeContext], Type]]:
-        """Adjust type of a class attribute.
+        """Adjust type of an instance attribute.
 
-        This method is called with attribute full name using the class where the attribute was
-        defined (or Var.info.fullname for generated attributes).
+        This method is called with attribute full name using the class of the instance where
+        the attribute was defined (or Var.info.fullname for generated attributes).
 
         For classes without __getattr__ or __getattribute__, this hook is only called for
         names of fields/properties (but not methods) that exist in the instance MRO.
@@ -643,6 +643,25 @@ class Plugin(CommonPluginApi):
         get_attribute_hook is called with '__main__.Base.x' and '__main__.Base.y'.
         However, if we had not implemented __getattr__ on Base, you would only get
         the callback for 'var.x'; 'var.y' would produce an error without calling the hook.
+        """
+        return None
+
+    def get_class_attribute_hook(self, fullname: str
+                                 ) -> Optional[Callable[[AttributeContext], Type]]:
+        """
+        Adjust type of a class attribute.
+
+        This method is called with attribute full name using the class where the attribute was
+        defined (or Var.info.fullname for generated attributes).
+
+        For example:
+
+            class Cls:
+                x: Any
+
+            Cls.x
+
+        get_class_attribute_hook is called with '__main__.Cls.x'.
         """
         return None
 
@@ -766,6 +785,10 @@ class ChainedPlugin(Plugin):
     def get_attribute_hook(self, fullname: str
                            ) -> Optional[Callable[[AttributeContext], Type]]:
         return self._find_hook(lambda plugin: plugin.get_attribute_hook(fullname))
+
+    def get_class_attribute_hook(self, fullname: str
+                                 ) -> Optional[Callable[[AttributeContext], Type]]:
+        return self._find_hook(lambda plugin: plugin.get_class_attribute_hook(fullname))
 
     def get_class_decorator_hook(self, fullname: str
                                  ) -> Optional[Callable[[ClassDefContext], None]]:
