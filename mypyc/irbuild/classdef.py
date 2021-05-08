@@ -1,5 +1,6 @@
 """Transform class definitions from the mypy AST form to IR."""
 
+import textwrap
 from typing import List, Optional, Tuple
 from typing_extensions import Final
 
@@ -29,7 +30,6 @@ from mypyc.irbuild.util import (
 from mypyc.irbuild.builder import IRBuilder
 from mypyc.irbuild.function import transform_method
 
-
 def transform_class_def(builder: IRBuilder, cdef: ClassDef) -> None:
     """Create IR for a class definition.
 
@@ -47,8 +47,11 @@ def transform_class_def(builder: IRBuilder, cdef: ClassDef) -> None:
     # We do this check here because the base field of parent
     # classes aren't necessarily populated yet at
     # prepare_class_def time.
-    if any(ir.base_mro[i].base != ir. base_mro[i + 1] for i in range(len(ir.base_mro) - 1)):
-        builder.error("Non-trait MRO must be linear", cdef.line)
+    for i in range(len(ir.base_mro) - 1):
+        if ir.base_mro[i].base != ir.base_mro[i+1]:
+            err_msg = _non_linear_mro_error_msg(builder, cdef, ir.base_mro, ir.base_mro[i], ir.base_mro[i+1])
+            builder.error(err_msg, cdef.line)
+            break
 
     if ir.allow_interpreted_subclasses:
         for parent in ir.mro:
@@ -543,3 +546,35 @@ def dataclass_non_ext_info(builder: IRBuilder, cdef: ClassDef) -> Optional[NonEx
         )
     else:
         return None
+
+
+def _non_linear_mro_error_msg(builder: IRBuilder, cdef: ClassDef, base_mro: List[ClassIR],
+                              failing_subclass: ClassIR, expected_subclass: ClassIR):
+    """
+    Mypyc currently doesn't support native classes
+    """
+    if not builder.options.explain:
+        return "Non-trait MRO must be linear"
+
+    non_trait_mro_str = " ".join([str(c.name) for c in base_mro])
+
+    subclass_base_name = failing_subclass.base.name if failing_subclass.base else "object"
+    err_msg = f"""
+Native classes must have a linear non-trait MRO.
+
+The non-trait MRO of {cdef.name} is currently:
+    {non_trait_mro_str}
+
+However:
+    - the base of {failing_subclass.name} is {subclass_base_name}
+    - but {expected_subclass.name} was expected for a linear MRO
+
+Possible fixes for this include:
+    - Labelling subclasses that include just method and attribute definitions as traits.
+    - Re-ordering the subclasses to introduce a linear MRO.
+    - Adjust {failing_subclass.name} to have {expected_subclass.name} as a base.
+    - Adjusting the subclasses and removing the need for multiple inheritence.
+
+More information can be found at https://mypyc.readthedocs.io/en/latest/native_classes.html
+    """
+    return textwrap.indent(err_msg, "  ")
