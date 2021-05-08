@@ -1026,8 +1026,81 @@ else:
 if str_or_bool_literal is not True and str_or_bool_literal is not False:
     reveal_type(str_or_bool_literal)  # N: Revealed type is "builtins.str"
 else:
-    reveal_type(str_or_bool_literal)  # N: Revealed type is "Union[Literal[False], Literal[True]]"
+    reveal_type(str_or_bool_literal)  # N: Revealed type is "builtins.bool"
+[builtins fixtures/primitives.pyi]
 
+[case testNarrowingBooleanIdentityCheck]
+# flags: --strict-optional
+from typing import Optional
+from typing_extensions import Literal
+
+bool_val: bool
+
+if bool_val is not False:
+    reveal_type(bool_val)   # N: Revealed type is "Literal[True]"
+else:
+    reveal_type(bool_val)   # N: Revealed type is "Literal[False]"
+
+opt_bool_val: Optional[bool]
+
+if opt_bool_val is not None:
+    reveal_type(opt_bool_val)   # N: Revealed type is "builtins.bool"
+
+if opt_bool_val is not False:
+    reveal_type(opt_bool_val)   # N: Revealed type is "Union[Literal[True], None]"
+else:
+    reveal_type(opt_bool_val)   # N: Revealed type is "Literal[False]"
+[builtins fixtures/primitives.pyi]
+
+[case testNarrowingBooleanTruthiness]
+# flags: --strict-optional
+from typing import Optional
+from typing_extensions import Literal
+
+bool_val: bool
+
+if bool_val:
+    reveal_type(bool_val)   # N: Revealed type is "Literal[True]"
+else:
+    reveal_type(bool_val)   # N: Revealed type is "Literal[False]"
+reveal_type(bool_val)  # N: Revealed type is "builtins.bool"
+
+opt_bool_val: Optional[bool]
+
+if opt_bool_val:
+    reveal_type(opt_bool_val)   # N: Revealed type is "Literal[True]"
+else:
+    reveal_type(opt_bool_val)   # N: Revealed type is "Union[Literal[False], None]"
+reveal_type(opt_bool_val)   # N: Revealed type is "Union[builtins.bool, None]"
+[builtins fixtures/primitives.pyi]
+
+[case testNarrowingBooleanBoolOp]
+# flags: --strict-optional
+from typing import Optional
+from typing_extensions import Literal
+
+bool_a: bool
+bool_b: bool
+
+if bool_a and bool_b:
+   reveal_type(bool_a) # N: Revealed type is "Literal[True]"
+   reveal_type(bool_b) # N: Revealed type is "Literal[True]"
+else:
+   reveal_type(bool_a) # N: Revealed type is "builtins.bool"
+   reveal_type(bool_b) # N: Revealed type is "builtins.bool"
+
+if not bool_a or bool_b:
+   reveal_type(bool_a) # N: Revealed type is "builtins.bool"
+   reveal_type(bool_b) # N: Revealed type is "builtins.bool"
+else:
+   reveal_type(bool_a) # N: Revealed type is "Literal[True]"
+   reveal_type(bool_b) # N: Revealed type is "Literal[False]"
+
+if True and bool_b:
+   reveal_type(bool_b) # N: Revealed type is "Literal[True]"
+
+x = True and bool_b
+reveal_type(x) # N: Revealed type is "builtins.bool"
 [builtins fixtures/primitives.pyi]
 
 [case testNarrowingTypedDictUsingEnumLiteral]

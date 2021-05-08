@@ -533,11 +533,11 @@ f = (PY3 or PY2) and 's'
 g = (PY2 or PY3) or 's'
 h = (PY3 or PY2) or 's'
 reveal_type(a)  # N: Revealed type is "builtins.bool"
-reveal_type(b)  # N: Revealed type is "builtins.str"
-reveal_type(c)  # N: Revealed type is "builtins.str"
+reveal_type(b)  # N: Revealed type is "Literal['s']"
+reveal_type(c)  # N: Revealed type is "Literal['s']"
 reveal_type(d)  # N: Revealed type is "builtins.bool"
-reveal_type(e)  # N: Revealed type is "builtins.str"
-reveal_type(f)  # N: Revealed type is "builtins.str"
+reveal_type(e)  # N: Revealed type is "Literal['s']"
+reveal_type(f)  # N: Revealed type is "Literal['s']"
 reveal_type(g)  # N: Revealed type is "builtins.bool"
 reveal_type(h)  # N: Revealed type is "builtins.bool"
 [builtins fixtures/ops.pyi]

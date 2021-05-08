@@ -316,11 +316,11 @@ if int():
 if int():
     b = b or b
 if int():
-    b = b and a # E: Incompatible types in assignment (expression has type "Union[bool, A]", variable has type "bool")
+    b = b and a # E: Incompatible types in assignment (expression has type "Union[Literal[False], A]", variable has type "bool")
 if int():
     b = a and b # E: Incompatible types in assignment (expression has type "Union[A, bool]", variable has type "bool")
 if int():
-    b = b or a  # E: Incompatible types in assignment (expression has type "Union[bool, A]", variable has type "bool")
+    b = b or a  # E: Incompatible types in assignment (expression has type "Union[Literal[True], A]", variable has type "bool")
 if int():
     b = a or b  # E: Incompatible types in assignment (expression has type "Union[A, bool]", variable has type "bool")
 class A: pass

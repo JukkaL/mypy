@@ -304,6 +304,7 @@ from a import x
 def f(): pass
 
 [targets a, b, a, a.y, b.f, __main__]
+[builtins fixtures/tuple.pyi]
 
 [case testNewAnalyzerRedefinitionAndDeferral1b]
 import a

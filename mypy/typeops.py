@@ -669,7 +669,7 @@ def is_singleton_type(typ: Type) -> bool:
     )
 
 
-def try_expanding_enum_to_union(typ: Type, target_fullname: str) -> ProperType:
+def try_expanding_sum_type_to_union(typ: Type, target_fullname: str) -> ProperType:
     """Attempts to recursively expand any enum Instances with the given target_fullname
     into a Union of all of its component LiteralTypes.
 
@@ -691,28 +691,34 @@ def try_expanding_enum_to_union(typ: Type, target_fullname: str) -> ProperType:
     typ = get_proper_type(typ)
 
     if isinstance(typ, UnionType):
-        items = [try_expanding_enum_to_union(item, target_fullname) for item in typ.items]
+        items = [try_expanding_sum_type_to_union(item, target_fullname) for item in typ.items]
         return make_simplified_union(items, contract_literals=False)
-    elif isinstance(typ, Instance) and typ.type.is_enum and typ.type.fullname == target_fullname:
-        new_items = []
-        for name, symbol in typ.type.names.items():
-            if not isinstance(symbol.node, Var):
-                continue
-            # Skip "_order_" and "__order__", since Enum will remove it
-            if name in ("_order_", "__order__"):
-                continue
-            new_items.append(LiteralType(name, typ))
-        # SymbolTables are really just dicts, and dicts are guaranteed to preserve
-        # insertion order only starting with Python 3.7. So, we sort these for older
-        # versions of Python to help make tests deterministic.
-        #
-        # We could probably skip the sort for Python 3.6 since people probably run mypy
-        # only using CPython, but we might as well for the sake of full correctness.
-        if sys.version_info < (3, 7):
-            new_items.sort(key=lambda lit: lit.value)
-        return make_simplified_union(new_items, contract_literals=False)
-    else:
-        return typ
+    elif isinstance(typ, Instance) and typ.type.fullname == target_fullname:
+        if typ.type.is_enum:
+            new_items = []
+            for name, symbol in typ.type.names.items():
+                if not isinstance(symbol.node, Var):
+                    continue
+                # Skip "_order_" and "__order__", since Enum will remove it
+                if name in ("_order_", "__order__"):
+                    continue
+                new_items.append(LiteralType(name, typ))
+            # SymbolTables are really just dicts, and dicts are guaranteed to preserve
+            # insertion order only starting with Python 3.7. So, we sort these for older
+            # versions of Python to help make tests deterministic.
+            #
+            # We could probably skip the sort for Python 3.6 since people probably run mypy
+            # only using CPython, but we might as well for the sake of full correctness.
+            if sys.version_info < (3, 7):
+                new_items.sort(key=lambda lit: lit.value)
+            return make_simplified_union(new_items, contract_literals=False)
+        elif typ.type.fullname == "builtins.bool":
+            return make_simplified_union(
+                [LiteralType(True, typ), LiteralType(False, typ)],
+                contract_literals=False
+            )
+
+    return typ
 
 
 def try_contracting_literals_in_union(types: Sequence[Type]) -> List[ProperType]:
@@ -730,9 +736,12 @@ def try_contracting_literals_in_union(types: Sequence[Type]) -> List[ProperType]
     for idx, typ in enumerate(proper_types):
         if isinstance(typ, LiteralType):
             fullname = typ.fallback.type.fullname
-            if typ.fallback.type.is_enum:
+            if typ.fallback.type.is_enum or isinstance(typ.value, bool):
                 if fullname not in sum_types:
-                    sum_types[fullname] = (set(get_enum_values(typ.fallback)), [])
+                    sum_types[fullname] = (set(get_enum_values(typ.fallback))
+                                           if typ.fallback.type.is_enum
+                                           else set((True, False)),
+                                           [])
                 literals, indexes = sum_types[fullname]
                 literals.discard(typ.value)
                 indexes.append(idx)
