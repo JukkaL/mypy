@@ -15,7 +15,7 @@ from mypyc.ir.ops import Value
 from mypyc.ir.func_ir import all_values
 from mypyc.test.testutil import (
     ICODE_GEN_BUILTINS, use_custom_builtins, MypycDataSuite, build_ir_for_single_file,
-    assert_test_output, replace_native_int
+    assert_test_output
 )
 
 files = [
@@ -32,7 +32,6 @@ class TestAnalysis(MypycDataSuite):
         """Perform a data-flow analysis test case."""
 
         with use_custom_builtins(os.path.join(self.data_prefix, ICODE_GEN_BUILTINS), testcase):
-            testcase.output = replace_native_int(testcase.output)
             try:
                 ir = build_ir_for_single_file(testcase.input)
             except CompileError as e:
