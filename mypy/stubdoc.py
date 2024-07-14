@@ -76,6 +76,7 @@ class FunctionSig(NamedTuple):
     name: str
     args: list[ArgSig]
     ret_type: str | None
+    docstring: str | None = None
 
     def is_special_method(self) -> bool:
         return bool(
@@ -108,6 +109,7 @@ class FunctionSig(NamedTuple):
         is_async: bool = False,
         any_val: str | None = None,
         docstring: str | None = None,
+        include_docstrings: bool = False,
     ) -> str:
         args: list[str] = []
         for arg in self.args:
@@ -144,8 +146,10 @@ class FunctionSig(NamedTuple):
         sig = "{indent}{prefix}def {name}({args}){ret}:".format(
             indent=indent, prefix=prefix, name=self.name, args=", ".join(args), ret=retfield
         )
-        if docstring:
-            suffix = f"\n{indent}    {mypy.util.quote_docstring(docstring)}"
+        # if an overload has a docstring use it, otherwise fall back to the generic docstring
+        doc = (self.docstring or docstring) if include_docstrings else None
+        if doc:
+            suffix = f"\n{indent}    {mypy.util.quote_docstring(doc)}"
         else:
             suffix = " ..."
         return f"{sig}{suffix}"

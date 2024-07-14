@@ -772,7 +772,8 @@ class BaseStubGenerator:
                 signature.format_sig(
                     indent=self._indent,
                     is_async=is_coroutine,
-                    docstring=docstring if self._include_docstrings else None,
+                    docstring=docstring,
+                    include_docstrings=self._include_docstrings,
                 )
             )
         return lines
