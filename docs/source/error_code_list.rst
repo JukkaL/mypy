@@ -221,6 +221,35 @@ You can use :py:data:`~typing.Callable` as the type for callable objects:
         for x in objs:
             f(x)
 
+.. _code-metaclass:
+
+Check the validity of a class's metaclass [metaclass]
+-----------------------------------------------------
+
+Mypy checks whether the metaclass of a class is valid. The metaclass
+must be a subclass of ``type``. Further, the class hierarchy must yield
+a consistent metaclass. For more details, see the
+`Python documentation <https://docs.python.org/3.13/reference/datamodel.html#determining-the-appropriate-metaclass>`_
+
+Note that mypy's metaclass checking is limited and may produce false-positives.
+See also :ref:`limitations`.
+
+Example with an error:
+
+.. code-block:: python
+
+    class GoodMeta(type):
+        pass
+
+    class BadMeta:
+        pass
+
+    class A1(metaclass=GoodMeta):  # OK
+        pass
+
+    class A2(metaclass=BadMeta):  # Error:  Metaclasses not inheriting from "type" are not supported  [metaclass]
+        pass
+
 .. _code-var-annotated:
 
 Require annotation if variable type is unclear [var-annotated]
