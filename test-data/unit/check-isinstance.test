@@ -1821,13 +1821,15 @@ if issubclass(fm, Baz):
 from typing import TypeVar
 
 class A: pass
-class B(A): pass
+class B(A):
+    z: int
 
 T = TypeVar('T', bound=A)
 
 def f(x: T) -> None:
     if isinstance(x, B):
-        reveal_type(x) # N: Revealed type is "__main__.B"
+        reveal_type(x.z) # N: Revealed type is "builtins.int"
+        reveal_type(x) # N: Revealed type is "T`-1"
     else:
         reveal_type(x) # N: Revealed type is "T`-1"
     reveal_type(x) # N: Revealed type is "T`-1"
@@ -2892,3 +2894,19 @@ if hasattr(mod, "y"):
 [file mod.py]
 def __getattr__(attr: str) -> str: ...
 [builtins fixtures/module.pyi]
+
+[case testFunctionCanReturnNarrowedTypeVar]
+from typing import TypeVar
+
+T = TypeVar("T")
+
+def f(x: T) -> T:
+    if isinstance(x, int):
+        reveal_type(x)  # N: Revealed type is "T`-1"
+        x + 42
+        return x
+    else:
+        reveal_type(x)  # N: Revealed type is "T`-1"
+        x + 42  # E: Unsupported left operand type for + ("T")
+        return x
+[builtins fixtures/isinstancelist.pyi]

@@ -1913,7 +1913,7 @@ def restrict_subtype_away(t: Type, s: Type) -> Type:
     """Return t minus s for runtime type assertions.
 
     If we can't determine a precise result, return a supertype of the
-    ideal result (just t is a valid result).
+    ideal result (i.e. just t is a valid result).
 
     This is used for type inference of runtime type checks such as
     isinstance(). Currently, this just removes elements of a union type.
@@ -1928,6 +1928,11 @@ def restrict_subtype_away(t: Type, s: Type) -> Type:
                 if (isinstance(get_proper_type(item), AnyType) or not covers_at_runtime(item, s))
             ]
         return UnionType.make_union(new_items)
+    elif isinstance(p_t, TypeVarType):
+        # TODO: should this check if `p_t.upper_bound` is covered at runtime?
+        # NOTE: I don't think I'm allowed to return proper types like this. But
+        #       I don't know what else I could do.
+        return p_t.copy_modified(upper_bound=restrict_subtype_away(p_t.upper_bound, s))
     elif covers_at_runtime(t, s):
         return UninhabitedType()
     else:

@@ -7598,6 +7598,10 @@ def conditional_types(
             # Expression is never of any type in proposed_type_ranges
             return UninhabitedType(), default
         else:
+            if isinstance(current_type, TypeVarType):
+                # narrowing T`-1 to int should *really* return T`-1 with a narrowed upper bound!
+                proposed_type = current_type.copy_modified(upper_bound=proposed_type)
+
             # we can only restrict when the type is precise, not bounded
             proposed_precise_type = UnionType.make_union(
                 [
