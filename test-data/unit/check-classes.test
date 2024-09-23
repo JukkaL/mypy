@@ -6727,11 +6727,11 @@ class C(Generic[T]):
     def meth(self, cls: Type[T]) -> None:
         if not issubclass(cls, Sub):
             return
-        reveal_type(cls)  # N: Revealed type is "Type[__main__.Sub]"
+        reveal_type(cls)  # N: Revealed type is "Type[T`1(upper_bound=__main__.Sub)]"
     def other(self, cls: Type[T]) -> None:
         if not issubclass(cls, Sub):
             return
-        reveal_type(cls)  # N: Revealed type is "Type[__main__.Sub]"
+        reveal_type(cls)  # N: Revealed type is "Type[T`1(upper_bound=__main__.Sub)]"
 
 [builtins fixtures/isinstancelist.pyi]
 

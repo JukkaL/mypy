@@ -1818,19 +1818,43 @@ if issubclass(fm, Baz):
 [builtins fixtures/isinstance.pyi]
 
 [case testIsinstanceAndNarrowTypeVariable]
+# flags: --warn-unreachable
 from typing import TypeVar
 
 class A: pass
 class B(A): pass
+class C: pass
 
 T = TypeVar('T', bound=A)
 
 def f(x: T) -> None:
     if isinstance(x, B):
-        reveal_type(x) # N: Revealed type is "__main__.B"
+        reveal_type(x) # N: Revealed type is "T`-1(upper_bound=__main__.B)"
+        x1: T = x
+        a: A = x
+        b: B = x
+        c: C = x  # E: Incompatible types in assignment (expression has type "T", variable has type "C")
+    elif isinstance(x, int):
+        return  # E: Statement is unreachable
     else:
         reveal_type(x) # N: Revealed type is "T`-1"
+        x2: T = x
     reveal_type(x) # N: Revealed type is "T`-1"
+[builtins fixtures/isinstance.pyi]
+
+[case testIsinstanceAndNarrowTypeVariableIntersection-xfail]
+# flags: --warn-unreachable
+from typing import TypeVar
+
+class A: pass
+class B: pass
+
+T = TypeVar('T', bound=A)
+
+def f(x: T) -> None:
+    if isinstance(x, B):
+        reveal_type(x) # N: Revealed type is "T`-1(upper_bound=Union[__main__.A, __main__.B])"
+
 [builtins fixtures/isinstance.pyi]
 
 [case testIsinstanceAndTypeType]
