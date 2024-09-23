@@ -173,3 +173,38 @@ Alias4 = Callable[[*IntList], int]  # E: "List[int]" cannot be unpacked (must be
 x4: Alias4[int]  # E: Bad number of arguments for type alias, expected 0, given 1
 reveal_type(x4)  # N: Revealed type is "def (*Any) -> builtins.int"
 [builtins fixtures/tuple.pyi]
+
+[case testTypeVarTupleNewSyntaxTypedDict]
+# flags: --python-version 3.11
+from typing import Tuple, Callable, Generic
+from typing_extensions import TypeVarTuple, Unpack, TypedDict
+
+Ts = TypeVarTuple("Ts")
+class A(TypedDict, Generic[*Ts, T]):
+    fn: Callable[[*Ts], None]
+    val: T
+
+class B(A[*Ts, T]):
+    gn: Callable[[*Ts], None]
+    vals: Tuple[*Ts]
+
+y: B[int, str]
+reveal_type(y)  # N: Revealed type is "TypedDict('__main__.B', {'fn': def (builtins.int), 'val': builtins.str, 'gn': def (builtins.int), 'vals': Tuple[builtins.int]})"
+reveal_type(y["gn"])  # N: Revealed type is "def (builtins.int)"
+reveal_type(y["vals"])  # N: Revealed type is "Tuple[builtins.int]"
+
+z: B[*Tuple[int, ...]]
+reveal_type(z)  # N: Revealed type is "TypedDict('__main__.B', {'fn': def (*builtins.int), 'val': builtins.int, 'gn': def (*builtins.int), 'vals': builtins.tuple[builtins.int, ...]})"
+reveal_type(z["gn"])  # N: Revealed type is "def (*builtins.int)"
+
+t: B[int, *Tuple[int, str], str]
+reveal_type(t)  # N: Revealed type is "TypedDict('__main__.B', {'fn': def (builtins.int, builtins.int, builtins.str), 'val': builtins.str, 'gn': def (builtins.int, builtins.int, builtins.str), 'vals': Tuple[builtins.int, builtins.int, builtins.str]})"
+
+def ftest(x: int, y: str) -> None: ...
+def gtest(x: int, y: str) -> None: ...
+td = B({"fn": ftest, "val": 42, "gn": gtest, "vals": (6, "7")})
+reveal_type(td)  # N: Revealed type is "TypedDict('__main__.B', {'fn': def (builtins.int, builtins.str), 'val': builtins.int, 'gn': def (builtins.int, builtins.str), 'vals': Tuple[builtins.int, builtins.str]})"
+
+def gbad() -> int: ...
+td2 = B({"fn": ftest, "val": 42, "gn": gbad, "vals": (6, "7")})  # E: Incompatible types (expression has type "Callable[[], int]", TypedDict item "gn" has type "Callable[[int, str], None]")
+[builtins fixtures/tuple.pyi]

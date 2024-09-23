@@ -1158,6 +1158,40 @@ def bad() -> int: ...
 td2 = A({"fn": bad, "val": 42})  # E: Incompatible types (expression has type "Callable[[], int]", TypedDict item "fn" has type "Callable[[], None]")
 [builtins fixtures/tuple.pyi]
 
+[case testVariadicTypedDictExtending]
+from typing import Tuple, Callable, Generic
+from typing_extensions import TypeVarTuple, Unpack, TypedDict
+
+Ts = TypeVarTuple("Ts")
+class A(TypedDict, Generic[Unpack[Ts], T]):
+    fn: Callable[[Unpack[Ts]], None]
+    val: T
+
+class B(A[Unpack[Ts], T]):
+    gn: Callable[[Unpack[Ts]], None]
+    vals: Tuple[Unpack[Ts]]
+
+y: B[int, str]
+reveal_type(y)  # N: Revealed type is "TypedDict('__main__.B', {'fn': def (builtins.int), 'val': builtins.str, 'gn': def (builtins.int), 'vals': Tuple[builtins.int]})"
+reveal_type(y["gn"])  # N: Revealed type is "def (builtins.int)"
+reveal_type(y["vals"])  # N: Revealed type is "Tuple[builtins.int]"
+
+z: B[Unpack[Tuple[int, ...]]]
+reveal_type(z)  # N: Revealed type is "TypedDict('__main__.B', {'fn': def (*builtins.int), 'val': builtins.int, 'gn': def (*builtins.int), 'vals': builtins.tuple[builtins.int, ...]})"
+reveal_type(z["gn"])  # N: Revealed type is "def (*builtins.int)"
+
+t: B[int, Unpack[Tuple[int, str]], str]
+reveal_type(t)  # N: Revealed type is "TypedDict('__main__.B', {'fn': def (builtins.int, builtins.int, builtins.str), 'val': builtins.str, 'gn': def (builtins.int, builtins.int, builtins.str), 'vals': Tuple[builtins.int, builtins.int, builtins.str]})"
+
+def ftest(x: int, y: str) -> None: ...
+def gtest(x: int, y: str) -> None: ...
+td = B({"fn": ftest, "val": 42, "gn": gtest, "vals": (6, "7")})
+reveal_type(td)  # N: Revealed type is "TypedDict('__main__.B', {'fn': def (builtins.int, builtins.str), 'val': builtins.int, 'gn': def (builtins.int, builtins.str), 'vals': Tuple[builtins.int, builtins.str]})"
+
+def gbad() -> int: ...
+td2 = B({"fn": ftest, "val": 42, "gn": gbad, "vals": (6, "7")})  # E: Incompatible types (expression has type "Callable[[], int]", TypedDict item "gn" has type "Callable[[int, str], None]")
+[builtins fixtures/tuple.pyi]
+
 [case testFixedUnpackWithRegularInstance]
 from typing import Tuple, Generic, TypeVar
 from typing_extensions import Unpack
