@@ -749,12 +749,13 @@ class InspectionStubGenerator(BaseStubGenerator):
             )
         else:  # regular property
             if readonly:
+                docstring = self._indent_docstring(ctx.docstring) if ctx.docstring else None
                 ro_properties.append(f"{self._indent}@property")
                 sig = FunctionSig(name, [ArgSig("self")], inferred_type)
                 ro_properties.append(
                     sig.format_sig(
                         indent=self._indent,
-                        docstring=ctx.docstring,
+                        docstring=docstring,
                         include_docstrings=self._include_docstrings,
                     )
                 )
