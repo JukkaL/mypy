@@ -36,6 +36,7 @@ from mypy.stubutil import (
     infer_method_arg_types,
     infer_method_ret_type,
 )
+from mypy.util import quote_docstring
 
 
 class ExternalSignatureGenerator(SignatureGenerator):
@@ -644,8 +645,7 @@ class InspectionStubGenerator(BaseStubGenerator):
                 if inferred[0].args and inferred[0].args[0].name == "cls":
                     decorators.append("@classmethod")
 
-        if docstring:
-            docstring = self._indent_docstring(docstring)
+        docstring = self._indent_docstring(ctx.docstring) if ctx.docstring else None
         output.extend(self.format_func_def(inferred, decorators=decorators, docstring=docstring))
         self._fix_iter(ctx, inferred, output)
 
@@ -749,9 +749,16 @@ class InspectionStubGenerator(BaseStubGenerator):
             )
         else:  # regular property
             if readonly:
+                docstring = self._indent_docstring(ctx.docstring) if ctx.docstring else None
                 ro_properties.append(f"{self._indent}@property")
                 sig = FunctionSig(name, [ArgSig("self")], inferred_type)
-                ro_properties.append(sig.format_sig(indent=self._indent))
+                ro_properties.append(
+                    sig.format_sig(
+                        indent=self._indent,
+                        docstring=docstring,
+                        include_docstrings=self._include_docstrings,
+                    )
+                )
             else:
                 if inferred_type is None:
                     inferred_type = self.add_name("_typeshed.Incomplete")
@@ -862,8 +869,16 @@ class InspectionStubGenerator(BaseStubGenerator):
             bases_str = "(%s)" % ", ".join(bases)
         else:
             bases_str = ""
-        if types or static_properties or rw_properties or methods or ro_properties:
+
+        if class_info.docstring and self._include_docstrings:
+            doc = f"    {self._indent}{quote_docstring(class_info.docstring)}"
+            docstring = doc.splitlines(keepends=False)
+        else:
+            docstring = []
+
+        if docstring or types or static_properties or rw_properties or methods or ro_properties:
             output.append(f"{self._indent}class {class_name}{bases_str}:")
+            output.extend(docstring)
             for line in types:
                 if (
                     output
@@ -873,14 +888,10 @@ class InspectionStubGenerator(BaseStubGenerator):
                 ):
                     output.append("")
                 output.append(line)
-            for line in static_properties:
-                output.append(line)
-            for line in rw_properties:
-                output.append(line)
-            for line in methods:
-                output.append(line)
-            for line in ro_properties:
-                output.append(line)
+            output.extend(static_properties)
+            output.extend(rw_properties)
+            output.extend(methods)
+            output.extend(ro_properties)
         else:
             output.append(f"{self._indent}class {class_name}{bases_str}: ...")
 
