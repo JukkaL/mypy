@@ -1807,8 +1807,15 @@ class ExpressionChecker(ExpressionVisitor[Type]):
         ):
             proper_arg = get_proper_type(arg_types[0])
             if isinstance(proper_arg, Instance) and proper_arg.type.is_protocol:
-                self.msg.fail("Calling type() on a protocol class is unsound", context)
-                callee = callee.copy_modified(ret_type=self.named_type("builtins.object"))
+                callee = callee.copy_modified(
+                    ret_type=UnionType(
+                        [
+                            self.named_type("builtins.type"),
+                            self.named_type("types.ModuleType"),
+                            AnyType(TypeOfAny.special_form),
+                        ]
+                    )
+                )
             else:
                 callee = callee.copy_modified(ret_type=TypeType.make_normalized(arg_types[0]))
 
