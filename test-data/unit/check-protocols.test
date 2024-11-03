@@ -4215,3 +4215,22 @@ def g4(a: Input[bytes], b: Output[str]) -> None:
     f(a, b)  # E: Cannot infer type argument 1 of "f"
 
 [builtins fixtures/tuple.pyi]
+
+[case testTypeCallOnProtocol]
+from typing import Protocol
+
+import mod
+
+class P(Protocol):
+    def foo(self) -> None: ...
+
+a: P = mod
+value = type(a)  # E: Calling type() on a protocol class is unsound
+reveal_type(value)  # N: Revealed type is "builtins.object"
+reveal_type(value.foo)  # E: "object" has no attribute "foo" \
+                        # N: Revealed type is "Any"
+
+[file mod.py]
+def foo() -> None: ...
+
+[builtins fixtures/tuple.pyi]
