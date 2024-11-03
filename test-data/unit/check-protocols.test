@@ -4215,3 +4215,32 @@ def g4(a: Input[bytes], b: Output[str]) -> None:
     f(a, b)  # E: Cannot infer type argument 1 of "f"
 
 [builtins fixtures/tuple.pyi]
+
+[case testTypeCallOnProtocol]
+from typing import Any, Protocol, cast
+import types
+
+class P(Protocol):
+    def foo(self) -> None: ...
+
+import mod
+
+a: P = mod
+value = type(a)
+reveal_type(value)  # N: Revealed type is "Union[builtins.type, types.ModuleType, Any]"
+reveal_type(value.foo)  # E: Item "type" of "Union[type, Module, Any]" has no attribute "foo" \
+                        # N: Revealed type is "Any"
+
+class Namespace: ...
+n = Namespace()
+n.foo = lambda: None  # E: "Namespace" has no attribute "foo"
+
+b: P = cast(Any, n)
+value = type(b)
+reveal_type(value)  # N: Revealed type is "Union[builtins.type, types.ModuleType, Any]"
+reveal_type(value.foo)  # E: Item "type" of "Union[type, Module, Any]" has no attribute "foo" \
+                        # N: Revealed type is "Any"
+[file mod.py]
+def foo() -> None: ...
+
+[builtins fixtures/tuple.pyi]
