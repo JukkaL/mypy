@@ -1164,7 +1164,7 @@ This feature was contributed by Ivan Levkivskyi (PR [16237](https://github.com/p
 
 ### Mypy Changelog
 
-We now maintain a [changelog](https://github.com/python/mypy/blob/master/CHANGELOG.md) in the mypy Git repository. It mirrors the contents of [mypy release blog posts](https://mypy-lang.blogspot.com/). We will continue to also publish release blog posts. In the future, release blog posts will be created based on the changelog near a release date.
+We now maintain a [changelog](https://github.com/python/mypy/blob/main/CHANGELOG.md) in the mypy Git repository. It mirrors the contents of [mypy release blog posts](https://mypy-lang.blogspot.com/). We will continue to also publish release blog posts. In the future, release blog posts will be created based on the changelog near a release date.
 
 This was contributed by Shantanu (PR [16280](https://github.com/python/mypy/pull/16280)).
 

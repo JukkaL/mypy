@@ -2,7 +2,7 @@ Credits
 -------
 
 For a full list of contributors you can mine the commit history:
-https://github.com/python/mypy/commits/master
+https://github.com/python/mypy/commits/main
 
 For lists of contributors per mypy release (including typeshed) see
 the release blog posts at https://mypy-lang.blogspot.com/.

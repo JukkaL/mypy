@@ -19,5 +19,5 @@ cd build
 echo $COMMIT > mypy_commit
 git commit -am "Build wheels for mypy $V"
 git tag v$V
-# Push a tag, but no need to push the change to master
+# Push a tag, but no need to push the change to main
 git push --tags

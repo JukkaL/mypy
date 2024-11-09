@@ -1,4 +1,4 @@
-.. mypyc documentation master file, created by
+.. mypyc documentation main file, created by
    sphinx-quickstart on Sun Apr  5 14:01:55 2020.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.

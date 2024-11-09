@@ -2,7 +2,7 @@
 
 Simple usage:
 
-  python misc/perf_compare.py my-branch master ...
+  python misc/perf_compare.py my-branch main ...
 
 What this does:
 

@@ -263,7 +263,7 @@ Your CI script might work like this:
 
 * Create a tarball from the ``.mypy_cache`` directory.
 
-* Determine the current git master branch commit id (say, using
+* Determine the current git main branch commit id (say, using
   ``git rev-parse HEAD``).
 
 * Upload the tarball to the shared repository with a name derived from the
@@ -278,13 +278,13 @@ populates the local ``.mypy_cache`` directory from the shared
 repository and then runs a normal incremental build.
 
 The wrapper script needs some logic to determine the most recent
-central repository commit (by convention, the ``origin/master`` branch
+central repository commit (by convention, the ``origin/main`` branch
 for git) the local development branch is based on. In a typical git
 setup you can do it like this:
 
 .. code::
 
-    git merge-base HEAD origin/master
+    git merge-base HEAD origin/main
 
 The next step is to download the cache data (contents of the
 ``.mypy_cache`` directory) from the shared repository based on the
@@ -331,11 +331,11 @@ at least if your codebase is hundreds of thousands of lines or more:
   potentially large number of changes in an incremental build, as this can
   be much slower than downloading cache data and restarting the daemon.
 
-* If the current local branch is based on a very recent master commit,
+* If the current local branch is based on a very recent main commit,
   the remote cache data may not yet be available for that commit, as
   there will necessarily be some latency to build the cache files. It
   may be a good idea to look for cache data for, say, the 5 latest
-  master commits and use the most recent data that is available.
+  main commits and use the most recent data that is available.
 
 * If the remote cache is not accessible for some reason (say, from a public
   network), the script can still fall back to a normal incremental build.

@@ -93,9 +93,9 @@ can be specified after colon:
 
 In the following sections we describe the basics of the plugin system with
 some examples. For more technical details, please read the docstrings in
-`mypy/plugin.py <https://github.com/python/mypy/blob/master/mypy/plugin.py>`_
+`mypy/plugin.py <https://github.com/python/mypy/blob/main/mypy/plugin.py>`_
 in mypy source code. Also you can find good examples in the bundled plugins
-located in `mypy/plugins <https://github.com/python/mypy/tree/master/mypy/plugins>`_.
+located in `mypy/plugins <https://github.com/python/mypy/tree/main/mypy/plugins>`_.
 
 High-level overview
 *******************

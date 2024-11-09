@@ -63,7 +63,7 @@ features.
 ## Development Environment
 
 First you should set up the mypy development environment as described in
-the [mypy docs](https://github.com/python/mypy/blob/master/README.md).
+the [mypy docs](https://github.com/python/mypy/blob/main/README.md).
 macOS, Linux and Windows are supported.
 
 ## Compiling and Running Programs

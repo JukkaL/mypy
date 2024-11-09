@@ -4,7 +4,7 @@
 
 <!--
 Checklist:
-- Read the [Contributing Guidelines](https://github.com/python/mypy/blob/master/CONTRIBUTING.md)
+- Read the [Contributing Guidelines](https://github.com/python/mypy/blob/main/CONTRIBUTING.md)
 - Add tests for all changed behaviour.
 - If you can't add a test, please explain why and how you verified your changes work.
 - Make sure CI passes.

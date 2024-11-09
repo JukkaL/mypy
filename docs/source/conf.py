@@ -109,7 +109,7 @@ html_theme = "furo"
 
 html_theme_options = {
     "source_repository": "https://github.com/python/mypy",
-    "source_branch": "master",
+    "source_branch": "main",
     "source_directory": "docs/source",
 }
 

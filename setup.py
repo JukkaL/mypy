@@ -239,7 +239,7 @@ setup(
     project_urls={
         "Documentation": "https://mypy.readthedocs.io/en/stable/index.html",
         "Repository": "https://github.com/python/mypy",
-        "Changelog": "https://github.com/python/mypy/blob/master/CHANGELOG.md",
+        "Changelog": "https://github.com/python/mypy/blob/main/CHANGELOG.md",
         "Issues": "https://github.com/python/mypy/issues",
     },
 )

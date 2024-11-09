@@ -99,7 +99,7 @@ def filter_omitted_commits(commits: list[CommitInfo]) -> list[CommitInfo]:
 def normalize_title(title: str) -> str:
     # We sometimes add a title prefix when cherry-picking commits to a
     # release branch. Attempt to remove these prefixes so that we can
-    # match them to the corresponding master branch.
+    # match them to the corresponding main branch.
     if m := re.match(r"\[release [0-9.]+\] *", title, flags=re.I):
         title = title.replace(m.group(0), "")
     return title
