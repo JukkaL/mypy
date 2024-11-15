@@ -2069,6 +2069,7 @@ from enum import Enum
 
 A = Enum('A', ['x', 'y'])
 A = Enum('A', ['z', 't'])  # E: Name "A" already defined on line 3
+[builtins fixtures/tuple.pyi]
 
 [case testNewAnalyzerNewTypeRedefinition]
 from typing import NewType

@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 # This requires setuptools when building; setuptools is not needed
 # when installing from a wheel file (though it is still needed for
 # alternative forms of installing, as suggested by README.md).
-from setuptools import Extension, find_packages, setup
+from setuptools import Extension, setup
 from setuptools.command.build_py import build_py
 
 from mypy.version import __version__ as version
@@ -26,7 +26,6 @@ from mypy.version import __version__ as version
 if TYPE_CHECKING:
     from typing_extensions import TypeGuard
 
-description = "Optional static typing for Python"
 long_description = """
 Mypy -- Optional Static Typing for Python
 =========================================
@@ -77,13 +76,6 @@ class CustomPythonBuild(build_py):
 
 
 cmdclass = {"build_py": CustomPythonBuild}
-
-package_data = ["py.typed"]
-
-package_data += find_package_data(os.path.join("mypy", "typeshed"), ["*.py", "*.pyi"])
-package_data += [os.path.join("mypy", "typeshed", "stdlib", "VERSIONS")]
-
-package_data += find_package_data(os.path.join("mypy", "xml"), ["*.xsd", "*.xslt", "*.css"])
 
 USE_MYPYC = False
 # To compile with mypyc, a mypyc checkout must be present on the PYTHONPATH
@@ -179,67 +171,6 @@ else:
     ext_modules = []
 
 
-classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Environment :: Console",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Software Development",
-    "Typing :: Typed",
-]
-
 setup(
-    name="mypy",
-    version=version,
-    description=description,
-    long_description=long_description,
-    author="Jukka Lehtosalo",
-    author_email="jukka.lehtosalo@iki.fi",
-    url="https://www.mypy-lang.org/",
-    license="MIT",
-    py_modules=[],
-    ext_modules=ext_modules,
-    packages=find_packages(),
-    package_data={"mypy": package_data},
-    entry_points={
-        "console_scripts": [
-            "mypy=mypy.__main__:console_entry",
-            "stubgen=mypy.stubgen:main",
-            "stubtest=mypy.stubtest:main",
-            "dmypy=mypy.dmypy.client:console_entry",
-            "mypyc=mypyc.__main__:main",
-        ]
-    },
-    classifiers=classifiers,
-    cmdclass=cmdclass,
-    # When changing this, also update mypy-requirements.txt and pyproject.toml
-    install_requires=[
-        "typing_extensions>=4.6.0",
-        "mypy_extensions >= 1.0.0",
-        "tomli>=1.1.0; python_version<'3.11'",
-    ],
-    # Same here.
-    extras_require={
-        "dmypy": "psutil >= 4.0",
-        "mypyc": "setuptools >= 50",
-        "python2": "",
-        "reports": "lxml",
-        "install-types": "pip",
-        "faster-cache": "orjson",
-    },
-    python_requires=">=3.8",
-    include_package_data=True,
-    project_urls={
-        "Documentation": "https://mypy.readthedocs.io/en/stable/index.html",
-        "Repository": "https://github.com/python/mypy",
-        "Changelog": "https://github.com/python/mypy/blob/master/CHANGELOG.md",
-        "Issues": "https://github.com/python/mypy/issues",
-    },
+    version=version, long_description=long_description, ext_modules=ext_modules, cmdclass=cmdclass
 )

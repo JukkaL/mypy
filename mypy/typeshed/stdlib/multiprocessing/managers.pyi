@@ -10,6 +10,7 @@ from typing_extensions import Self, TypeAlias
 from .connection import Connection
 from .context import BaseContext
 from .shared_memory import _SLT, ShareableList as _ShareableList, SharedMemory as _SharedMemory
+from .util import Finalize as _Finalize
 
 __all__ = ["BaseManager", "SyncManager", "BaseProxy", "Token", "SharedMemoryManager"]
 
@@ -156,7 +157,7 @@ class BaseManager:
     def get_server(self) -> Server: ...
     def connect(self) -> None: ...
     def start(self, initializer: Callable[..., object] | None = None, initargs: Iterable[Any] = ()) -> None: ...
-    def shutdown(self) -> None: ...  # only available after start() was called
+    shutdown: _Finalize  # only available after start() was called
     def join(self, timeout: float | None = None) -> None: ...  # undocumented
     @property
     def address(self) -> Any: ...

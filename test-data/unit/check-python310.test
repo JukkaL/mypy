@@ -648,6 +648,25 @@ match m:
         reveal_type(m)  # N: Revealed type is "builtins.tuple[Any, ...]"
 [builtins fixtures/primitives.pyi]
 
+[case testMatchClassPatternCaptureSelfSubtype]
+class A(str):
+    pass
+
+class B(str):
+    __match_args__ = ("b",)
+    b: int
+
+def f1(x: A):
+    match x:
+        case A(a):
+            reveal_type(a)  # N: Revealed type is "__main__.A"
+
+def f2(x: B):
+    match x:
+        case B(b):
+            reveal_type(b)  # N: Revealed type is "builtins.int"
+[builtins fixtures/tuple.pyi]
+
 [case testMatchInvalidClassPattern]
 m: object
 
@@ -1524,6 +1543,7 @@ def g(m: Medal) -> int:
         case Medal.bronze:
             reveal_type(m)  # N: Revealed type is "Literal[__main__.Medal.bronze]"
             return 2
+[builtins fixtures/enum.pyi]
 
 
 [case testMatchLiteralPatternEnumWithTypedAttribute]
@@ -1578,6 +1598,7 @@ match m:
         reveal_type(m)  # N: Revealed type is "Literal[__main__.Medal.bronze]"
     case _ as unreachable:
         assert_never(unreachable)
+[builtins fixtures/enum.pyi]
 
 [case testMatchLiteralPatternEnumCustomEquals-skip]
 from enum import Enum
@@ -1595,6 +1616,7 @@ match m:
         reveal_type(m)  # N: Revealed type is "Literal[__main__.Medal.gold]"
     case _:
         reveal_type(m)  # N: Revealed type is "__main__.Medal"
+[builtins fixtures/enum.pyi]
 
 [case testMatchNarrowUsingPatternGuardSpecialCase]
 def f(x: int | str) -> int:
@@ -1672,6 +1694,7 @@ def union(x: str | bool) -> None:
         case True:
             return
     reveal_type(x)  # N: Revealed type is "Union[builtins.str, Literal[False]]"
+[builtins fixtures/tuple.pyi]
 
 [case testMatchAssertFalseToSilenceFalsePositives]
 class C:
@@ -1701,6 +1724,22 @@ def f(x: int | str) -> int:
             return n
         case str() as s:
             return 1
+
+[case testMatchOrPatternExhaustiveness]
+from typing import NoReturn, Literal
+def assert_never(x: NoReturn) -> None: ...
+
+Color = Literal["blue", "green", "red"]
+c: Color
+
+match c:
+    case "blue":
+        reveal_type(c) # N: Revealed type is "Literal['blue']"
+    case "green" | "notColor":
+        reveal_type(c) # N: Revealed type is "Literal['green']"
+    case _:
+        assert_never(c) # E: Argument 1 to "assert_never" has incompatible type "Literal['red']"; expected "Never"
+[typing fixtures/typing-typeddict.pyi]
 
 [case testMatchAsPatternIntersection-skip]
 class A: pass

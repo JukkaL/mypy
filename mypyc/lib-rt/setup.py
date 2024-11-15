@@ -21,7 +21,7 @@ else:
     compile_args = ["--std=c++11"]
 
 
-class build_ext_custom(build_ext):
+class build_ext_custom(build_ext):  # noqa: N801
     def get_library_names(self):
         return ["gtest"]
 

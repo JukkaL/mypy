@@ -987,7 +987,7 @@ class StubgencSuite(unittest.TestCase):
     def test_generate_c_type_classmethod_with_overloads(self) -> None:
         class TestClass:
             @classmethod
-            def test(self, arg0: str) -> None:
+            def test(cls, arg0: str) -> None:
                 """
                 test(cls, arg0: str)
                 test(cls, arg0: int)

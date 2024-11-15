@@ -5355,6 +5355,7 @@ c: C
 c = C.X
 if int():
     c = 1
+[builtins fixtures/enum.pyi]
 [out]
 ==
 ==
@@ -5386,6 +5387,7 @@ if int():
     n = C.X
     if int():
         n = c
+[builtins fixtures/enum.pyi]
 [out]
 ==
 ==
@@ -5410,6 +5412,7 @@ from enum import Enum
 
 class C(Enum):
     X = 0
+[builtins fixtures/tuple.pyi]
 [typing fixtures/typing-medium.pyi]
 [out]
 ==
@@ -5432,6 +5435,7 @@ from enum import Enum
 class C(Enum):
     X = 0
     Y = 1
+[builtins fixtures/enum.pyi]
 [out]
 ==
 a.py:4: error: Argument 1 to "f" has incompatible type "C"; expected "int"
@@ -5456,6 +5460,7 @@ c: C
 c = C.X
 if int():
    c = 1
+[builtins fixtures/tuple.pyi]
 [out]
 ==
 ==
@@ -5485,6 +5490,7 @@ if int():
     n: int
     n = C.X
 n = c
+[builtins fixtures/enum.pyi]
 [out]
 ==
 ==
@@ -5506,6 +5512,7 @@ C = Enum('C', 'X Y')
 from enum import Enum
 
 C = Enum('C', 'X')
+[builtins fixtures/tuple.pyi]
 [typing fixtures/typing-medium.pyi]
 [out]
 ==
@@ -5526,6 +5533,7 @@ class C:
 [file b.py.2]
 from enum import Enum
 C = Enum('C', [('X', 0), ('Y', 1)])
+[builtins fixtures/tuple.pyi]
 [out]
 ==
 a.py:4: error: Argument 1 to "f" has incompatible type "C"; expected "int"

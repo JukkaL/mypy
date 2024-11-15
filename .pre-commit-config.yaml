@@ -1,17 +1,17 @@
 exclude: '^(mypyc/external/)|(mypy/typeshed/)|misc/typeshed_patches'  # Exclude all vendored code from lints
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0  # must match test-requirements.txt
+    rev: v4.5.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 24.8.0  # must match test-requirements.txt
+    rev: 24.8.0
     hooks:
       - id: black
         exclude: '^(test-data/)'
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9  # must match test-requirements.txt
+    rev: v0.6.9
     hooks:
       - id: ruff
         args: [--exit-non-zero-on-fix]

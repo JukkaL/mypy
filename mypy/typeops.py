@@ -650,8 +650,16 @@ def _remove_redundant_union_items(items: list[Type], keep_erased: bool) -> list[
 def _get_type_method_ret_type(t: Type, *, name: str) -> Type | None:
     t = get_proper_type(t)
 
+    # For Enum literals the ret_type can change based on the Enum
+    # we need to check the type of the enum rather than the literal
+    if isinstance(t, LiteralType) and t.is_enum_literal():
+        t = t.fallback
+
     if isinstance(t, Instance):
         sym = t.type.get(name)
+        # Fallback to the metaclass for the lookup when necessary
+        if not sym and (m := t.type.metaclass_type):
+            sym = m.type.get(name)
         if sym:
             sym_type = get_proper_type(sym.type)
             if isinstance(sym_type, CallableType):

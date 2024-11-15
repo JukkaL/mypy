@@ -905,6 +905,7 @@ def g() -> None:
     A.X
 [file mod.py]
 class B: pass
+[builtins fixtures/tuple.pyi]
 [out]
 <m.A.X> -> m.g
 <m.A> -> <m.f>, m.f, m.g

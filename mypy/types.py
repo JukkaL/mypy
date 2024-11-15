@@ -2818,10 +2818,28 @@ class LiteralType(ProperType):
         self.fallback = fallback
         self._hash = -1  # Cached hash value
 
+    # NOTE: Enum types are always truthy by default, but this can be changed
+    #       in subclasses, so we need to get the truthyness from the Enum
+    #       type rather than base it on the value (which is a non-empty
+    #       string for enums, so always truthy)
+    # TODO: We should consider moving this branch to the `can_be_true`
+    #       `can_be_false` properties instead, so the truthyness only
+    #       needs to be determined once per set of Enum literals.
+    #       However, the same can be said for `TypeAliasType` in some
+    #       cases and we only set the default based on the type it is
+    #       aliasing. So if we decide to change this, we may want to
+    #       change that as well. perf_compare output was inconclusive
+    #       but slightly favored this version, probably because we have
+    #       almost no test cases where we would redundantly compute
+    #       `can_be_false`/`can_be_true`.
     def can_be_false_default(self) -> bool:
+        if self.fallback.type.is_enum:
+            return self.fallback.can_be_false
         return not self.value
 
     def can_be_true_default(self) -> bool:
+        if self.fallback.type.is_enum:
+            return self.fallback.can_be_true
         return bool(self.value)
 
     def accept(self, visitor: TypeVisitor[T]) -> T:

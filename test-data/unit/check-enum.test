@@ -11,6 +11,8 @@ m = Medal.gold
 if int():
     m = 1  # E: Incompatible types in assignment (expression has type "int", variable has type "Medal")
 
+[builtins fixtures/enum.pyi]
+
 -- Creation from Enum call
 -- -----------------------
 
@@ -79,6 +81,7 @@ from typing import Generic, TypeVar
 T = TypeVar("T")
 class Medal(Generic[T], metaclass=EnumMeta):  # E: Enum class cannot be generic
     q = None
+[builtins fixtures/enum.pyi]
 
 [case testEnumNameAndValue]
 from enum import Enum
@@ -175,6 +178,31 @@ def infer_truth(truth: Truth) -> None:
     reveal_type(truth.value) # N: Revealed type is "builtins.bool"
 [builtins fixtures/bool.pyi]
 
+[case testEnumTruthyness]
+# mypy: warn-unreachable
+import enum
+class E(enum.Enum):
+    x = 0
+if not E.x:
+    "noop"
+[builtins fixtures/tuple.pyi]
+[out]
+main:6: error: Statement is unreachable
+
+[case testEnumTruthynessCustomDunderBool]
+# mypy: warn-unreachable
+import enum
+from typing_extensions import Literal
+class E(enum.Enum):
+    x = 0
+    def __bool__(self) -> Literal[False]:
+        return False
+if E.x:
+    "noop"
+[builtins fixtures/enum.pyi]
+[out]
+main:9: error: Statement is unreachable
+
 [case testEnumUnique]
 import enum
 @enum.unique
@@ -183,6 +211,7 @@ class E(enum.Enum):
     y = 1  # NOTE: This duplicate value is not detected by mypy at the moment
 x = 1
 x = E.x
+[builtins fixtures/enum.pyi]
 [out]
 main:7: error: Incompatible types in assignment (expression has type "E", variable has type "int")
 
@@ -197,6 +226,7 @@ if int():
 s = ''
 if int():
     s = N.y # E: Incompatible types in assignment (expression has type "N", variable has type "str")
+[builtins fixtures/enum.pyi]
 
 [case testIntEnum_functionTakingIntEnum]
 from enum import IntEnum
@@ -207,6 +237,7 @@ def takes_some_int_enum(n: SomeIntEnum):
 takes_some_int_enum(SomeIntEnum.x)
 takes_some_int_enum(1)  # Error
 takes_some_int_enum(SomeIntEnum(1))  # How to deal with the above
+[builtins fixtures/enum.pyi]
 [out]
 main:7: error: Argument 1 to "takes_some_int_enum" has incompatible type "int"; expected "SomeIntEnum"
 
@@ -218,6 +249,7 @@ def takes_int(i: int):
     pass
 takes_int(SomeIntEnum.x)
 takes_int(2)
+[builtins fixtures/enum.pyi]
 
 [case testIntEnum_functionReturningIntEnum]
 from enum import IntEnum
@@ -230,6 +262,7 @@ an_int = returns_some_int_enum()
 
 an_enum = SomeIntEnum.x
 an_enum = returns_some_int_enum()
+[builtins fixtures/enum.pyi]
 [out]
 
 [case testStrEnumCreation]
@@ -244,6 +277,7 @@ reveal_type(MyStrEnum.x)  # N: Revealed type is "Literal[__main__.MyStrEnum.x]?"
 reveal_type(MyStrEnum.x.value)  # N: Revealed type is "Literal['x']?"
 reveal_type(MyStrEnum.y)  # N: Revealed type is "Literal[__main__.MyStrEnum.y]?"
 reveal_type(MyStrEnum.y.value)  # N: Revealed type is "Literal['y']?"
+[builtins fixtures/enum.pyi]
 [out]
 
 [case testEnumMethods]
@@ -278,6 +312,7 @@ takes_int(SomeExtIntEnum.x)
 def takes_some_ext_int_enum(s: SomeExtIntEnum):
     pass
 takes_some_ext_int_enum(SomeExtIntEnum.x)
+[builtins fixtures/enum.pyi]
 
 [case testNamedTupleEnum]
 from typing import NamedTuple
@@ -299,6 +334,7 @@ class E(IntEnum):
     a = 1
 x: int
 reveal_type(E(x))
+[builtins fixtures/tuple.pyi]
 [out]
 main:5: note: Revealed type is "__main__.E"
 
@@ -308,6 +344,7 @@ class E(IntEnum):
     a = 1
 s: str
 reveal_type(E[s])
+[builtins fixtures/enum.pyi]
 [out]
 main:5: note: Revealed type is "__main__.E"
 
@@ -317,6 +354,7 @@ class E(IntEnum):
     a = 1
 E[1]  # E: Enum index should be a string (actual index type "int")
 x = E[1]  # E: Enum index should be a string (actual index type "int")
+[builtins fixtures/enum.pyi]
 
 [case testEnumIndexIsNotAnAlias]
 from enum import Enum
@@ -334,6 +372,7 @@ def get_member(name: str) -> E:
     return val
 
 reveal_type(get_member('a'))  # N: Revealed type is "__main__.E"
+[builtins fixtures/enum.pyi]
 
 [case testGenericEnum]
 from enum import Enum
@@ -346,6 +385,7 @@ class F(Generic[T], Enum):  # E: Enum class cannot be generic
     y: T
 
 reveal_type(F[int].x)  # N: Revealed type is "__main__.F[builtins.int]"
+[builtins fixtures/enum.pyi]
 
 [case testEnumFlag]
 from enum import Flag
@@ -357,6 +397,7 @@ if int():
     x = 1 # E: Incompatible types in assignment (expression has type "int", variable has type "C")
 if int():
     x = x | C.b
+[builtins fixtures/enum.pyi]
 
 [case testEnumIntFlag]
 from enum import IntFlag
@@ -368,6 +409,7 @@ if int():
     x = 1 # E: Incompatible types in assignment (expression has type "int", variable has type "C")
 if int():
     x = x | C.b
+[builtins fixtures/enum.pyi]
 
 [case testAnonymousEnum]
 from enum import Enum
@@ -378,6 +420,7 @@ class A:
         self.x = E.a
 a = A()
 reveal_type(a.x)
+[builtins fixtures/enum.pyi]
 [out]
 main:8: note: Revealed type is "__main__.E@4"
 
@@ -393,6 +436,7 @@ x = A.E.a
 y = B.E.a
 if int():
     x = y # E: Incompatible types in assignment (expression has type "__main__.B.E", variable has type "__main__.A.E")
+[builtins fixtures/enum.pyi]
 
 [case testFunctionalEnumString]
 from enum import Enum, IntEnum
@@ -402,6 +446,7 @@ reveal_type(E.foo)
 reveal_type(E.bar.value)
 reveal_type(I.bar)
 reveal_type(I.baz.value)
+[builtins fixtures/enum.pyi]
 [out]
 main:4: note: Revealed type is "Literal[__main__.E.foo]?"
 main:5: note: Revealed type is "Any"
@@ -414,6 +459,7 @@ E = Enum('E', ('foo', 'bar'))
 F = IntEnum('F', ['bar', 'baz'])
 reveal_type(E.foo)
 reveal_type(F.baz)
+[builtins fixtures/enum.pyi]
 [out]
 main:4: note: Revealed type is "Literal[__main__.E.foo]?"
 main:5: note: Revealed type is "Literal[__main__.F.baz]?"
@@ -426,6 +472,7 @@ reveal_type(E.foo)
 reveal_type(F.baz)
 reveal_type(E.foo.value)
 reveal_type(F.bar.name)
+[builtins fixtures/enum.pyi]
 [out]
 main:4: note: Revealed type is "Literal[__main__.E.foo]?"
 main:5: note: Revealed type is "Literal[__main__.F.baz]?"
@@ -440,6 +487,7 @@ reveal_type(E.foo)
 reveal_type(F.baz)
 reveal_type(E.foo.value)
 reveal_type(F.bar.name)
+[builtins fixtures/enum.pyi]
 [out]
 main:4: note: Revealed type is "Literal[__main__.E.foo]?"
 main:5: note: Revealed type is "Literal[__main__.F.baz]?"
@@ -455,6 +503,7 @@ fake_enum1 = Enum('fake_enum1', ['a', 'b'])
 fake_enum2 = Enum('fake_enum2', names=['a', 'b'])
 fake_enum3 = Enum(value='fake_enum3', names=['a', 'b'])
 fake_enum4 = Enum(value='fake_enum4', names=['a', 'b'] , module=__name__)
+[builtins fixtures/enum.pyi]
 
 [case testFunctionalEnumErrors]
 from enum import Enum, IntEnum
@@ -484,6 +533,7 @@ X = Enum('Something', 'a b')  # E: String argument 1 "Something" to enum.Enum(..
 reveal_type(X.a)  # N: Revealed type is "Literal[__main__.Something@23.a]?"
 X.asdf  # E: "Type[Something@23]" has no attribute "asdf"
 
+[builtins fixtures/tuple.pyi]
 [typing fixtures/typing-medium.pyi]
 
 [case testFunctionalEnumFlag]
@@ -498,6 +548,7 @@ reveal_type(B.a.name)   # N: Revealed type is "Literal['a']?"
 # TODO: The revealed type should be 'int' here
 reveal_type(A.x.value)  # N: Revealed type is "Any"
 reveal_type(B.a.value)  # N: Revealed type is "Any"
+[builtins fixtures/enum.pyi]
 
 [case testAnonymousFunctionalEnum]
 from enum import Enum
@@ -507,6 +558,7 @@ class A:
         self.x = E.a
 a = A()
 reveal_type(a.x)
+[builtins fixtures/enum.pyi]
 [out]
 main:7: note: Revealed type is "__main__.A.E@4"
 
@@ -520,6 +572,7 @@ x = A.E.a
 y = B.E.a
 if int():
     x = y # E: Incompatible types in assignment (expression has type "__main__.B.E", variable has type "__main__.A.E")
+[builtins fixtures/enum.pyi]
 
 [case testFunctionalEnumProtocols]
 from enum import IntEnum
@@ -537,6 +590,7 @@ a: E = E.x  # type: ignore[used-before-def]
 class E(Enum):
     x = 1
     y = 2
+[builtins fixtures/enum.pyi]
 [out]
 
 [case testEnumWorkWithForward2]
@@ -547,6 +601,7 @@ F = Enum('F', {'x': 1, 'y': 2})
 def fn(x: F) -> None:
     pass
 fn(b)
+[builtins fixtures/enum.pyi]
 [out]
 
 [case testFunctionalEnum]
@@ -564,6 +619,7 @@ Gu.a
 Gb.a
 Hu.a
 Hb.a
+[builtins fixtures/enum.pyi]
 [out]
 
 [case testEnumIncremental]
@@ -576,6 +632,7 @@ class E(Enum):
     a = 1
     b = 2
 F = Enum('F', 'a b')
+[builtins fixtures/enum.pyi]
 [rechecked]
 [stale]
 [out1]
@@ -734,6 +791,7 @@ class SomeEnum(Enum):
 from enum import Enum
 class SomeEnum(Enum):
     a = "foo"
+[builtins fixtures/enum.pyi]
 [out]
 main:2: note: Revealed type is "Literal[1]?"
 [out2]
@@ -949,7 +1007,7 @@ x: Optional[Foo]
 if x:
     reveal_type(x)  # N: Revealed type is "__main__.Foo"
 else:
-    reveal_type(x)  # N: Revealed type is "Union[__main__.Foo, None]"
+    reveal_type(x)  # N: Revealed type is "None"
 
 if x is not None:
     reveal_type(x)  # N: Revealed type is "__main__.Foo"
@@ -961,7 +1019,7 @@ if x is Foo.A:
 else:
     reveal_type(x)  # N: Revealed type is "Union[Literal[__main__.Foo.B], Literal[__main__.Foo.C], None]"
 reveal_type(x) # N: Revealed type is "Union[__main__.Foo, None]"
-[builtins fixtures/bool.pyi]
+[builtins fixtures/enum.pyi]
 
 [case testEnumReachabilityWithMultipleEnums]
 from enum import Enum
@@ -1104,6 +1162,7 @@ class A:
         self.b = Enum("b", [("foo", "bar")])  # E: Enum type as attribute is not supported
 
 reveal_type(A().b)  # N: Revealed type is "Any"
+[builtins fixtures/enum.pyi]
 
 [case testEnumReachabilityWithChaining]
 from enum import Enum
@@ -1307,6 +1366,7 @@ class Foo(Enum):
 a = Foo.A
 reveal_type(a.value)    # N: Revealed type is "Union[Literal[1]?, Literal[2]?]"
 reveal_type(a._value_)  # N: Revealed type is "Union[Literal[1]?, Literal[2]?]"
+[builtins fixtures/enum.pyi]
 
 [case testNewSetsUnexpectedValueType]
 from enum import Enum
@@ -1325,7 +1385,7 @@ class Foo(bytes, Enum):
 a = Foo.A
 reveal_type(a.value)    # N: Revealed type is "Any"
 reveal_type(a._value_)  # N: Revealed type is "Any"
-[builtins fixtures/primitives.pyi]
+[builtins fixtures/tuple.pyi]
 [typing fixtures/typing-medium.pyi]
 
 [case testValueTypeWithNewInParentClass]
@@ -1398,6 +1458,7 @@ class E(IntEnum):
     A = N(0)
 
 reveal_type(E.A.value) # N: Revealed type is "__main__.N"
+[builtins fixtures/enum.pyi]
 
 
 [case testEnumFinalValues]
@@ -1410,6 +1471,7 @@ class Medal(Enum):
 Medal.gold = 0  # E: Cannot assign to final attribute "gold"
 # Same value:
 Medal.silver = 2  # E: Cannot assign to final attribute "silver"
+[builtins fixtures/enum.pyi]
 
 
 [case testEnumFinalValuesCannotRedefineValueProp]
@@ -1417,6 +1479,7 @@ from enum import Enum
 class Types(Enum):
     key = 0
     value = 1
+[builtins fixtures/enum.pyi]
 
 
 [case testEnumReusedKeys]
@@ -2035,7 +2098,7 @@ class C(Enum):
     _ignore_ = 'X'
 
 C._ignore_ # E: "Type[C]" has no attribute "_ignore_"
-[typing fixtures/typing-medium.pyi]
+[builtins fixtures/enum.pyi]
 
 [case testCanOverrideDunderAttributes]
 import typing
@@ -2114,6 +2177,7 @@ class AllPartialList(Enum):
 
     def check(self) -> None:
         reveal_type(self.value)  # N: Revealed type is "builtins.list[Any]"
+[builtins fixtures/tuple.pyi]
 
 [case testEnumPrivateAttributeNotMember]
 from enum import Enum
@@ -2125,6 +2189,7 @@ class MyEnum(Enum):
 
 # TODO: change the next line to use MyEnum._MyEnum__my_dict when mypy implements name mangling
 x: MyEnum = MyEnum.__my_dict  # E: Incompatible types in assignment (expression has type "Dict[int, str]", variable has type "MyEnum")
+[builtins fixtures/enum.pyi]
 
 [case testEnumWithPrivateAttributeReachability]
 # flags: --warn-unreachable
@@ -2202,6 +2267,7 @@ class Medal(Enum):
                      # N: See https://typing.readthedocs.io/en/latest/spec/enums.html#defining-members \
                      # E: Incompatible types in assignment (expression has type "int", variable has type "str")
     bronze = 3
+[builtins fixtures/enum.pyi]
 
 [case testEnumMemberWithPlaceholder]
 from enum import Enum
@@ -2211,6 +2277,7 @@ class Pet(Enum):
     DOG: str = ...  # E: Enum members must be left unannotated \
                     # N: See https://typing.readthedocs.io/en/latest/spec/enums.html#defining-members \
                     # E: Incompatible types in assignment (expression has type "ellipsis", variable has type "str")
+[builtins fixtures/enum.pyi]
 
 [case testEnumValueWithPlaceholderNodeType]
 # https://github.com/python/mypy/issues/11971

@@ -2523,3 +2523,18 @@ reveal_type(replaced_2)  # N: Revealed type is "__main__.Gen[builtins.int]"
 Gen(2).__replace__(x="not an int")  # E: Argument "x" to "__replace__" of "Gen" has incompatible type "str"; expected "int"
 
 [builtins fixtures/tuple.pyi]
+
+[case testDunderReplaceCovariantOverride]
+# flags: --python-version 3.13
+from dataclasses import dataclass
+
+@dataclass
+class Base:
+    a: object
+
+@dataclass
+class Child(Base):  # E: Argument 1 of "__replace__" is incompatible with supertype "Base"; supertype defines the argument type as "object" \
+                    # N: This violates the Liskov substitution principle \
+                    # N: See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides
+    a: int
+[builtins fixtures/tuple.pyi]

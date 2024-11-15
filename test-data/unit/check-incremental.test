@@ -6586,6 +6586,7 @@ class TheClass:
             for x in names
         })
         self.enum_type = pyenum
+[builtins fixtures/tuple.pyi]
 [out]
 [out2]
 tmp/a.py:3: note: Revealed type is "def (value: builtins.object) -> lib.TheClass.pyenum@6"
