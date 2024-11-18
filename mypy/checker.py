@@ -1223,11 +1223,14 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                     if defn.is_async_generator:
                         if not self.is_async_generator_return_type(typ.ret_type):
                             self.fail(
-                                message_registry.INVALID_RETURN_TYPE_FOR_ASYNC_GENERATOR, typ
+                                message_registry.INVALID_RETURN_TYPE_FOR_ASYNC_GENERATOR,
+                                typ.ret_type,
                             )
                     else:
                         if not self.is_generator_return_type(typ.ret_type, defn.is_coroutine):
-                            self.fail(message_registry.INVALID_RETURN_TYPE_FOR_GENERATOR, typ)
+                            self.fail(
+                                message_registry.INVALID_RETURN_TYPE_FOR_GENERATOR, typ.ret_type
+                            )
 
                 # Fix the type if decorated with `@types.coroutine` or `@asyncio.coroutine`.
                 if defn.is_awaitable_coroutine:
