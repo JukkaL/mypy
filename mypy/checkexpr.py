@@ -3418,12 +3418,13 @@ class ExpressionChecker(ExpressionVisitor[Type]):
             if isinstance(e.left, StrExpr):
                 return self.strfrm_checker.check_str_interpolation(e.left, e.right)
         left_type = self.accept(e.left)
-
+        right_type = self.accept(e.right)
         proper_left_type = get_proper_type(left_type)
+        proper_right_type = get_proper_type(right_type)
+
         if isinstance(proper_left_type, TupleType) and e.op == "+":
             left_add_method = proper_left_type.partial_fallback.type.get("__add__")
             if left_add_method and left_add_method.fullname == "builtins.tuple.__add__":
-                proper_right_type = get_proper_type(self.accept(e.right))
                 if isinstance(proper_right_type, TupleType):
                     right_radd_method = proper_right_type.partial_fallback.type.get("__radd__")
                     if right_radd_method is None:
@@ -3451,7 +3452,7 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                             items=proper_left_type.items + [UnpackType(mapped)]
                         )
 
-        if e.op == "+" and (result := self.literal_expression_addition(e, left_type)):
+        if e.op == "+" and (result := self.literal_expression_addition(e, left_type, right_type)):
             return result
 
         use_reverse: UseReverse = USE_REVERSE_DEFAULT
@@ -3460,14 +3461,12 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                 # This is a special case for `dict | TypedDict`.
                 # 1. Find `dict | TypedDict` case
                 # 2. Switch `dict.__or__` to `TypedDict.__ror__` (the same from both runtime and typing perspective)
-                proper_right_type = get_proper_type(self.accept(e.right))
                 if isinstance(proper_right_type, TypedDictType):
                     use_reverse = USE_REVERSE_ALWAYS
             if isinstance(proper_left_type, TypedDictType):
                 # This is the reverse case: `TypedDict | dict`,
                 # simply do not allow the reverse checking:
                 # do not call `__dict__.__ror__`.
-                proper_right_type = get_proper_type(self.accept(e.right))
                 if is_named_instance(proper_right_type, "builtins.dict"):
                     use_reverse = USE_REVERSE_NEVER
 
@@ -3478,7 +3477,6 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                 and isinstance(proper_left_type, Instance)
                 and proper_left_type.type.fullname == "builtins.tuple"
             ):
-                proper_right_type = get_proper_type(self.accept(e.right))
                 if (
                     isinstance(proper_right_type, TupleType)
                     and proper_right_type.partial_fallback.type.fullname == "builtins.tuple"
@@ -3502,7 +3500,7 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                 result, method_type = self.check_op(
                     # The reverse operator here gives better error messages:
                     operators.reverse_op_methods[method],
-                    base_type=self.accept(e.right),
+                    base_type=right_type,
                     arg=e.left,
                     context=e,
                     allow_reverse=False,
@@ -3515,7 +3513,7 @@ class ExpressionChecker(ExpressionVisitor[Type]):
             raise RuntimeError(f"Unknown operator {e.op}")
 
     def literal_value_from_expr(
-        self, expr: Expression, typ: Type | None = None
+        self, expr: Expression, typ: Type
     ) -> tuple[list[str | int], str, bool] | None:
         if isinstance(expr, StrExpr):
             return [expr.value], "builtins.str", False
@@ -3524,7 +3522,6 @@ class ExpressionChecker(ExpressionVisitor[Type]):
         if isinstance(expr, BytesExpr):
             return [expr.value], "builtins.bytes", False
 
-        typ = typ or self.accept(expr)
         ptype = get_proper_type(typ)
 
         if isinstance(ptype, LiteralType) and not isinstance(ptype.value, (bool, float)):
@@ -3542,18 +3539,20 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                 if fallback != pitem.fallback.type.fullname:
                     break
                 values.append(pitem.value)
-            else:
+            else:  # no break
                 assert fallback is not None
                 return values, fallback, True
         return None
 
-    def literal_expression_addition(self, e: OpExpr, left_type: Type) -> Type | None:
+    def literal_expression_addition(
+        self, e: OpExpr, left_type: Type, right_type: Type
+    ) -> Type | None:
         """Check if literal values can be combined with addition."""
         assert e.op == "+"
         if not (lvalue := self.literal_value_from_expr(e.left, left_type)):
             return None
         if (
-            not (rvalue := self.literal_value_from_expr(e.right))
+            not (rvalue := self.literal_value_from_expr(e.right, right_type))
             or lvalue[1] != rvalue[1]  # different fallback
             or lvalue[2] + rvalue[2] == 0  # no LiteralType
         ):
