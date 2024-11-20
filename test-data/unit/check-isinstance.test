@@ -1993,7 +1993,7 @@ class C(A): pass
 
 y: Optional[B]
 if y in (B(), C()):
-    reveal_type(y) # N: Revealed type is "__main__.B"
+    reveal_type(y) # N: Revealed type is "Union[__main__.B, None]"
 else:
     reveal_type(y) # N: Revealed type is "Union[__main__.B, None]"
 [builtins fixtures/tuple.pyi]

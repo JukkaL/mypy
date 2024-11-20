@@ -2333,3 +2333,104 @@ def f(x: C) -> None:
 
 f(C(5))
 [builtins fixtures/primitives.pyi]
+
+[case testNarrowLiteralsInListOrSetOrTupleExpression]
+# flags: --warn-unreachable
+
+from typing import Optional
+from typing_extensions import Literal
+
+x: int
+
+def f(v: Optional[Literal[1, 2, 3, 4]]) -> None:
+    if v in (0, 1, 2):
+        reveal_type(v)  # N: Revealed type is "Union[Literal[1], Literal[2]]"
+    elif v in [1]:
+        reveal_type(v)  # E: Statement is unreachable
+    elif v is None or v in {3, x}:
+        reveal_type(v)  # N: Revealed type is "Union[Literal[3], Literal[4], None]"
+    elif v in ():
+        reveal_type(v)  # E: Statement is unreachable
+    else:
+        reveal_type(v)  # N: Revealed type is "Literal[4]"
+    reveal_type(v)  # N: Revealed type is "Union[Literal[1], Literal[2], Literal[3], Literal[4], None]"
+[builtins fixtures/primitives.pyi]
+
+[case testNarrowLiteralsNotInListOrSetOrTupleExpression]
+# flags: --warn-unreachable
+
+from typing import Optional
+from typing_extensions import Literal
+
+x: int
+
+def f(v: Optional[Literal[1, 2, 3, 4, 5]]) -> None:
+    if v not in {0, 1, 2, 3}:
+        reveal_type(v)  # N: Revealed type is "Union[Literal[4], Literal[5], None]"
+    elif v not in [1, 2, 3, 4]:  # E: Right operand of "and" is never evaluated
+        reveal_type(v)  # E: Statement is unreachable
+    elif v is not None and v not in (3,):
+        reveal_type(v)  # N: Revealed type is "Union[Literal[1], Literal[2]]"
+    elif v not in (x, 3):
+        reveal_type(v)  # E: Statement is unreachable
+    else:
+        reveal_type(v)  # N: Revealed type is "Literal[3]"
+    reveal_type(v)  # N: Revealed type is "Union[Literal[1], Literal[2], Literal[3], Literal[4], Literal[5], None]"
+[builtins fixtures/primitives.pyi]
+
+[case testNarrowEnumsInListOrSetOrTupleExpression]
+from enum import Enum
+from typing import Final
+
+class E(Enum):
+    A = 1
+    B = 2
+    C = 3
+    D = 4
+
+A: Final = E.A
+C: Final = E.C
+
+def f(v: E) -> None:
+    reveal_type(v)  # N: Revealed type is "__main__.E"
+    if v in (A, E.B):
+        reveal_type(v)  # N: Revealed type is "Union[Literal[__main__.E.A], Literal[__main__.E.B]]"
+    elif v in [E.A]:
+        reveal_type(v)
+    elif v in {C}:
+        reveal_type(v)  # N: Revealed type is "Literal[__main__.E.C]"
+    elif v in ():
+        reveal_type(v)
+    else:
+        reveal_type(v)  # N: Revealed type is "Literal[__main__.E.D]"
+    reveal_type(v)  # N: Revealed type is "__main__.E"
+[builtins fixtures/primitives.pyi]
+
+[case testNarrowEnumsNotInListOrSetOrTupleExpression]
+from enum import Enum
+from typing import Final
+
+class E(Enum):
+    A = 1
+    B = 2
+    C = 3
+    D = 4
+    E = 5
+
+A: Final = E.A
+C: Final = E.C
+
+def f(v: E) -> None:
+    reveal_type(v)  # N: Revealed type is "__main__.E"
+    if v not in (A, E.B, E.C):
+        reveal_type(v)  # N: Revealed type is "Union[Literal[__main__.E.D], Literal[__main__.E.E]]"
+    elif v not in [E.A, E.B, E.C, E.C]:
+        reveal_type(v)
+    elif v not in {C}:
+        reveal_type(v)  # N: Revealed type is "Union[Literal[__main__.E.A], Literal[__main__.E.B]]"
+    elif v not in []:
+        reveal_type(v)  # N: Revealed type is "Literal[__main__.E.C]"
+    else:
+        reveal_type(v)
+    reveal_type(v)  # N: Revealed type is "__main__.E"
+[builtins fixtures/primitives.pyi]

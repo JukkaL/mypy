@@ -256,3 +256,12 @@ TUPLE: Final[Tuple[str, ...]] = ('x', 'y')
 def test_final_boxed_tuple() -> None:
     t = TUPLE
     assert t == ('x', 'y')
+
+[case testTupleDoNotCrashOnTransformedInComparisons]
+def f() -> None:
+    for n in ["x"]:
+        if n in ("x", "z") or n.startswith("y"):
+            print(n)
+f()
+[out]
+x

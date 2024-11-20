@@ -5,6 +5,7 @@ from __future__ import annotations
 import itertools
 from collections import defaultdict
 from contextlib import ExitStack, contextmanager
+from copy import copy
 from typing import (
     AbstractSet,
     Callable,
@@ -116,6 +117,7 @@ from mypy.nodes import (
     RaiseStmt,
     RefExpr,
     ReturnStmt,
+    SetExpr,
     StarExpr,
     Statement,
     StrExpr,
@@ -4710,12 +4712,71 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                 if self.in_checked_function():
                     self.fail(message_registry.RETURN_VALUE_EXPECTED, s)
 
+    def _transform_sequence_expressions_for_narrowing_with_in(self, e: Expression) -> Expression:
+        """
+        Transform an expression like
+
+        (x is None) and (x in (1, 2)) and (x not in [3, 4])
+
+        into
+
+        (x is None) and (x == 1 or x == 2) and (x != 3 and x != 4)
+
+        This transformation is supposed to enable narrowing literals and enums using the in
+        (and the not in) operator in combination with tuple expressions without the need to
+        implement additional narrowing logic.
+        """
+        if isinstance(e, OpExpr):
+            e.left = self._transform_sequence_expressions_for_narrowing_with_in(e.left)
+            e.right = self._transform_sequence_expressions_for_narrowing_with_in(e.right)
+            return e
+
+        if not (
+            isinstance(e, ComparisonExpr)
+            and isinstance(left := e.operands[0], NameExpr)
+            and ((op_in := e.operators[0]) in ("in", "not in"))
+            and isinstance(litu := e.operands[1], (ListExpr, SetExpr, TupleExpr))
+        ):
+            return e
+
+        op_eq, op_con = (["=="], "or") if (op_in == "in") else (["!="], "and")
+        line = e.line
+        left_new = left
+        comparisons = []
+        for right in reversed(litu.items):
+            if isinstance(right, StarExpr):
+                return e
+            comparison = ComparisonExpr(op_eq, [left_new, right])
+            comparison.line = line
+            comparisons.append(comparison)
+            left_new = copy(left)
+        if (nmb := len(comparisons)) == 0:
+            if op_in == "in":
+                e = NameExpr("False")
+                e.fullname = "builtins.False"
+                e.line = line
+                return e
+            e = NameExpr("True")
+            e.fullname = "builtins.True"
+            e.line = line
+            return e
+        if nmb == 1:
+            return comparisons[0]
+        e = OpExpr(op_con, comparisons[1], comparisons[0])
+        for comparison in comparisons[2:]:
+            e = OpExpr(op_con, comparison, e)
+        e.line = line
+        return e
+
     def visit_if_stmt(self, s: IfStmt) -> None:
         """Type check an if statement."""
         # This frame records the knowledge from previous if/elif clauses not being taken.
         # Fall-through to the original frame is handled explicitly in each block.
         with self.binder.frame_context(can_skip=False, conditional_frame=True, fall_through=0):
             for e, b in zip(s.expr, s.body):
+
+                e = self._transform_sequence_expressions_for_narrowing_with_in(e)
+
                 t = get_proper_type(self.expr_checker.accept(e))
 
                 if isinstance(t, DeletedType):

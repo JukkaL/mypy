@@ -8,6 +8,7 @@ _Tco = TypeVar('_Tco', covariant=True)
 
 class object:
     def __init__(self) -> None: pass
+    def __eq__(self, other: object) -> bool: pass
 
 class type:
     def __init__(self, *a: object) -> None: pass
