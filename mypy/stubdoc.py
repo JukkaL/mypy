@@ -76,6 +76,7 @@ class FunctionSig(NamedTuple):
     name: str
     args: list[ArgSig]
     ret_type: str | None
+    type_args: str = ""  # TODO implement in stubgenc and remove the default
 
     def is_special_method(self) -> bool:
         return bool(
@@ -141,9 +142,7 @@ class FunctionSig(NamedTuple):
             retfield = " -> " + ret_type
 
         prefix = "async " if is_async else ""
-        sig = "{indent}{prefix}def {name}({args}){ret}:".format(
-            indent=indent, prefix=prefix, name=self.name, args=", ".join(args), ret=retfield
-        )
+        sig = f"{indent}{prefix}def {self.name}{self.type_args}({', '.join(args)}){retfield}:"
         if docstring:
             suffix = f"\n{indent}    {mypy.util.quote_docstring(docstring)}"
         else:

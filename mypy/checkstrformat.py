@@ -393,8 +393,10 @@ class StringFormatterChecker:
                 # If the explicit conversion is given, then explicit conversion is called _first_.
                 if spec.conversion[1] not in "rsa":
                     self.msg.fail(
-                        'Invalid conversion type "{}",'
-                        ' must be one of "r", "s" or "a"'.format(spec.conversion[1]),
+                        (
+                            f'Invalid conversion type "{spec.conversion[1]}", '
+                            f'must be one of "r", "s" or "a"'
+                        ),
                         call,
                         code=codes.STRING_FORMATTING,
                     )
@@ -472,8 +474,7 @@ class StringFormatterChecker:
                 expr = self.get_expr_by_position(int(key), call)
                 if not expr:
                     self.msg.fail(
-                        "Cannot find replacement for positional"
-                        " format specifier {}".format(key),
+                        f"Cannot find replacement for positional format specifier {key}",
                         call,
                         code=codes.STRING_FORMATTING,
                     )
@@ -654,8 +655,9 @@ class StringFormatterChecker:
                 assert spec.key, "Call this method only after auto-generating keys!"
                 assert spec.field
                 self.msg.fail(
-                    "Invalid index expression in format field"
-                    ' accessor "{}"'.format(spec.field[len(spec.key) :]),
+                    'Invalid index expression in format field accessor "{}"'.format(
+                        spec.field[len(spec.key) :]
+                    ),
                     ctx,
                     code=codes.STRING_FORMATTING,
                 )

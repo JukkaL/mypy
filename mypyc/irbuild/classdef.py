@@ -7,6 +7,7 @@ from abc import abstractmethod
 from typing import Callable, Final
 
 from mypy.nodes import (
+    EXCLUDED_ENUM_ATTRIBUTES,
     TYPE_VAR_TUPLE_KIND,
     AssignmentStmt,
     CallExpr,
@@ -27,7 +28,7 @@ from mypy.nodes import (
     TypeParam,
     is_class_var,
 )
-from mypy.types import ENUM_REMOVED_PROPS, Instance, UnboundType, get_proper_type
+from mypy.types import Instance, UnboundType, get_proper_type
 from mypyc.common import PROPSET_PREFIX
 from mypyc.ir.class_ir import ClassIR, NonExtClassInfo
 from mypyc.ir.func_ir import FuncDecl, FuncSignature
@@ -683,7 +684,7 @@ def add_non_ext_class_attr(
             cdef.info.bases
             and cdef.info.bases[0].type.fullname == "enum.Enum"
             # Skip these since Enum will remove it
-            and lvalue.name not in ENUM_REMOVED_PROPS
+            and lvalue.name not in EXCLUDED_ENUM_ATTRIBUTES
         ):
             # Enum values are always boxed, so use object_rprimitive.
             attr_to_cache.append((lvalue, object_rprimitive))

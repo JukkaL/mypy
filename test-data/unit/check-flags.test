@@ -963,6 +963,12 @@ from missing import Unchecked
 
 t: Unchecked = 12  # E: Type of variable becomes "Any" due to an unfollowed import
 
+[case testAllowImplicitAnyVariableDefinition]
+# flags: --ignore-missing-imports --allow-any-unimported
+from missing import Unchecked
+
+t: Unchecked = 12
+
 [case testDisallowImplicitAnyGeneric]
 # flags: --ignore-missing-imports --disallow-any-unimported
 from missing import Unchecked

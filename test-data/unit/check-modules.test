@@ -3136,15 +3136,12 @@ import google.cloud.ndb  # E: Library stubs not installed for "google.cloud.ndb"
 from google.cloud import ndb
 
 [case testMissingSubmoduleOfInstalledStubPackage]
-import bleach.xyz
-from bleach.abc import fgh
+import bleach.exists
+import bleach.xyz  # E: Cannot find implementation or library stub for module named "bleach.xyz" \
+                   # N: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+from bleach.abc import fgh  # E: Cannot find implementation or library stub for module named "bleach.abc"
 [file bleach/__init__.pyi]
-[out]
-main:1: error: Library stubs not installed for "bleach.xyz"
-main:1: note: Hint: "python3 -m pip install types-bleach"
-main:1: note: (or run "mypy --install-types" to install all missing stub packages)
-main:1: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
-main:2: error: Library stubs not installed for "bleach.abc"
+[file bleach/exists.pyi]
 
 [case testMissingSubmoduleOfInstalledStubPackageIgnored]
 # flags: --ignore-missing-imports

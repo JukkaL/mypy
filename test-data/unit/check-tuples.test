@@ -1438,6 +1438,12 @@ reveal_type(t[x:])  # N: Revealed type is "builtins.tuple[Union[builtins.int, bu
 t[y:]  # E: Slice index must be an integer, SupportsIndex or None
 [builtins fixtures/tuple.pyi]
 
+[case testTupleSliceStepZeroNoCrash]
+# This was crashing: https://github.com/python/mypy/issues/18062
+# TODO: emit better error when 0 is used for step
+()[::0]  # E: Ambiguous slice of a variadic tuple
+[builtins fixtures/tuple.pyi]
+
 [case testInferTupleTypeFallbackAgainstInstance]
 from typing import TypeVar, Generic, Tuple
 T = TypeVar('T')

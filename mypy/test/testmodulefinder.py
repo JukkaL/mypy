@@ -53,12 +53,12 @@ class ModuleFinderSuite(Suite):
         Find find pkg1/a.py for "a" with namespace_packages False.
         """
         found_module = self.fmc_nons.find_module("a")
-        expected = os.path.join(data_path, "pkg1", "a.py")
+        expected = os.path.abspath(os.path.join(data_path, "pkg1", "a.py"))
         assert_equal(expected, found_module)
 
     def test__no_namespace_packages__find_b_in_pkg2(self) -> None:
         found_module = self.fmc_ns.find_module("b")
-        expected = os.path.join(data_path, "pkg2", "b", "__init__.py")
+        expected = os.path.abspath(os.path.join(data_path, "pkg2", "b", "__init__.py"))
         assert_equal(expected, found_module)
 
     def test__find_nsx_as_namespace_pkg_in_pkg1(self) -> None:
@@ -67,7 +67,7 @@ class ModuleFinderSuite(Suite):
         the path to the first one found in mypypath.
         """
         found_module = self.fmc_ns.find_module("nsx")
-        expected = os.path.join(data_path, "nsx-pkg1", "nsx")
+        expected = os.path.abspath(os.path.join(data_path, "nsx-pkg1", "nsx"))
         assert_equal(expected, found_module)
 
     def test__find_nsx_a_init_in_pkg1(self) -> None:
@@ -75,7 +75,7 @@ class ModuleFinderSuite(Suite):
         Find nsx-pkg1/nsx/a/__init__.py for "nsx.a" in namespace mode.
         """
         found_module = self.fmc_ns.find_module("nsx.a")
-        expected = os.path.join(data_path, "nsx-pkg1", "nsx", "a", "__init__.py")
+        expected = os.path.abspath(os.path.join(data_path, "nsx-pkg1", "nsx", "a", "__init__.py"))
         assert_equal(expected, found_module)
 
     def test__find_nsx_b_init_in_pkg2(self) -> None:
@@ -83,7 +83,7 @@ class ModuleFinderSuite(Suite):
         Find nsx-pkg2/nsx/b/__init__.py for "nsx.b" in namespace mode.
         """
         found_module = self.fmc_ns.find_module("nsx.b")
-        expected = os.path.join(data_path, "nsx-pkg2", "nsx", "b", "__init__.py")
+        expected = os.path.abspath(os.path.join(data_path, "nsx-pkg2", "nsx", "b", "__init__.py"))
         assert_equal(expected, found_module)
 
     def test__find_nsx_c_c_in_pkg3(self) -> None:
@@ -91,7 +91,7 @@ class ModuleFinderSuite(Suite):
         Find nsx-pkg3/nsx/c/c.py for "nsx.c.c" in namespace mode.
         """
         found_module = self.fmc_ns.find_module("nsx.c.c")
-        expected = os.path.join(data_path, "nsx-pkg3", "nsx", "c", "c.py")
+        expected = os.path.abspath(os.path.join(data_path, "nsx-pkg3", "nsx", "c", "c.py"))
         assert_equal(expected, found_module)
 
     def test__find_nsy_a__init_pyi(self) -> None:
@@ -99,7 +99,7 @@ class ModuleFinderSuite(Suite):
         Prefer nsy-pkg1/a/__init__.pyi file over __init__.py.
         """
         found_module = self.fmc_ns.find_module("nsy.a")
-        expected = os.path.join(data_path, "nsy-pkg1", "nsy", "a", "__init__.pyi")
+        expected = os.path.abspath(os.path.join(data_path, "nsy-pkg1", "nsy", "a", "__init__.pyi"))
         assert_equal(expected, found_module)
 
     def test__find_nsy_b__init_py(self) -> None:
@@ -109,7 +109,7 @@ class ModuleFinderSuite(Suite):
         a package is preferred over a module.
         """
         found_module = self.fmc_ns.find_module("nsy.b")
-        expected = os.path.join(data_path, "nsy-pkg2", "nsy", "b", "__init__.py")
+        expected = os.path.abspath(os.path.join(data_path, "nsy-pkg2", "nsy", "b", "__init__.py"))
         assert_equal(expected, found_module)
 
     def test__find_nsy_c_pyi(self) -> None:
@@ -119,17 +119,17 @@ class ModuleFinderSuite(Suite):
         .pyi is preferred over .py.
         """
         found_module = self.fmc_ns.find_module("nsy.c")
-        expected = os.path.join(data_path, "nsy-pkg2", "nsy", "c.pyi")
+        expected = os.path.abspath(os.path.join(data_path, "nsy-pkg2", "nsy", "c.pyi"))
         assert_equal(expected, found_module)
 
     def test__find_a_in_pkg1(self) -> None:
         found_module = self.fmc_ns.find_module("a")
-        expected = os.path.join(data_path, "pkg1", "a.py")
+        expected = os.path.abspath(os.path.join(data_path, "pkg1", "a.py"))
         assert_equal(expected, found_module)
 
     def test__find_b_init_in_pkg2(self) -> None:
         found_module = self.fmc_ns.find_module("b")
-        expected = os.path.join(data_path, "pkg2", "b", "__init__.py")
+        expected = os.path.abspath(os.path.join(data_path, "pkg2", "b", "__init__.py"))
         assert_equal(expected, found_module)
 
     def test__find_d_nowhere(self) -> None:
@@ -165,7 +165,7 @@ class ModuleFinderSitePackagesSuite(Suite):
         self.fmc_nons = FindModuleCache(self.search_paths, fscache=None, options=options)
 
     def path(self, *parts: str) -> str:
-        return os.path.join(self.package_dir, *parts)
+        return os.path.abspath(os.path.join(self.package_dir, *parts))
 
     def test__packages_with_ns(self) -> None:
         cases = [
@@ -214,7 +214,7 @@ class ModuleFinderSitePackagesSuite(Suite):
             # A regular package with an installed set of stubs
             ("foo.bar", self.path("foo-stubs", "bar.pyi")),
             # A regular, non-site-packages module
-            ("a", os.path.join(data_path, "pkg1", "a.py")),
+            ("a", os.path.abspath(os.path.join(data_path, "pkg1", "a.py"))),
         ]
         for module, expected in cases:
             template = "Find(" + module + ") got {}; expected {}"
@@ -269,7 +269,7 @@ class ModuleFinderSitePackagesSuite(Suite):
             # A regular package with an installed set of stubs
             ("foo.bar", self.path("foo-stubs", "bar.pyi")),
             # A regular, non-site-packages module
-            ("a", os.path.join(data_path, "pkg1", "a.py")),
+            ("a", os.path.abspath(os.path.join(data_path, "pkg1", "a.py"))),
         ]
         for module, expected in cases:
             template = "Find(" + module + ") got {}; expected {}"

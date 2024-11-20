@@ -2303,3 +2303,162 @@ reveal_type(capture(fn))  # N: Revealed type is "Union[builtins.str, builtins.in
 reveal_type(capture(err))  # N: Revealed type is "builtins.int"
 
 [builtins fixtures/paramspec.pyi]
+
+[case testRunParamSpecOverlappingOverloadsOrder]
+from typing import Any, Callable, overload
+from typing_extensions import ParamSpec
+
+P = ParamSpec("P")
+
+class Base:
+    pass
+class Child(Base):
+    def __call__(self) -> str: ...
+class NotChild:
+    def __call__(self) -> str: ...
+
+@overload
+def handle(func: Base) -> int: ...
+@overload
+def handle(func: Callable[P, str], *args: P.args, **kwargs: P.kwargs) -> str: ...
+def handle(func: Any, *args: Any, **kwargs: Any) -> Any:
+    return func(*args, **kwargs)
+
+@overload
+def handle_reversed(func: Callable[P, str], *args: P.args, **kwargs: P.kwargs) -> str: ...
+@overload
+def handle_reversed(func: Base) -> int: ...
+def handle_reversed(func: Any, *args: Any, **kwargs: Any) -> Any:
+    return func(*args, **kwargs)
+
+reveal_type(handle(Child()))  # N: Revealed type is "builtins.int"
+reveal_type(handle(NotChild()))  # N: Revealed type is "builtins.str"
+
+reveal_type(handle_reversed(Child()))  # N: Revealed type is "builtins.str"
+reveal_type(handle_reversed(NotChild()))  # N: Revealed type is "builtins.str"
+
+[builtins fixtures/paramspec.pyi]
+
+[case testBindPartial]
+from functools import partial
+from typing_extensions import ParamSpec
+from typing import Callable, TypeVar
+
+P = ParamSpec("P")
+T = TypeVar("T")
+
+def run(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, **kwargs)
+    return func2(*args)
+
+def run2(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, *args)
+    return func2(**kwargs)
+
+def run3(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, *args, **kwargs)
+    return func2()
+
+def run4(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, *args, **kwargs)
+    return func2(**kwargs)
+
+def run_bad(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, *args, **kwargs)
+    return func2(*args)  # E: Too many arguments
+
+def run_bad2(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, **kwargs)
+    return func2(**kwargs)  # E: Too few arguments
+
+def run_bad3(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, *args)
+    return func2()  # E: Too few arguments
+
+[builtins fixtures/paramspec.pyi]
+
+[case testBindPartialConcatenate]
+from functools import partial
+from typing_extensions import Concatenate, ParamSpec
+from typing import Callable, TypeVar
+
+P = ParamSpec("P")
+T = TypeVar("T")
+
+def run(func: Callable[Concatenate[int, P], T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, 1, **kwargs)
+    return func2(*args)
+
+def run2(func: Callable[Concatenate[int, P], T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, **kwargs)
+    p = [""]
+    func2(1, *p)  # E: Too few arguments \
+                  # E: Argument 2 has incompatible type "*List[str]"; expected "P.args"
+    func2(1, 2, *p)  # E: Too few arguments \
+                     # E: Argument 2 has incompatible type "int"; expected "P.args" \
+                     # E: Argument 3 has incompatible type "*List[str]"; expected "P.args"
+    func2(1, *args, *p)  # E: Argument 3 has incompatible type "*List[str]"; expected "P.args"
+    func2(1, *p, *args)  # E: Argument 2 has incompatible type "*List[str]"; expected "P.args"
+    return func2(1, *args)
+
+def run3(func: Callable[Concatenate[int, P], T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, 1, *args)
+    d = {"":""}
+    func2(**d)  # E: Too few arguments \
+                # E: Argument 1 has incompatible type "**Dict[str, str]"; expected "P.kwargs"
+    return func2(**kwargs)
+
+def run4(func: Callable[Concatenate[int, P], T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, 1)
+    return func2(*args, **kwargs)
+
+def run5(func: Callable[Concatenate[int, P], T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, 1, *args, **kwargs)
+    func2()
+    return func2(**kwargs)
+
+def run_bad(func: Callable[Concatenate[int, P], T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, *args)  # E: Argument 1 has incompatible type "*P.args"; expected "int"
+    return func2(1, **kwargs)  # E: Argument 1 has incompatible type "int"; expected "P.args"
+
+def run_bad2(func: Callable[Concatenate[int, P], T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, 1, *args)
+    func2()  # E: Too few arguments
+    func2(*args, **kwargs)  # E: Too many arguments
+    return func2(1, **kwargs)  # E: Argument 1 has incompatible type "int"; expected "P.args"
+
+def run_bad3(func: Callable[Concatenate[int, P], T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, 1, **kwargs)
+    func2()  # E: Too few arguments
+    return func2(1, *args)  # E: Argument 1 has incompatible type "int"; expected "P.args"
+
+def run_bad4(func: Callable[Concatenate[int, P], T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, 1)
+    func2()  # E: Too few arguments
+    func2(*args)  # E: Too few arguments
+    func2(1, *args)  # E: Too few arguments \
+                     # E: Argument 1 has incompatible type "int"; expected "P.args"
+    func2(1, **kwargs)  # E: Too few arguments \
+                        # E: Argument 1 has incompatible type "int"; expected "P.args"
+    return func2(**kwargs)  # E: Too few arguments
+
+[builtins fixtures/paramspec.pyi]
+
+[case testOtherVarArgs]
+from functools import partial
+from typing_extensions import Concatenate, ParamSpec
+from typing import Callable, TypeVar, Tuple
+
+P = ParamSpec("P")
+T = TypeVar("T")
+
+def run(func: Callable[Concatenate[int, str, P], T], *args: P.args, **kwargs: P.kwargs) -> T:
+    func2 = partial(func, **kwargs)
+    args_prefix: Tuple[int, str] = (1, 'a')
+    func2(*args_prefix)  # E: Too few arguments
+    func2(*args, *args_prefix)  # E: Argument 1 has incompatible type "*P.args"; expected "int" \
+                                # E: Argument 1 has incompatible type "*P.args"; expected "str" \
+                                # E: Argument 2 has incompatible type "*Tuple[int, str]"; expected "P.args"
+    return func2(*args_prefix, *args)
+
+[builtins fixtures/paramspec.pyi]

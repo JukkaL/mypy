@@ -27,7 +27,7 @@ class MetadataStore:
 
     @abstractmethod
     def getmtime(self, name: str) -> float:
-        """Read the mtime of a metadata entry..
+        """Read the mtime of a metadata entry.
 
         Raises FileNotFound if the entry does not exist.
         """

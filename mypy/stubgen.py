@@ -106,6 +106,7 @@ from mypy.nodes import (
     StrExpr,
     TempNode,
     TupleExpr,
+    TypeAliasStmt,
     TypeInfo,
     UnaryExpr,
     Var,
@@ -398,6 +399,9 @@ class DefinitionFinder(mypy.traverser.TraverserVisitor):
         for name in get_assigned_names(o.lvalues):
             self.names.add(name)
 
+    def visit_type_alias_stmt(self, o: TypeAliasStmt) -> None:
+        self.names.add(o.name.name)
+
 
 def find_referenced_names(file: MypyFile) -> set[str]:
     finder = ReferenceFinder()
@@ -468,13 +472,17 @@ class ASTStubGenerator(BaseStubGenerator, mypy.traverser.TraverserVisitor):
         self._vars: list[list[str]] = [[]]
         # What was generated previously in the stub file.
         self._state = EMPTY
-        self._current_class: ClassDef | None = None
+        self._class_stack: list[ClassDef] = []
         # Was the tree semantically analysed before?
         self.analyzed = analyzed
         # Short names of methods defined in the body of the current class
         self.method_names: set[str] = set()
         self.processing_enum = False
         self.processing_dataclass = False
+
+    @property
+    def _current_class(self) -> ClassDef | None:
+        return self._class_stack[-1] if self._class_stack else None
 
     def visit_mypy_file(self, o: MypyFile) -> None:
         self.module_name = o.fullname  # Current module being processed
@@ -507,7 +515,8 @@ class ASTStubGenerator(BaseStubGenerator, mypy.traverser.TraverserVisitor):
     def get_default_function_sig(self, func_def: FuncDef, ctx: FunctionContext) -> FunctionSig:
         args = self._get_func_args(func_def, ctx)
         retname = self._get_func_return(func_def, ctx)
-        return FunctionSig(func_def.name, args, retname)
+        type_args = self.format_type_args(func_def)
+        return FunctionSig(func_def.name, args, retname, type_args)
 
     def _get_func_args(self, o: FuncDef, ctx: FunctionContext) -> list[ArgSig]:
         args: list[ArgSig] = []
@@ -646,12 +655,14 @@ class ASTStubGenerator(BaseStubGenerator, mypy.traverser.TraverserVisitor):
                 if init_code:
                     self.add(init_code)
 
-        if self._current_class is not None:
+        if self._class_stack:
             if len(o.arguments):
                 self_var = o.arguments[0].variable.name
             else:
                 self_var = "self"
-            class_info = ClassInfo(self._current_class.name, self_var)
+            class_info: ClassInfo | None = None
+            for class_def in self._class_stack:
+                class_info = ClassInfo(class_def.name, self_var, parent=class_info)
         else:
             class_info = None
 
@@ -741,7 +752,7 @@ class ASTStubGenerator(BaseStubGenerator, mypy.traverser.TraverserVisitor):
         return self.resolve_name(name)
 
     def visit_class_def(self, o: ClassDef) -> None:
-        self._current_class = o
+        self._class_stack.append(o)
         self.method_names = find_method_names(o.defs.body)
         sep: int | None = None
         if self.is_top_level() and self._state != EMPTY:
@@ -765,7 +776,8 @@ class ASTStubGenerator(BaseStubGenerator, mypy.traverser.TraverserVisitor):
             self.import_tracker.add_import("abc")
             self.import_tracker.require_name("abc")
         bases = f"({', '.join(base_types)})" if base_types else ""
-        self.add(f"{self._indent}class {o.name}{bases}:\n")
+        type_args = self.format_type_args(o)
+        self.add(f"{self._indent}class {o.name}{type_args}{bases}:\n")
         self.indent()
         if self._include_docstrings and o.docstring:
             docstring = mypy.util.quote_docstring(o.docstring)
@@ -786,8 +798,8 @@ class ASTStubGenerator(BaseStubGenerator, mypy.traverser.TraverserVisitor):
             self._state = CLASS
         self.method_names = set()
         self.processing_dataclass = False
+        self._class_stack.pop(-1)
         self.processing_enum = False
-        self._current_class = None
 
     def get_base_types(self, cdef: ClassDef) -> list[str]:
         """Get list of base classes for a class."""
@@ -1100,6 +1112,16 @@ class ASTStubGenerator(BaseStubGenerator, mypy.traverser.TraverserVisitor):
         self.add(f"{self._indent}{lvalue.name} = {rvalue.accept(p)}\n")
         self.record_name(lvalue.name)
         self._vars[-1].append(lvalue.name)
+
+    def visit_type_alias_stmt(self, o: TypeAliasStmt) -> None:
+        """Type aliases defined with the `type` keyword (PEP 695)."""
+        p = AliasPrinter(self)
+        name = o.name.name
+        rvalue = o.value.expr()
+        type_args = self.format_type_args(o)
+        self.add(f"{self._indent}type {name}{type_args} = {rvalue.accept(p)}\n")
+        self.record_name(name)
+        self._vars[-1].append(name)
 
     def visit_if_stmt(self, o: IfStmt) -> None:
         # Ignore if __name__ == '__main__'.
@@ -1777,7 +1799,9 @@ manual changes.  This directory is assumed to exist.
 
 
 def parse_options(args: list[str]) -> Options:
-    parser = argparse.ArgumentParser(prog="stubgen", usage=HEADER, description=DESCRIPTION)
+    parser = argparse.ArgumentParser(
+        prog="stubgen", usage=HEADER, description=DESCRIPTION, fromfile_prefix_chars="@"
+    )
 
     parser.add_argument(
         "--ignore-errors",

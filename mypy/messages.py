@@ -675,8 +675,7 @@ class MessageBuilder:
                         arg_type, callee.arg_types[n - 1], options=self.options
                     )
                     info = (
-                        f" (expression has type {arg_type_str}, "
-                        f"target has type {callee_type_str})"
+                        f" (expression has type {arg_type_str}, target has type {callee_type_str})"
                     )
                     error_msg = (
                         message_registry.INCOMPATIBLE_TYPES_IN_ASSIGNMENT.with_additional_msg(info)
@@ -1433,8 +1432,7 @@ class MessageBuilder:
 
     def unsafe_super(self, method: str, cls: str, ctx: Context) -> None:
         self.fail(
-            'Call to abstract method "{}" of "{}" with trivial body'
-            " via super() is unsafe".format(method, cls),
+            f'Call to abstract method "{method}" of "{cls}" with trivial body via super() is unsafe',
             ctx,
             code=codes.SAFE_SUPER,
         )
@@ -1588,8 +1586,10 @@ class MessageBuilder:
 
     def cant_override_final(self, name: str, base_name: str, ctx: Context) -> None:
         self.fail(
-            'Cannot override final attribute "{}"'
-            ' (previously declared in base class "{}")'.format(name, base_name),
+            (
+                f'Cannot override final attribute "{name}" '
+                f'(previously declared in base class "{base_name}")'
+            ),
             ctx,
         )
 
@@ -1676,15 +1676,16 @@ class MessageBuilder:
 
     def overloaded_signatures_arg_specific(self, index: int, context: Context) -> None:
         self.fail(
-            "Overloaded function implementation does not accept all possible arguments "
-            "of signature {}".format(index),
+            (
+                f"Overloaded function implementation does not accept all possible arguments "
+                f"of signature {index}"
+            ),
             context,
         )
 
     def overloaded_signatures_ret_specific(self, index: int, context: Context) -> None:
         self.fail(
-            "Overloaded function implementation cannot produce return type "
-            "of signature {}".format(index),
+            f"Overloaded function implementation cannot produce return type of signature {index}",
             context,
         )
 
@@ -1707,8 +1708,7 @@ class MessageBuilder:
         context: Context,
     ) -> None:
         self.fail(
-            'Signatures of "{}" of "{}" and "{}" of {} '
-            "are unsafely overlapping".format(
+            'Signatures of "{}" of "{}" and "{}" of {} are unsafely overlapping'.format(
                 reverse_method,
                 reverse_class.name,
                 forward_method,
@@ -1997,8 +1997,7 @@ class MessageBuilder:
         self, actual: int, tvar_name: str, expected: int, context: Context
     ) -> None:
         msg = capitalize(
-            '{} type variable "{}" used in protocol where'
-            " {} one is expected".format(
+            '{} type variable "{}" used in protocol where {} one is expected'.format(
                 variance_string(actual), tvar_name, variance_string(expected)
             )
         )
@@ -2246,15 +2245,17 @@ class MessageBuilder:
         for name, subflags, superflags in conflict_flags[:MAX_ITEMS]:
             if not class_obj and IS_CLASSVAR in subflags and IS_CLASSVAR not in superflags:
                 self.note(
-                    "Protocol member {}.{} expected instance variable,"
-                    " got class variable".format(supertype.type.name, name),
+                    "Protocol member {}.{} expected instance variable, got class variable".format(
+                        supertype.type.name, name
+                    ),
                     context,
                     code=code,
                 )
             if not class_obj and IS_CLASSVAR in superflags and IS_CLASSVAR not in subflags:
                 self.note(
-                    "Protocol member {}.{} expected class variable,"
-                    " got instance variable".format(supertype.type.name, name),
+                    "Protocol member {}.{} expected class variable, got instance variable".format(
+                        supertype.type.name, name
+                    ),
                     context,
                     code=code,
                 )

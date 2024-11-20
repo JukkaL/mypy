@@ -648,6 +648,25 @@ match m:
         reveal_type(m)  # N: Revealed type is "builtins.tuple[Any, ...]"
 [builtins fixtures/primitives.pyi]
 
+[case testMatchClassPatternCaptureSelfSubtype]
+class A(str):
+    pass
+
+class B(str):
+    __match_args__ = ("b",)
+    b: int
+
+def f1(x: A):
+    match x:
+        case A(a):
+            reveal_type(a)  # N: Revealed type is "__main__.A"
+
+def f2(x: B):
+    match x:
+        case B(b):
+            reveal_type(b)  # N: Revealed type is "builtins.int"
+[builtins fixtures/tuple.pyi]
+
 [case testMatchInvalidClassPattern]
 m: object
 
@@ -1524,6 +1543,62 @@ def g(m: Medal) -> int:
         case Medal.bronze:
             reveal_type(m)  # N: Revealed type is "Literal[__main__.Medal.bronze]"
             return 2
+[builtins fixtures/enum.pyi]
+
+
+[case testMatchLiteralPatternEnumWithTypedAttribute]
+from enum import Enum
+from typing import NoReturn
+def assert_never(x: NoReturn) -> None: ...
+
+class int:
+    def __new__(cls, value: int): pass
+
+class Medal(int, Enum):
+    prize: str
+
+    def __new__(cls, value: int, prize: str) -> Medal:
+        enum = int.__new__(cls, value)
+        enum._value_ = value
+        enum.prize = prize
+        return enum
+
+    gold = (1, 'cash prize')
+    silver = (2, 'sponsorship')
+    bronze = (3, 'nothing')
+
+m: Medal
+
+match m:
+    case Medal.gold:
+        reveal_type(m)  # N: Revealed type is "Literal[__main__.Medal.gold]"
+    case Medal.silver:
+        reveal_type(m)  # N: Revealed type is "Literal[__main__.Medal.silver]"
+    case Medal.bronze:
+        reveal_type(m)  # N: Revealed type is "Literal[__main__.Medal.bronze]"
+    case _ as unreachable:
+        assert_never(unreachable)
+
+[builtins fixtures/tuple.pyi]
+
+[case testMatchLiteralPatternFunctionalEnum]
+from enum import Enum
+from typing import NoReturn
+def assert_never(x: NoReturn) -> None: ...
+
+Medal = Enum('Medal', 'gold silver bronze')
+m: Medal
+
+match m:
+    case Medal.gold:
+        reveal_type(m)  # N: Revealed type is "Literal[__main__.Medal.gold]"
+    case Medal.silver:
+        reveal_type(m)  # N: Revealed type is "Literal[__main__.Medal.silver]"
+    case Medal.bronze:
+        reveal_type(m)  # N: Revealed type is "Literal[__main__.Medal.bronze]"
+    case _ as unreachable:
+        assert_never(unreachable)
+[builtins fixtures/enum.pyi]
 
 [case testMatchLiteralPatternEnumCustomEquals-skip]
 from enum import Enum
@@ -1541,6 +1616,7 @@ match m:
         reveal_type(m)  # N: Revealed type is "Literal[__main__.Medal.gold]"
     case _:
         reveal_type(m)  # N: Revealed type is "__main__.Medal"
+[builtins fixtures/enum.pyi]
 
 [case testMatchNarrowUsingPatternGuardSpecialCase]
 def f(x: int | str) -> int:
@@ -1618,6 +1694,7 @@ def union(x: str | bool) -> None:
         case True:
             return
     reveal_type(x)  # N: Revealed type is "Union[builtins.str, Literal[False]]"
+[builtins fixtures/tuple.pyi]
 
 [case testMatchAssertFalseToSilenceFalsePositives]
 class C:
@@ -1647,6 +1724,22 @@ def f(x: int | str) -> int:
             return n
         case str() as s:
             return 1
+
+[case testMatchOrPatternExhaustiveness]
+from typing import NoReturn, Literal
+def assert_never(x: NoReturn) -> None: ...
+
+Color = Literal["blue", "green", "red"]
+c: Color
+
+match c:
+    case "blue":
+        reveal_type(c) # N: Revealed type is "Literal['blue']"
+    case "green" | "notColor":
+        reveal_type(c) # N: Revealed type is "Literal['green']"
+    case _:
+        assert_never(c) # E: Argument 1 to "assert_never" has incompatible type "Literal['red']"; expected "Never"
+[typing fixtures/typing-typeddict.pyi]
 
 [case testMatchAsPatternIntersection-skip]
 class A: pass
@@ -2288,4 +2381,31 @@ def test(xs: Tuple[Unpack[Ts]]) -> None:
             reveal_type(a3)  # N: Revealed type is "builtins.int"
             reveal_type(b3)  # N: Revealed type is "builtins.list[builtins.object]"
             reveal_type(c3)  # N: Revealed type is "builtins.int"
+[builtins fixtures/tuple.pyi]
+
+[case testMatchSequencePatternTypeVarBoundNoCrash]
+# This was crashing: https://github.com/python/mypy/issues/18089
+from typing import TypeVar, Sequence, Any
+
+T = TypeVar("T", bound=Sequence[Any])
+
+def f(x: T) -> None:
+    match x:
+        case [_]:
+            pass
+[builtins fixtures/tuple.pyi]
+
+[case testMatchSequencePatternTypeVarBoundNarrows]
+from typing import TypeVar, Sequence
+
+T = TypeVar("T", bound=Sequence[int | str])
+
+def accept_seq_int(x: Sequence[int]): ...
+
+def f(x: T) -> None:
+    match x:
+        case [1, 2]:
+            accept_seq_int(x)
+        case _:
+            accept_seq_int(x)  # E: Argument 1 to "accept_seq_int" has incompatible type "T"; expected "Sequence[int]"
 [builtins fixtures/tuple.pyi]

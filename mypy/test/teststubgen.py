@@ -38,6 +38,7 @@ from mypy.stubgen import (
 from mypy.stubgenc import InspectionStubGenerator, infer_c_method_args
 from mypy.stubutil import (
     ClassInfo,
+    FunctionContext,
     common_dir_prefix,
     infer_method_ret_type,
     remove_misplaced_type_comments,
@@ -612,6 +613,16 @@ class StubgenUtilSuite(unittest.TestCase):
         assert common_dir_prefix([r"foo\bar/x.pyi"]) == r"foo\bar"
         assert common_dir_prefix([r"foo/bar/x.pyi"]) == r"foo\bar"
 
+    def test_function_context_nested_classes(self) -> None:
+        ctx = FunctionContext(
+            module_name="spangle",
+            name="foo",
+            class_info=ClassInfo(
+                name="Nested", self_var="self", parent=ClassInfo(name="Parent", self_var="self")
+            ),
+        )
+        assert ctx.fullname == "spangle.Parent.Nested.foo"
+
 
 class StubgenHelpersSuite(unittest.TestCase):
     def test_is_blacklisted_path(self) -> None:
@@ -976,7 +987,7 @@ class StubgencSuite(unittest.TestCase):
     def test_generate_c_type_classmethod_with_overloads(self) -> None:
         class TestClass:
             @classmethod
-            def test(self, arg0: str) -> None:
+            def test(cls, arg0: str) -> None:
                 """
                 test(cls, arg0: str)
                 test(cls, arg0: int)

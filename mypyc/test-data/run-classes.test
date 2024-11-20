@@ -76,6 +76,19 @@ assert hasattr(c, 'x')
 1000000000000000000000000000001
 1000000000000000000000000000002
 
+[case testTypedDictWithFields]
+import collections
+from typing_extensions import TypedDict
+class C(TypedDict):
+    x: collections.deque
+[file driver.py]
+from native import C
+from collections import deque
+
+print(C.__annotations__["x"] is deque)
+[out]
+True
+
 [case testClassWithDeletableAttributes]
 from typing import Any, cast
 from testutil import assertRaises
@@ -270,8 +283,8 @@ from enum import Enum
 
 class TestEnum(Enum):
     _order_ = "a b"
-    a : int = 1
-    b : int = 2
+    a = 1
+    b = 2
 
     @classmethod
     def test(cls) -> int:
@@ -2594,3 +2607,15 @@ def test_class_final_attribute_inherited() -> None:
     assert C().b == 2
     assert B().c == 3
     assert C().c == 3
+
+[case testClassWithFinalAttributeAccess]
+from typing import Final
+
+class C:
+    a: Final = {'x': 'y'}
+    b: Final = C.a
+
+def test_final_attribute() -> None:
+    assert C.a['x'] == 'y'
+    assert C.b['x'] == 'y'
+    assert C.a is C.b

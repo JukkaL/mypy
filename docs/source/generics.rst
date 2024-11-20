@@ -146,7 +146,7 @@ example (Python 3.12 syntax):
    from typing import Mapping, Iterator
 
    # This is a generic subclass of Mapping
-   class MyMapp[KT, VT](Mapping[KT, VT]):
+   class MyMap[KT, VT](Mapping[KT, VT]):
        def __getitem__(self, k: KT) -> VT: ...
        def __iter__(self) -> Iterator[KT]: ...
        def __len__(self) -> int: ...
@@ -641,7 +641,7 @@ infer the most flexible variance for each class type variable. Here
 
 .. code-block:: python
 
-   class Box[T]:  # this type is implilicitly covariant
+   class Box[T]:  # this type is implicitly covariant
        def __init__(self, content: T) -> None:
            self._content = content
 
@@ -663,12 +663,12 @@ the attribute as ``Final``, the class could still be made covariant:
 
    from typing import Final
 
-   class Box[T]:  # this type is implilicitly covariant
+   class Box[T]:  # this type is implicitly covariant
        def __init__(self, content: T) -> None:
            self.content: Final = content
 
        def get_content(self) -> T:
-           return self._content
+           return self.content
 
 When using the legacy syntax, mypy assumes that all user-defined generics
 are invariant by default. To declare a given generic class as covariant or

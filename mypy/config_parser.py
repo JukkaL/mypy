@@ -472,12 +472,7 @@ def parse_section(
             )
             continue
         else:
-            dv = None
-            # We have to keep new_semantic_analyzer in Options
-            # for plugin compatibility but it is not a valid option anymore.
-            assert hasattr(template, "new_semantic_analyzer")
-            if key != "new_semantic_analyzer":
-                dv = getattr(template, key, None)
+            dv = getattr(template, key, None)
             if dv is None:
                 if key.endswith("_report"):
                     report_type = key[:-7].replace("_", "-")

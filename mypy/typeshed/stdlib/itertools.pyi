@@ -1,4 +1,5 @@
 import sys
+from _typeshed import MaybeNone
 from collections.abc import Callable, Iterable, Iterator
 from typing import Any, Generic, Literal, SupportsComplex, SupportsFloat, SupportsIndex, SupportsInt, TypeVar, overload
 from typing_extensions import Self, TypeAlias
@@ -122,7 +123,7 @@ class zip_longest(Generic[_T_co]):
     # In the overloads without fillvalue, all of the tuple members could theoretically be None,
     # but we return Any instead to avoid false positives for code where we know one of the iterables
     # is longer.
-    def __new__(cls, iter1: Iterable[_T1], iter2: Iterable[_T2], /) -> zip_longest[tuple[_T1 | Any, _T2 | Any]]: ...
+    def __new__(cls, iter1: Iterable[_T1], iter2: Iterable[_T2], /) -> zip_longest[tuple[_T1 | MaybeNone, _T2 | MaybeNone]]: ...
     @overload
     def __new__(
         cls, iter1: Iterable[_T1], iter2: Iterable[_T2], /, *, fillvalue: _T
@@ -131,7 +132,7 @@ class zip_longest(Generic[_T_co]):
     @overload
     def __new__(
         cls, iter1: Iterable[_T1], iter2: Iterable[_T2], iter3: Iterable[_T3], /
-    ) -> zip_longest[tuple[_T1 | Any, _T2 | Any, _T3 | Any]]: ...
+    ) -> zip_longest[tuple[_T1 | MaybeNone, _T2 | MaybeNone, _T3 | MaybeNone]]: ...
     @overload
     def __new__(
         cls, iter1: Iterable[_T1], iter2: Iterable[_T2], iter3: Iterable[_T3], /, *, fillvalue: _T
@@ -140,7 +141,7 @@ class zip_longest(Generic[_T_co]):
     @overload
     def __new__(
         cls, iter1: Iterable[_T1], iter2: Iterable[_T2], iter3: Iterable[_T3], iter4: Iterable[_T4], /
-    ) -> zip_longest[tuple[_T1 | Any, _T2 | Any, _T3 | Any, _T4 | Any]]: ...
+    ) -> zip_longest[tuple[_T1 | MaybeNone, _T2 | MaybeNone, _T3 | MaybeNone, _T4 | MaybeNone]]: ...
     @overload
     def __new__(
         cls, iter1: Iterable[_T1], iter2: Iterable[_T2], iter3: Iterable[_T3], iter4: Iterable[_T4], /, *, fillvalue: _T
@@ -149,7 +150,7 @@ class zip_longest(Generic[_T_co]):
     @overload
     def __new__(
         cls, iter1: Iterable[_T1], iter2: Iterable[_T2], iter3: Iterable[_T3], iter4: Iterable[_T4], iter5: Iterable[_T5], /
-    ) -> zip_longest[tuple[_T1 | Any, _T2 | Any, _T3 | Any, _T4 | Any, _T5 | Any]]: ...
+    ) -> zip_longest[tuple[_T1 | MaybeNone, _T2 | MaybeNone, _T3 | MaybeNone, _T4 | MaybeNone, _T5 | MaybeNone]]: ...
     @overload
     def __new__(
         cls,
@@ -174,7 +175,7 @@ class zip_longest(Generic[_T_co]):
         iter6: Iterable[_T],
         /,
         *iterables: Iterable[_T],
-    ) -> zip_longest[tuple[_T | Any, ...]]: ...
+    ) -> zip_longest[tuple[_T | MaybeNone, ...]]: ...
     @overload
     def __new__(
         cls,

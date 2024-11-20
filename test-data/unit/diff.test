@@ -566,6 +566,7 @@ A = Enum('A', 'x')
 B = Enum('B', 'y')
 C = IntEnum('C', 'x')
 D = IntEnum('D', 'x y')
+[builtins fixtures/enum.pyi]
 [out]
 __main__.B.x
 __main__.B.y
@@ -605,6 +606,7 @@ class D(Enum):
     Y = 'b'
 class F(Enum):
     X = 0
+[builtins fixtures/enum.pyi]
 [out]
 __main__.B.Y
 __main__.B.Z

@@ -263,6 +263,38 @@ mypy-daemon: error: Missing target module, package, files, or command.
 $ dmypy stop
 Daemon stopped
 
+[case testDaemonRunTwoFilesFullTypeshed]
+$ dmypy run x.py
+Daemon started
+Success: no issues found in 1 source file
+$ dmypy run y.py
+Success: no issues found in 1 source file
+$ dmypy run x.py
+Success: no issues found in 1 source file
+[file x.py]
+[file y.py]
+
+[case testDaemonCheckTwoFilesFullTypeshed]
+$ dmypy start
+Daemon started
+$ dmypy check foo.py
+foo.py:3: error: Incompatible types in assignment (expression has type "str", variable has type "int")  [assignment]
+Found 1 error in 1 file (checked 1 source file)
+== Return code: 1
+$ dmypy check bar.py
+Success: no issues found in 1 source file
+$ dmypy check foo.py
+foo.py:3: error: Incompatible types in assignment (expression has type "str", variable has type "int")  [assignment]
+Found 1 error in 1 file (checked 1 source file)
+== Return code: 1
+[file foo.py]
+from bar import add
+x: str = add("a", "b")
+x_error: int = add("a", "b")
+[file bar.py]
+def add(a, b) -> str:
+    return a + b
+
 [case testDaemonWarningSuccessExitCode-posix]
 $ dmypy run -- foo.py --follow-imports=error --python-version=3.11
 Daemon started

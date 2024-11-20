@@ -14,6 +14,83 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "mypy"
+description = "Optional static typing for Python"
+readme = {text = """
+Mypy -- Optional Static Typing for Python
+=========================================
+
+Add type annotations to your Python programs, and use mypy to type
+check them.  Mypy is essentially a Python linter on steroids, and it
+can catch many programming errors by analyzing your program, without
+actually having to run it.  Mypy has a powerful type system with
+features such as type inference, gradual typing, generics and union
+types.
+""", content-type = "text/x-rst"}
+authors = [{name = "Jukka Lehtosalo", email = "jukka.lehtosalo@iki.fi"}]
+license = {text = "MIT"}
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development",
+  "Typing :: Typed",
+]
+requires-python = ">=3.8"
+dependencies = [
+  # When changing this, also update build-system.requires and mypy-requirements.txt
+  "typing_extensions>=4.6.0",
+  "mypy_extensions>=1.0.0",
+  "tomli>=1.1.0; python_version<'3.11'",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dmypy = ["psutil>=4.0"]
+mypyc = ["setuptools>=50"]
+python2 = []
+reports = ["lxml"]
+install-types = ["pip"]
+faster-cache = ["orjson"]
+
+[project.urls]
+Homepage = "https://www.mypy-lang.org/"
+Documentation = "https://mypy.readthedocs.io/en/stable/index.html"
+Repository = "https://github.com/python/mypy"
+Changelog = "https://github.com/python/mypy/blob/master/CHANGELOG.md"
+Issues = "https://github.com/python/mypy/issues"
+
+[project.scripts]
+mypy = "mypy.__main__:console_entry"
+stubgen = "mypy.stubgen:main"
+stubtest = "mypy.stubtest:main"
+dmypy = "mypy.dmypy.client:console_entry"
+mypyc = "mypyc.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["mypy*", "mypyc*", "*__mypyc*"]
+namespaces = false
+
+[tool.setuptools.package-data]
+mypy = [
+  "py.typed",
+  "typeshed/**/*.py",
+  "typeshed/**/*.pyi",
+  "typeshed/stdlib/VERSIONS",
+  "xml/*.xsd",
+  "xml/*.xslt",
+  "xml/*.css",
+]
+
 [tool.black]
 line-length = 99
 target-version = ["py38", "py39", "py310", "py311", "py312"]
@@ -49,6 +126,7 @@ select = [
   "W",       # pycodestyle (warning)
   "B",       # flake8-bugbear
   "I",       # isort
+  "N",       # pep8-naming
   "RUF100",  # Unused noqa comments
   "PGH004",  # blanket noqa comments
   "UP",      # pyupgrade
@@ -68,6 +146,8 @@ ignore = [
   "E721",  # Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
   "E731",  # Do not assign a `lambda` expression, use a `def`
   "E741",  # Ambiguous variable name
+  "N818",  # Exception should be named with an Error suffix
+  "N806",  # UPPER_CASE used for constant local variables
   "UP031", # Use format specifiers instead of percent format
   "UP032", # 'f-string always preferable to format' is controversial
   "C416",  # There are a few cases where it's nice to have names for the dict items
@@ -80,6 +160,10 @@ unfixable = [
     "B018",  # automatic fix might obscure issue
     "UP036", # sometimes it's better to just noqa this
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# Mixed case variable and function names.
+"mypy/fastparse.py" = ["N802", "N816"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true

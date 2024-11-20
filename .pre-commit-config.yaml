@@ -1,19 +1,33 @@
 exclude: '^(mypyc/external/)|(mypy/typeshed/)|misc/typeshed_patches'  # Exclude all vendored code from lints
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0  # must match test-requirements.txt
+    rev: v4.5.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 24.8.0  # must match test-requirements.txt
+    rev: 24.8.0
     hooks:
       - id: black
         exclude: '^(test-data/)'
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9  # must match test-requirements.txt
+    rev: v0.6.9
     hooks:
       - id: ruff
         args: [--exit-non-zero-on-fix]
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.29.4
+    hooks:
+      - id: check-dependabot
+      - id: check-github-workflows
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.3
+    hooks:
+      - id: actionlint
+        args: [
+          -ignore=property "debug_build" is not defined,
+          -ignore=property "allow_failure" is not defined,
+          -ignore=SC2(046|086),
+        ]
 ci:
   autoupdate_schedule: quarterly

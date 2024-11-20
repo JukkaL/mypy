@@ -2176,3 +2176,41 @@ class count:
 def foo(x: Union[range[int], count]) -> None:
     for item in x:
         reveal_type(item)  # N: Revealed type is "builtins.int"
+
+[case testGenericDescriptorWithSelfTypeAnnotationsAndOverloads]
+from __future__ import annotations
+from typing import Any, overload, Callable, TypeVar, Generic, ParamSpec
+from typing_extensions import Concatenate
+
+C = TypeVar("C", bound=Callable[..., Any])
+S = TypeVar("S")
+P = ParamSpec("P")
+R = TypeVar("R")
+
+class Descriptor(Generic[C]):
+    def __init__(self, impl: C) -> None: ...
+
+    @overload
+    def __get__(
+        self: Descriptor[C], instance: None, owner: type | None
+    ) -> Descriptor[C]: ...
+
+    @overload
+    def __get__(
+        self: Descriptor[Callable[Concatenate[S, P], R]], instance: S, owner: type | None,
+    ) -> Callable[P, R]: ...
+
+    def __get__(self, *args, **kwargs): ...
+
+class Test:
+    @Descriptor
+    def method(self, foo: int, bar: str) -> bytes: ...
+
+reveal_type(Test().method) # N: Revealed type is "def (foo: builtins.int, bar: builtins.str) -> builtins.bytes"
+
+class Test2:
+    @Descriptor
+    def method(self, foo: int, *, bar: str) -> bytes: ...
+
+reveal_type(Test2().method) # N: Revealed type is "def (foo: builtins.int, *, bar: builtins.str) -> builtins.bytes"
+[builtins fixtures/tuple.pyi]

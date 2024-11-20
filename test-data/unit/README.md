@@ -100,6 +100,10 @@ First install any additional dependencies needed for testing:
 
     python3 -m pip install -U -r test-requirements.txt
 
+Configure `pre-commit` to run the linters automatically when you commit:
+
+    pre-commit install
+
 The unit test suites are driven by the `pytest` framework. To run all mypy tests,
 run `pytest` in the mypy repository:
 
@@ -157,9 +161,11 @@ To run mypy on itself:
 
     python3 -m mypy --config-file mypy_self_check.ini -p mypy
 
-To run the linter:
+To run the linter (this commands just wraps `pre-commit`, so you can also
+invoke it directly like `pre-commit run -a`, and this will also run when you
+`git commit` if enabled):
 
-    ruff .
+    python3 runtests.py lint
 
 You can also run all of the above tests using `runtests.py` (this includes
 type checking mypy and linting):

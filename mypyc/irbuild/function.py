@@ -806,6 +806,11 @@ def load_type(builder: IRBuilder, typ: TypeInfo, line: int) -> Value:
     elif typ.fullname in builtin_names:
         builtin_addr_type, src = builtin_names[typ.fullname]
         class_obj = builder.add(LoadAddress(builtin_addr_type, src, line))
+    elif typ.module_name in builder.imports:
+        loaded_module = builder.load_module(typ.module_name)
+        class_obj = builder.builder.get_attr(
+            loaded_module, typ.name, object_rprimitive, line, borrow=False
+        )
     else:
         class_obj = builder.load_global_str(typ.name, line)
 
@@ -988,10 +993,6 @@ def load_singledispatch_registry(builder: IRBuilder, dispatch_func_obj: Value, l
 
 def singledispatch_main_func_name(orig_name: str) -> str:
     return f"__mypyc_singledispatch_main_function_{orig_name}__"
-
-
-def get_registry_identifier(fitem: FuncDef) -> str:
-    return f"__mypyc_singledispatch_registry_{fitem.fullname}__"
 
 
 def maybe_insert_into_registry_dict(builder: IRBuilder, fitem: FuncDef) -> None:

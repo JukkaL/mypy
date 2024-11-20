@@ -400,11 +400,11 @@ Mypy supports TypeIs (:pep:`742`).
 
 A `TypeIs narrowing function <https://typing.readthedocs.io/en/latest/spec/narrowing.html#typeis>`_
 allows you to define custom type checks that can narrow the type of a variable
-in `both the if and else <https://docs.python.org/3.13/library/typing.html#typing.TypeIs>_`
+in `both the if and else <https://docs.python.org/3.13/library/typing.html#typing.TypeIs>`_
 branches of a conditional, similar to how the built-in isinstance() function works.
 
 TypeIs is new in Python 3.13 — for use in older Python versions, use the backport
-from `typing_extensions <https://typing-extensions.readthedocs.io/en/latest/>_`
+from `typing_extensions <https://typing-extensions.readthedocs.io/en/latest/>`_
 
 Consider the following example using TypeIs:
 

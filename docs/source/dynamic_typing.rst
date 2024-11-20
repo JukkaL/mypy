@@ -86,7 +86,7 @@ treated as ``Any``:
         reveal_type(x[0])     # Revealed type is "Any"
         x[0].anything_goes()  # OK
 
-You can make mypy warn you about untyped function parameters using the
+You can make mypy warn you about missing generic parameters using the
 :option:`--disallow-any-generics <mypy --disallow-any-generics>` flag.
 
 Finally, another major source of ``Any`` types leaking into your program is from

@@ -28,6 +28,7 @@ concurrency:
 jobs:
   docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       TOXENV: docs
       TOX_SKIP_MISSING_INTERPRETERS: False

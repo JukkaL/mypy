@@ -94,6 +94,7 @@ def build_type_map(
         if not options.global_opts:
             class_ir.children = None
         mapper.type_to_ir[cdef.info] = class_ir
+        mapper.symbol_fullnames.add(class_ir.fullname)
 
     # Populate structural information in class IR for extension classes.
     for module, cdef in classes:
@@ -149,6 +150,7 @@ def load_type_map(mapper: Mapper, modules: list[MypyFile], deser_ctx: DeserMaps)
             if isinstance(node.node, TypeInfo) and is_from_module(node.node, module):
                 ir = deser_ctx.classes[node.node.fullname]
                 mapper.type_to_ir[node.node] = ir
+                mapper.symbol_fullnames.add(node.node.fullname)
                 mapper.func_to_decl[node.node] = ir.ctor
 
     for module in modules:

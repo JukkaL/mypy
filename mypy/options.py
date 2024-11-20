@@ -400,17 +400,12 @@ class Options:
     def use_star_unpack(self) -> bool:
         return self.python_version >= (3, 11)
 
-    # To avoid breaking plugin compatibility, keep providing new_semantic_analyzer
-    @property
-    def new_semantic_analyzer(self) -> bool:
-        return True
-
     def snapshot(self) -> dict[str, object]:
         """Produce a comparable snapshot of this Option"""
         # Under mypyc, we don't have a __dict__, so we need to do worse things.
         d = dict(getattr(self, "__dict__", ()))
         for k in get_class_descriptors(Options):
-            if hasattr(self, k) and k != "new_semantic_analyzer":
+            if hasattr(self, k):
                 d[k] = getattr(self, k)
         # Remove private attributes from snapshot
         d = {k: v for k, v in d.items() if not k.startswith("_")}

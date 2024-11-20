@@ -17,6 +17,7 @@ from mypy.nodes import (
     ARG_POS,
     ARG_STAR,
     ARG_STAR2,
+    EXCLUDED_ENUM_ATTRIBUTES,
     SYMBOL_FUNCBASE_TYPES,
     Context,
     Decorator,
@@ -48,7 +49,6 @@ from mypy.typeops import (
     type_object_type_from_function,
 )
 from mypy.types import (
-    ENUM_REMOVED_PROPS,
     AnyType,
     CallableType,
     DeletedType,
@@ -1173,7 +1173,7 @@ def analyze_enum_class_attribute_access(
     itype: Instance, name: str, mx: MemberContext
 ) -> Type | None:
     # Skip these since Enum will remove it
-    if name in ENUM_REMOVED_PROPS:
+    if name in EXCLUDED_ENUM_ATTRIBUTES:
         return report_missing_attribute(mx.original_type, itype, name, mx)
     # Dunders and private names are not Enum members
     if name.startswith("__") and name.replace("_", "") != "":

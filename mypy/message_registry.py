@@ -196,8 +196,7 @@ TYPEVAR_VARIANCE_DEF: Final = 'TypeVar "{}" may only be a literal bool'
 TYPEVAR_ARG_MUST_BE_TYPE: Final = '{} "{}" must be a type'
 TYPEVAR_UNEXPECTED_ARGUMENT: Final = 'Unexpected argument to "TypeVar()"'
 UNBOUND_TYPEVAR: Final = (
-    "A function returning TypeVar should receive at least "
-    "one argument containing the same TypeVar"
+    "A function returning TypeVar should receive at least one argument containing the same TypeVar"
 )
 TYPE_PARAMETERS_SHOULD_BE_DECLARED: Final = (
     "All type parameters should be declared ({} not declared)"

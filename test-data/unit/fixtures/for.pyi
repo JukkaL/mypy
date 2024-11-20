@@ -12,9 +12,11 @@ class type: pass
 class tuple(Generic[t]):
     def __iter__(self) -> Iterator[t]: pass
 class function: pass
+class ellipsis: pass
 class bool: pass
 class int: pass # for convenience
-class str: pass # for convenience
+class str:  # for convenience
+    def upper(self) -> str: ...
 
 class list(Iterable[t], Generic[t]):
     def __iter__(self) -> Iterator[t]: pass

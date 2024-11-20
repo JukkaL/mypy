@@ -3894,6 +3894,20 @@ accepts_B(b)
 [builtins fixtures/dict.pyi]
 [typing fixtures/typing-typeddict.pyi]
 
+[case testTypedDictRequiredConsistentWithNotRequiredReadOnly]
+from typing import NotRequired, ReadOnly, Required, TypedDict
+
+class A(TypedDict):
+    x: NotRequired[ReadOnly[str]]
+
+class B(TypedDict):
+    x: Required[str]
+
+def f(b: B):
+    a: A = b  # ok
+[builtins fixtures/dict.pyi]
+[typing fixtures/typing-typeddict.pyi]
+
 [case testTypedDictReadOnlyCall]
 from typing import ReadOnly, TypedDict
 
@@ -3986,6 +4000,16 @@ class TP(TypedDict):
                                                        # E: "ReadOnly[]" type cannot be nested
 
     k: ReadOnly  # E: "ReadOnly[]" must have exactly one type argument
+[builtins fixtures/dict.pyi]
+[typing fixtures/typing-typeddict.pyi]
+
+[case testTypedDictAnnotatedWithSpecialForms]
+from typing import NotRequired, ReadOnly, Required, TypedDict
+from typing_extensions import Annotated
+
+class A(TypedDict):
+    a: Annotated[NotRequired[ReadOnly[int]], ""]  # ok
+    b: NotRequired[ReadOnly[Annotated[int, ""]]]  # ok
 [builtins fixtures/dict.pyi]
 [typing fixtures/typing-typeddict.pyi]
 

@@ -348,6 +348,8 @@ def verify_mypyfile(
             # Only verify the contents of the stub's __all__
             # if the stub actually defines __all__
             yield from _verify_exported_names(object_path, stub, runtime_all_as_set)
+        else:
+            yield Error(object_path + ["__all__"], "is not present in stub", MISSING, runtime)
     else:
         runtime_all_as_set = None
 
@@ -1891,6 +1893,8 @@ class _Arguments:
     custom_typeshed_dir: str | None
     check_typeshed: bool
     version: str
+    show_traceback: bool
+    pdb: bool
 
 
 # typeshed added a stub for __main__, but that causes stubtest to check itself
@@ -1936,6 +1940,8 @@ def test_stubs(args: _Arguments, use_builtins_fixtures: bool = False) -> int:
         options.abs_custom_typeshed_dir = os.path.abspath(options.custom_typeshed_dir)
     options.config_file = args.mypy_config_file
     options.use_builtins_fixtures = use_builtins_fixtures
+    options.show_traceback = args.show_traceback
+    options.pdb = args.pdb
 
     if options.config_file:
 
@@ -2088,6 +2094,10 @@ def parse_options(args: list[str]) -> _Arguments:
     )
     parser.add_argument(
         "--version", action="version", version="%(prog)s " + mypy.version.__version__
+    )
+    parser.add_argument("--pdb", action="store_true", help="Invoke pdb on fatal error")
+    parser.add_argument(
+        "--show-traceback", "--tb", action="store_true", help="Show traceback on fatal error"
     )
 
     return parser.parse_args(args, namespace=_Arguments())

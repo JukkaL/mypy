@@ -1238,6 +1238,35 @@ class B: pass
 [builtins fixtures/for.pyi]
 [out]
 
+[case testForStatementIndexNarrowing]
+from typing_extensions import TypedDict
+
+class X(TypedDict):
+    hourly: int
+    daily: int
+
+x: X
+for a in ("hourly", "daily"):
+    reveal_type(a)  # N: Revealed type is "Union[Literal['hourly']?, Literal['daily']?]"
+    reveal_type(x[a])  # N: Revealed type is "builtins.int"
+    reveal_type(a.upper())  # N: Revealed type is "builtins.str"
+    c = a
+    reveal_type(c)  # N: Revealed type is "builtins.str"
+    a = "monthly"
+    reveal_type(a)  # N: Revealed type is "builtins.str"
+    a = "yearly"
+    reveal_type(a)  # N: Revealed type is "builtins.str"
+    a = 1  # E: Incompatible types in assignment (expression has type "int", variable has type "str")
+    reveal_type(a)  # N: Revealed type is "builtins.str"
+    d = a
+    reveal_type(d)  # N: Revealed type is "builtins.str"
+
+b: str
+for b in ("hourly", "daily"):
+    reveal_type(b)  # N: Revealed type is "builtins.str"
+    reveal_type(b.upper())  # N: Revealed type is "builtins.str"
+[builtins fixtures/for.pyi]
+
 
 -- Regression tests
 -- ----------------

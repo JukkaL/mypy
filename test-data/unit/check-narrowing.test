@@ -1385,9 +1385,9 @@ val: Optional[A]
 if val == None:
     reveal_type(val)  # N: Revealed type is "Union[__main__.A, None]"
 else:
-    reveal_type(val)  # N: Revealed type is "Union[__main__.A, None]"
+    reveal_type(val)  # N: Revealed type is "__main__.A"
 if val != None:
-    reveal_type(val)  # N: Revealed type is "Union[__main__.A, None]"
+    reveal_type(val)  # N: Revealed type is "__main__.A"
 else:
     reveal_type(val)  # N: Revealed type is "Union[__main__.A, None]"
 

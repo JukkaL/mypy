@@ -958,9 +958,3 @@ class YieldFromCollector(FuncCollectorBase):
 
     def visit_yield_from_expr(self, expr: YieldFromExpr) -> None:
         self.yield_from_expressions.append((expr, self.in_assignment))
-
-
-def all_yield_from_expressions(node: Node) -> list[tuple[YieldFromExpr, bool]]:
-    v = YieldFromCollector()
-    node.accept(v)
-    return v.yield_from_expressions

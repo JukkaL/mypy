@@ -223,7 +223,11 @@ def get_possible_variants(typ: Type) -> list[Type]:
         else:
             return [typ.upper_bound]
     elif isinstance(typ, ParamSpecType):
-        return [typ.upper_bound]
+        # Extract 'object' from the final mro item
+        upper_bound = get_proper_type(typ.upper_bound)
+        if isinstance(upper_bound, Instance):
+            return [Instance(upper_bound.type.mro[-1], [])]
+        return [AnyType(TypeOfAny.implementation_artifact)]
     elif isinstance(typ, TypeVarTupleType):
         return [typ.upper_bound]
     elif isinstance(typ, UnionType):

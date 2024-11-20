@@ -14,6 +14,7 @@ jobs:
     name: Sync typeshed
     if: github.repository == 'python/mypy'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:

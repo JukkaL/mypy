@@ -787,7 +787,9 @@ class InspectionStubGenerator(BaseStubGenerator):
                 bases.append(base)
         return [self.strip_or_import(self.get_type_fullname(base)) for base in bases]
 
-    def generate_class_stub(self, class_name: str, cls: type, output: list[str]) -> None:
+    def generate_class_stub(
+        self, class_name: str, cls: type, output: list[str], parent_class: ClassInfo | None = None
+    ) -> None:
         """Generate stub for a single class using runtime introspection.
 
         The result lines will be appended to 'output'. If necessary, any
@@ -808,7 +810,9 @@ class InspectionStubGenerator(BaseStubGenerator):
         self.record_name(class_name)
         self.indent()
 
-        class_info = ClassInfo(class_name, "", getattr(cls, "__doc__", None), cls)
+        class_info = ClassInfo(
+            class_name, "", getattr(cls, "__doc__", None), cls, parent=parent_class
+        )
 
         for attr, value in items:
             # use unevaluated descriptors when dealing with property inspection
@@ -843,7 +847,7 @@ class InspectionStubGenerator(BaseStubGenerator):
                     class_info,
                 )
             elif inspect.isclass(value) and self.is_defined_in_module(value):
-                self.generate_class_stub(attr, value, types)
+                self.generate_class_stub(attr, value, types, parent_class=class_info)
             else:
                 attrs.append((attr, value))
 

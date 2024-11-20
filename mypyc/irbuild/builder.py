@@ -594,7 +594,7 @@ class IRBuilder:
             if isinstance(symbol, Decorator):
                 symbol = symbol.func
             if symbol is None:
-                # New semantic analyzer doesn't create ad-hoc Vars for special forms.
+                # Semantic analyzer doesn't create ad-hoc Vars for special forms.
                 assert lvalue.is_special_form
                 symbol = Var(lvalue.name)
             if not for_read and isinstance(symbol, Var) and symbol.is_cls:
@@ -979,17 +979,13 @@ class IRBuilder:
 
     def is_native_module(self, module: str) -> bool:
         """Is the given module one compiled by mypyc?"""
-        return module in self.mapper.group_map
+        return self.mapper.is_native_module(module)
 
     def is_native_ref_expr(self, expr: RefExpr) -> bool:
-        if expr.node is None:
-            return False
-        if "." in expr.node.fullname:
-            return self.is_native_module(expr.node.fullname.rpartition(".")[0])
-        return True
+        return self.mapper.is_native_ref_expr(expr)
 
     def is_native_module_ref_expr(self, expr: RefExpr) -> bool:
-        return self.is_native_ref_expr(expr) and expr.kind == GDEF
+        return self.mapper.is_native_module_ref_expr(expr)
 
     def is_synthetic_type(self, typ: TypeInfo) -> bool:
         """Is a type something other than just a class we've created?"""

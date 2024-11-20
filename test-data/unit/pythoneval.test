@@ -1555,18 +1555,6 @@ if isinstance(obj, Awaitable):
 _testSpecialTypingProtocols.py:6: note: Revealed type is "Tuple[builtins.int]"
 _testSpecialTypingProtocols.py:8: error: Statement is unreachable
 
-[case testEnumValueWithPlaceholderNodeType]
-# https://github.com/python/mypy/issues/11971
-from enum import Enum
-from typing import Callable, Dict
-class Foo(Enum):
-    Bar: Foo = Callable[[str], None]
-    Baz: Foo = Callable[[Dict[str, "Missing"]], None]
-[out]
-_testEnumValueWithPlaceholderNodeType.py:5: error: Incompatible types in assignment (expression has type "<typing special form>", variable has type "Foo")
-_testEnumValueWithPlaceholderNodeType.py:6: error: Incompatible types in assignment (expression has type "<typing special form>", variable has type "Foo")
-_testEnumValueWithPlaceholderNodeType.py:6: error: Name "Missing" is not defined
-
 [case testTypeshedRecursiveTypesExample]
 from typing import List, Union
 

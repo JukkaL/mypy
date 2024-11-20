@@ -3,7 +3,6 @@ from __future__ import annotations
 import unittest
 
 from mypy.stubinfo import (
-    approved_stub_package_exists,
     is_module_from_legacy_bundled_package,
     legacy_bundled_packages,
     non_bundled_packages_flat,
@@ -17,17 +16,6 @@ class TestStubInfo(unittest.TestCase):
         assert not is_module_from_legacy_bundled_package("PIL")
         assert is_module_from_legacy_bundled_package("pycurl")
         assert is_module_from_legacy_bundled_package("dataclasses")
-
-    def test_approved_stub_package_exists(self) -> None:
-        assert not approved_stub_package_exists("foobar_asdf")
-        assert approved_stub_package_exists("pycurl")
-        assert approved_stub_package_exists("babel")
-        assert approved_stub_package_exists("google.cloud.ndb")
-        assert approved_stub_package_exists("google.cloud.ndb.submodule")
-        assert not approved_stub_package_exists("google.cloud.unknown")
-        assert approved_stub_package_exists("google.protobuf")
-        assert approved_stub_package_exists("google.protobuf.submodule")
-        assert not approved_stub_package_exists("google")
 
     def test_stub_distribution_name(self) -> None:
         assert stub_distribution_name("foobar_asdf") is None

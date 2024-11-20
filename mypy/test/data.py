@@ -304,7 +304,7 @@ class DataDrivenTestCase(pytest.Item):
         self.data = data
         self.line = line
         self.old_cwd: str | None = None
-        self.tmpdir: tempfile.TemporaryDirectory[str] | None = None
+        self.tmpdir: str | None = None
 
     def runtest(self) -> None:
         if self.skip:
@@ -323,19 +323,19 @@ class DataDrivenTestCase(pytest.Item):
             save_dir: str | None = self.config.getoption("--save-failures-to", None)
             if save_dir:
                 assert self.tmpdir is not None
-                target_dir = os.path.join(save_dir, os.path.basename(self.tmpdir.name))
+                target_dir = os.path.join(save_dir, os.path.basename(self.tmpdir))
                 print(f"Copying data from test {self.name} to {target_dir}")
                 if not os.path.isabs(target_dir):
                     assert self.old_cwd
                     target_dir = os.path.join(self.old_cwd, target_dir)
-                shutil.copytree(self.tmpdir.name, target_dir)
+                shutil.copytree(self.tmpdir, target_dir)
             raise
 
     def setup(self) -> None:
         parse_test_case(case=self)
         self.old_cwd = os.getcwd()
-        self.tmpdir = tempfile.TemporaryDirectory(prefix="mypy-test-")
-        os.chdir(self.tmpdir.name)
+        self.tmpdir = tempfile.mkdtemp(prefix="mypy-test-")
+        os.chdir(self.tmpdir)
         os.mkdir(test_temp_dir)
 
         # Precalculate steps for find_steps()
@@ -371,10 +371,7 @@ class DataDrivenTestCase(pytest.Item):
         if self.old_cwd is not None:
             os.chdir(self.old_cwd)
         if self.tmpdir is not None:
-            try:
-                self.tmpdir.cleanup()
-            except OSError:
-                pass
+            shutil.rmtree(self.tmpdir, ignore_errors=True)
         self.old_cwd = None
         self.tmpdir = None
 

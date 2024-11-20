@@ -625,8 +625,8 @@ class SubtypeVisitor(TypeVisitor[bool]):
                         return is_named_instance(item, "builtins.object")
         if isinstance(right, LiteralType) and left.last_known_value is not None:
             return self._is_subtype(left.last_known_value, right)
-        if isinstance(right, CallableType):
-            # Special case: Instance can be a subtype of Callable.
+        if isinstance(right, FunctionLike):
+            # Special case: Instance can be a subtype of Callable / Overloaded.
             call = find_member("__call__", left, left, is_operator=True)
             if call:
                 return self._is_subtype(call, right)
@@ -910,14 +910,12 @@ class SubtypeVisitor(TypeVisitor[bool]):
                     return False
                 # Non-required key is not compatible with a required key since
                 # indexing may fail unexpectedly if a required key is missing.
-                # Required key is not compatible with a non-required key since
-                # the prior doesn't support 'del' but the latter should support
-                # it.
-                #
-                # NOTE: 'del' support is currently not implemented (#3550). We
-                #       don't want to have to change subtyping after 'del' support
-                #       lands so here we are anticipating that change.
-                if (name in left.required_keys) != (name in right.required_keys):
+                # Required key is not compatible with a non-read-only non-required
+                # key since the prior doesn't support 'del' but the latter should
+                # support it.
+                # Required key is compatible with a read-only non-required key.
+                required_differ = (name in left.required_keys) != (name in right.required_keys)
+                if not right_readonly and required_differ:
                     return False
                 # Readonly fields check:
                 #

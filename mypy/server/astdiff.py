@@ -303,6 +303,7 @@ def snapshot_definition(node: SymbolNode | None, common: SymbolSnapshot) -> Symb
             [snapshot_type(base) for base in node.bases],
             [snapshot_type(p) for p in node._promote],
             dataclass_transform_spec.serialize() if dataclass_transform_spec is not None else None,
+            node.deprecated,
         )
         prefix = node.fullname
         symbol_table = snapshot_symbol_table(prefix, node.names)

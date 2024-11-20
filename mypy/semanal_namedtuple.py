@@ -380,8 +380,7 @@ class NamedTupleAnalyzer:
                         rename = arg.name == "True"
                     else:
                         self.fail(
-                            'Boolean literal expected as the "rename" argument to '
-                            f"{type_name}()",
+                            f'Boolean literal expected as the "rename" argument to {type_name}()',
                             arg,
                             code=ARG_TYPE,
                         )

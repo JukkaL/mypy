@@ -13,7 +13,7 @@ import re
 import subprocess
 import sys
 from enum import Enum, unique
-from typing import Dict, Final, List, NamedTuple, Optional, Tuple, Union
+from typing import Dict, Final, List, Optional, Tuple, Union
 from typing_extensions import TypeAlias as _TypeAlias
 
 from mypy import pyinfo
@@ -21,16 +21,35 @@ from mypy.errors import CompileError
 from mypy.fscache import FileSystemCache
 from mypy.nodes import MypyFile
 from mypy.options import Options
-from mypy.stubinfo import approved_stub_package_exists
+from mypy.stubinfo import stub_distribution_name
 from mypy.util import os_path_join
 
 
 # Paths to be searched in find_module().
-class SearchPaths(NamedTuple):
-    python_path: tuple[str, ...]  # where user code is found
-    mypy_path: tuple[str, ...]  # from $MYPYPATH or config variable
-    package_path: tuple[str, ...]  # from get_site_packages_dirs()
-    typeshed_path: tuple[str, ...]  # paths in typeshed
+class SearchPaths:
+    def __init__(
+        self,
+        python_path: tuple[str, ...],
+        mypy_path: tuple[str, ...],
+        package_path: tuple[str, ...],
+        typeshed_path: tuple[str, ...],
+    ) -> None:
+        # where user code is found
+        self.python_path = tuple(map(os.path.abspath, python_path))
+        # from $MYPYPATH or config variable
+        self.mypy_path = tuple(map(os.path.abspath, mypy_path))
+        # from get_site_packages_dirs()
+        self.package_path = tuple(map(os.path.abspath, package_path))
+        # paths in typeshed
+        self.typeshed_path = tuple(map(os.path.abspath, typeshed_path))
+
+    def asdict(self) -> dict[str, tuple[str, ...]]:
+        return {
+            "python_path": self.python_path,
+            "mypy_path": self.mypy_path,
+            "package_path": self.package_path,
+            "typeshed_path": self.typeshed_path,
+        }
 
 
 # Package dirs are a two-tuple of path to search and whether to verify the module
@@ -73,8 +92,7 @@ class ModuleNotFoundReason(Enum):
         elif self is ModuleNotFoundReason.WRONG_WORKING_DIRECTORY:
             msg = 'Cannot find implementation or library stub for module named "{module}"'
             notes = [
-                "You may be running mypy in a subpackage, "
-                "mypy should be run on the package root"
+                "You may be running mypy in a subpackage, mypy should be run on the package root"
             ]
         elif self is ModuleNotFoundReason.FOUND_WITHOUT_TYPE_HINTS:
             msg = (
@@ -240,17 +258,17 @@ class FindModuleCache:
         return None
 
     def find_lib_path_dirs(self, id: str, lib_path: tuple[str, ...]) -> PackageDirs:
-        """Find which elements of a lib_path have the directory a module needs to exist.
-
-        This is run for the python_path, mypy_path, and typeshed_path search paths.
-        """
+        """Find which elements of a lib_path have the directory a module needs to exist."""
         components = id.split(".")
         dir_chain = os.sep.join(components[:-1])  # e.g., 'foo/bar'
 
         dirs = []
         for pathitem in self.get_toplevel_possibilities(lib_path, components[0]):
             # e.g., '/usr/lib/python3.4/foo/bar'
-            dir = os.path.normpath(os_path_join(pathitem, dir_chain))
+            if dir_chain:
+                dir = os_path_join(pathitem, dir_chain)
+            else:
+                dir = pathitem
             if self.fscache.isdir(dir):
                 dirs.append((dir, True))
         return dirs
@@ -331,8 +349,6 @@ class FindModuleCache:
             # If this is not a directory then we can't traverse further into it
             if not self.fscache.isdir(dir_path):
                 break
-        if approved_stub_package_exists(".".join(components)):
-            return ModuleNotFoundReason.APPROVED_STUBS_NOT_INSTALLED
         if plausible_match:
             return ModuleNotFoundReason.FOUND_WITHOUT_TYPE_HINTS
         else:
@@ -414,9 +430,15 @@ class FindModuleCache:
         third_party_inline_dirs: PackageDirs = []
         third_party_stubs_dirs: PackageDirs = []
         found_possible_third_party_missing_type_hints = False
-        need_installed_stubs = False
         # Third-party stub/typed packages
+        candidate_package_dirs = {
+            package_dir[0]
+            for component in (components[0], components[0] + "-stubs")
+            for package_dir in self.find_lib_path_dirs(component, self.search_paths.package_path)
+        }
         for pkg_dir in self.search_paths.package_path:
+            if pkg_dir not in candidate_package_dirs:
+                continue
             stub_name = components[0] + "-stubs"
             stub_dir = os_path_join(pkg_dir, stub_name)
             if fscache.isdir(stub_dir):
@@ -445,11 +467,10 @@ class FindModuleCache:
             if isinstance(non_stub_match, ModuleNotFoundReason):
                 if non_stub_match is ModuleNotFoundReason.FOUND_WITHOUT_TYPE_HINTS:
                     found_possible_third_party_missing_type_hints = True
-                elif non_stub_match is ModuleNotFoundReason.APPROVED_STUBS_NOT_INSTALLED:
-                    need_installed_stubs = True
             else:
                 third_party_inline_dirs.append(non_stub_match)
                 self._update_ns_ancestors(components, non_stub_match)
+
         if self.options and self.options.use_builtins_fixtures:
             # Everything should be in fixtures.
             third_party_inline_dirs.clear()
@@ -548,12 +569,25 @@ class FindModuleCache:
         if ancestor is not None:
             return ancestor
 
-        if need_installed_stubs:
-            return ModuleNotFoundReason.APPROVED_STUBS_NOT_INSTALLED
-        elif found_possible_third_party_missing_type_hints:
-            return ModuleNotFoundReason.FOUND_WITHOUT_TYPE_HINTS
-        else:
+        approved_dist_name = stub_distribution_name(id)
+        if approved_dist_name:
+            if len(components) == 1:
+                return ModuleNotFoundReason.APPROVED_STUBS_NOT_INSTALLED
+            # If we're a missing submodule of an already installed approved stubs, we don't want to
+            # error with APPROVED_STUBS_NOT_INSTALLED, but rather want to return NOT_FOUND.
+            for i in range(1, len(components)):
+                parent_id = ".".join(components[:i])
+                if stub_distribution_name(parent_id) == approved_dist_name:
+                    break
+            else:
+                return ModuleNotFoundReason.APPROVED_STUBS_NOT_INSTALLED
+            if self.find_module(parent_id) is ModuleNotFoundReason.APPROVED_STUBS_NOT_INSTALLED:
+                return ModuleNotFoundReason.APPROVED_STUBS_NOT_INSTALLED
             return ModuleNotFoundReason.NOT_FOUND
+
+        if found_possible_third_party_missing_type_hints:
+            return ModuleNotFoundReason.FOUND_WITHOUT_TYPE_HINTS
+        return ModuleNotFoundReason.NOT_FOUND
 
     def find_modules_recursive(self, module: str) -> list[BuildSource]:
         module_path = self.find_module(module, fast_path=True)
@@ -743,6 +777,7 @@ def get_search_dirs(python_executable: str | None) -> tuple[list[str], list[str]
             print(err.stdout)
             raise
         except OSError as err:
+            assert err.errno is not None
             reason = os.strerror(err.errno)
             raise CompileError(
                 [f"mypy: Invalid python executable '{python_executable}': {reason}"]
@@ -833,7 +868,6 @@ def compute_search_paths(
     return SearchPaths(
         python_path=tuple(reversed(python_path)),
         mypy_path=tuple(mypypath),
-        # package_path and typeshed_path must be normalised and absolute via os.path.abspath
         package_path=tuple(sys_path + site_packages),
         typeshed_path=tuple(lib_path),
     )

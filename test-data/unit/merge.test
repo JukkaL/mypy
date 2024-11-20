@@ -1490,6 +1490,7 @@ from enum import Enum
 class A(Enum):
     X = 0
     Y = 1
+[builtins fixtures/enum.pyi]
 [out]
 TypeInfo<0>(
   Name(target.A)

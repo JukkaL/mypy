@@ -31,7 +31,6 @@ from mypy.nodes import (
 )
 from mypy.state import state
 from mypy.types import (
-    ENUM_REMOVED_PROPS,
     AnyType,
     CallableType,
     ExtraAttrs,
@@ -651,8 +650,16 @@ def _remove_redundant_union_items(items: list[Type], keep_erased: bool) -> list[
 def _get_type_method_ret_type(t: Type, *, name: str) -> Type | None:
     t = get_proper_type(t)
 
+    # For Enum literals the ret_type can change based on the Enum
+    # we need to check the type of the enum rather than the literal
+    if isinstance(t, LiteralType) and t.is_enum_literal():
+        t = t.fallback
+
     if isinstance(t, Instance):
         sym = t.type.get(name)
+        # Fallback to the metaclass for the lookup when necessary
+        if not sym and (m := t.type.metaclass_type):
+            sym = m.type.get(name)
         if sym:
             sym_type = get_proper_type(sym.type)
             if isinstance(sym_type, CallableType):
@@ -959,24 +966,17 @@ def try_expanding_sum_type_to_union(typ: Type, target_fullname: str) -> ProperTy
             try_expanding_sum_type_to_union(item, target_fullname) for item in typ.relevant_items()
         ]
         return make_simplified_union(items, contract_literals=False)
-    elif isinstance(typ, Instance) and typ.type.fullname == target_fullname:
+
+    if isinstance(typ, Instance) and typ.type.fullname == target_fullname:
+        if typ.type.fullname == "builtins.bool":
+            items = [LiteralType(True, typ), LiteralType(False, typ)]
+            return make_simplified_union(items, contract_literals=False)
+
         if typ.type.is_enum:
-            new_items = []
-            for name, symbol in typ.type.names.items():
-                if not isinstance(symbol.node, Var):
-                    continue
-                # Skip these since Enum will remove it
-                if name in ENUM_REMOVED_PROPS:
-                    continue
-                # Skip private attributes
-                if name.startswith("__"):
-                    continue
-                new_items.append(LiteralType(name, typ))
-            return make_simplified_union(new_items, contract_literals=False)
-        elif typ.type.fullname == "builtins.bool":
-            return make_simplified_union(
-                [LiteralType(True, typ), LiteralType(False, typ)], contract_literals=False
-            )
+            items = [LiteralType(name, typ) for name in typ.type.enum_members]
+            if not items:
+                return typ
+            return make_simplified_union(items, contract_literals=False)
 
     return typ
 
@@ -1002,7 +1002,7 @@ def try_contracting_literals_in_union(types: Sequence[Type]) -> list[ProperType]
                 if fullname not in sum_types:
                     sum_types[fullname] = (
                         (
-                            set(typ.fallback.get_enum_values())
+                            set(typ.fallback.type.enum_members)
                             if typ.fallback.type.is_enum
                             else {True, False}
                         ),
@@ -1035,7 +1035,7 @@ def coerce_to_literal(typ: Type) -> Type:
         if typ.last_known_value:
             return typ.last_known_value
         elif typ.type.is_enum:
-            enum_values = typ.get_enum_values()
+            enum_values = typ.type.enum_members
             if len(enum_values) == 1:
                 return LiteralType(value=enum_values[0], fallback=typ)
     return original_type

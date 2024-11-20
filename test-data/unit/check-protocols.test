@@ -4215,3 +4215,24 @@ def g4(a: Input[bytes], b: Output[str]) -> None:
     f(a, b)  # E: Cannot infer type argument 1 of "f"
 
 [builtins fixtures/tuple.pyi]
+
+[case testOverloadProtocolSubtyping]
+from typing import Protocol, Self, overload
+
+class NumpyFloat:
+    __add__: "FloatOP"
+
+class FloatOP(Protocol):
+    @overload
+    def __call__(self, other: float) -> NumpyFloat: ...
+    @overload
+    def __call__(self, other: NumpyFloat) -> NumpyFloat: ...
+
+class SupportsAdd(Protocol):
+    @overload
+    def __add__(self, other: float) -> Self: ...
+    @overload
+    def __add__(self, other: NumpyFloat) -> Self: ...
+
+x: SupportsAdd = NumpyFloat()
+[builtins fixtures/tuple.pyi]

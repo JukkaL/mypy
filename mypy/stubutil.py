@@ -16,6 +16,7 @@ from mypy_extensions import mypyc_attr
 import mypy.options
 from mypy.modulefinder import ModuleNotFoundReason
 from mypy.moduleinspect import InspectError, ModuleInspect
+from mypy.nodes import PARAM_SPEC_KIND, TYPE_VAR_TUPLE_KIND, ClassDef, FuncDef, TypeAliasStmt
 from mypy.stubdoc import ArgSig, FunctionSig
 from mypy.types import AnyType, NoneType, Type, TypeList, TypeStrVisitor, UnboundType, UnionType
 
@@ -306,12 +307,18 @@ class AnnotationPrinter(TypeStrVisitor):
 
 class ClassInfo:
     def __init__(
-        self, name: str, self_var: str, docstring: str | None = None, cls: type | None = None
+        self,
+        name: str,
+        self_var: str,
+        docstring: str | None = None,
+        cls: type | None = None,
+        parent: ClassInfo | None = None,
     ) -> None:
         self.name = name
         self.self_var = self_var
         self.docstring = docstring
         self.cls = cls
+        self.parent = parent
 
 
 class FunctionContext:
@@ -334,7 +341,13 @@ class FunctionContext:
     def fullname(self) -> str:
         if self._fullname is None:
             if self.class_info:
-                self._fullname = f"{self.module_name}.{self.class_info.name}.{self.name}"
+                parents = []
+                class_info: ClassInfo | None = self.class_info
+                while class_info is not None:
+                    parents.append(class_info.name)
+                    class_info = class_info.parent
+                namespace = ".".join(reversed(parents))
+                self._fullname = f"{self.module_name}.{namespace}.{self.name}"
             else:
                 self._fullname = f"{self.module_name}.{self.name}"
         return self._fullname
@@ -777,6 +790,31 @@ class BaseStubGenerator:
             )
         return lines
 
+    def format_type_args(self, o: TypeAliasStmt | FuncDef | ClassDef) -> str:
+        if not o.type_args:
+            return ""
+        p = AnnotationPrinter(self)
+        type_args_list: list[str] = []
+        for type_arg in o.type_args:
+            if type_arg.kind == PARAM_SPEC_KIND:
+                prefix = "**"
+            elif type_arg.kind == TYPE_VAR_TUPLE_KIND:
+                prefix = "*"
+            else:
+                prefix = ""
+            if type_arg.upper_bound:
+                bound_or_values = f": {type_arg.upper_bound.accept(p)}"
+            elif type_arg.values:
+                bound_or_values = f": ({', '.join(v.accept(p) for v in type_arg.values)})"
+            else:
+                bound_or_values = ""
+            if type_arg.default:
+                default = f" = {type_arg.default.accept(p)}"
+            else:
+                default = ""
+            type_args_list.append(f"{prefix}{type_arg.name}{bound_or_values}{default}")
+        return "[" + ", ".join(type_args_list) + "]"
+
     def print_annotation(
         self,
         t: Type,
@@ -794,6 +832,8 @@ class BaseStubGenerator:
         return False
 
     def is_private_name(self, name: str, fullname: str | None = None) -> bool:
+        if "__mypy-" in name:
+            return True  # Never include mypy generated symbols
         if self._include_private:
             return False
         if fullname in self.EXTRA_EXPORTED:

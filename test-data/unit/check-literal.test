@@ -2961,6 +2961,30 @@ reveal_type(C().collection)  # N: Revealed type is "builtins.list[Literal['word'
 reveal_type(C().word)  # N: Revealed type is "Literal['word']"
 [builtins fixtures/tuple.pyi]
 
+[case testLiteralTernaryUnionNarrowing]
+from typing_extensions import Literal
+from typing import Optional
+
+SEP = Literal["a", "b"]
+
+class Base:
+    def feed_data(
+        self,
+        sep: SEP,
+    ) -> int:
+        return 0
+
+class C(Base):
+    def feed_data(
+        self,
+        sep: Optional[SEP] = None,
+    ) -> int:
+        if sep is None:
+            sep = "a" if int() else "b"
+            reveal_type(sep)  # N: Revealed type is "Union[Literal['a'], Literal['b']]"
+        return super().feed_data(sep)
+[builtins fixtures/tuple.pyi]
+
 [case testLiteralAddition]
 from typing import Union
 from typing_extensions import Literal

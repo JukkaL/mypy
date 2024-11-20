@@ -2,6 +2,89 @@
 
 ## Next release
 
+### Change to enum membership semantics
+
+As per the updated [typing specification for enums](https://typing.readthedocs.io/en/latest/spec/enums.html#defining-members),
+enum members must be left unannotated.
+
+```python
+class Pet(Enum):
+    CAT = 1  # Member attribute
+    DOG = 2  # Member attribute
+    WOLF: int = 3  # New error: Enum members must be left unannotated
+
+    species: str  # Considered a non-member attribute
+```
+
+In particular, the specification change can result in issues in type stubs (`.pyi` files), since
+historically it was common to leave the value absent:
+
+```python
+# In a type stub (.pyi file)
+
+class Pet(Enum):
+    # Change in semantics: previously considered members, now non-member attributes
+    CAT: int
+    DOG: int
+
+    # Mypy will now issue a warning if it detects this situation in type stubs:
+    # > Detected enum "Pet" in a type stub with zero members.
+    # > There is a chance this is due to a recent change in the semantics of enum membership.
+    # > If so, use `member = value` to mark an enum member, instead of `member: type`
+
+class Pet(Enum):
+    # As per the specification, you should now do one of the following:
+    DOG = 1  # Member attribute with value 1 and known type
+    WOLF = cast(int, ...)  # Member attribute with unknown value but known type
+    LION = ...  # Member attribute with unknown value and unknown type
+```
+
+Contributed by Terence Honles in PR [17207](https://github.com/python/mypy/pull/17207) and
+Shantanu Jain in PR [18068](https://github.com/python/mypy/pull/18068).
+
+## Mypy 1.13
+
+We’ve just uploaded mypy 1.13 to the Python Package Index ([PyPI](https://pypi.org/project/mypy/)).
+Mypy is a static type checker for Python. You can install it as follows:
+
+    python3 -m pip install -U mypy
+
+You can read the full documentation for this release on [Read the Docs](http://mypy.readthedocs.io).
+
+Note that unlike typical releases, Mypy 1.13 does not have any changes to type checking semantics
+from 1.12.1.
+
+### Improved performance
+
+Mypy 1.13 contains several performance improvements. Users can expect mypy to be 5-20% faster.
+In environments with long search paths (such as environments using many editable installs), mypy
+can be significantly faster, e.g. 2.2x faster in the use case targeted by these improvements.
+
+Mypy 1.13 allows use of the `orjson` library for handling the cache instead of the stdlib `json`,
+for improved performance. You can ensure the presence of `orjson` using the `faster-cache` extra:
+
+    python3 -m pip install -U mypy[faster-cache]
+
+Mypy may depend on `orjson` by default in the future.
+
+These improvements were contributed by Shantanu.
+
+List of changes:
+* Significantly speed up file handling error paths (Shantanu, PR [17920](https://github.com/python/mypy/pull/17920))
+* Use fast path in modulefinder more often (Shantanu, PR [17950](https://github.com/python/mypy/pull/17950))
+* Let mypyc optimise os.path.join (Shantanu, PR [17949](https://github.com/python/mypy/pull/17949))
+* Make is_sub_path faster (Shantanu, PR [17962](https://github.com/python/mypy/pull/17962))
+* Speed up stubs suggestions (Shantanu, PR [17965](https://github.com/python/mypy/pull/17965))
+* Use sha1 for hashing (Shantanu, PR [17953](https://github.com/python/mypy/pull/17953))
+* Use orjson instead of json, when available (Shantanu, PR [17955](https://github.com/python/mypy/pull/17955))
+* Add faster-cache extra, test in CI (Shantanu, PR [17978](https://github.com/python/mypy/pull/17978))
+
+### Acknowledgements
+Thanks to all mypy contributors who contributed to this release:
+
+- Shantanu Jain
+- Jukka Lehtosalo
+
 ## Mypy 1.12
 
 We’ve just uploaded mypy 1.12 to the Python Package Index ([PyPI](https://pypi.org/project/mypy/)). Mypy is a static type

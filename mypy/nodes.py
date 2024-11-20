@@ -969,6 +969,7 @@ VAR_FLAGS: Final = [
     "is_classvar",
     "is_abstract_var",
     "is_final",
+    "is_index_var",
     "final_unset_in_class",
     "final_set_in_init",
     "explicit_self_type",
@@ -1005,6 +1006,7 @@ class Var(SymbolNode):
         "is_classvar",
         "is_abstract_var",
         "is_final",
+        "is_index_var",
         "final_unset_in_class",
         "final_set_in_init",
         "is_suppressed_import",
@@ -1039,6 +1041,7 @@ class Var(SymbolNode):
         self.is_settable_property = False
         self.is_classvar = False
         self.is_abstract_var = False
+        self.is_index_var = False
         # Set to true when this variable refers to a module we were unable to
         # parse for some reason (eg a silenced module)
         self.is_suppressed_import = False
@@ -1724,7 +1727,7 @@ class StrExpr(Expression):
         return visitor.visit_str_expr(self)
 
 
-def is_StrExpr_list(seq: list[Expression]) -> TypeGuard[list[StrExpr]]:
+def is_StrExpr_list(seq: list[Expression]) -> TypeGuard[list[StrExpr]]:  # noqa: N802
     return all(isinstance(item, StrExpr) for item in seq)
 
 
@@ -2899,6 +2902,10 @@ EXCLUDED_PROTOCOL_ATTRIBUTES: Final = frozenset(
     }
 )
 
+# Attributes that can optionally be defined in the body of a subclass of
+# enum.Enum but are removed from the class __dict__ by EnumMeta.
+EXCLUDED_ENUM_ATTRIBUTES: Final = frozenset({"_ignore_", "_order_", "__order__"})
+
 
 class TypeInfo(SymbolNode):
     """The type structure of a single class.
@@ -3225,6 +3232,19 @@ class TypeInfo(SymbolNode):
                         continue
                     members.add(name)
         return sorted(members)
+
+    @property
+    def enum_members(self) -> list[str]:
+        return [
+            name
+            for name, sym in self.names.items()
+            if (
+                isinstance(sym.node, Var)
+                and name not in EXCLUDED_ENUM_ATTRIBUTES
+                and not name.startswith("__")
+                and sym.node.has_explicit_value
+            )
+        ]
 
     def __getitem__(self, name: str) -> SymbolTableNode:
         n = self.get(name)

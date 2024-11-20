@@ -6,22 +6,6 @@ def is_module_from_legacy_bundled_package(module: str) -> bool:
     return top_level in legacy_bundled_packages
 
 
-def approved_stub_package_exists(module: str) -> bool:
-    top_level = module.split(".", 1)[0]
-    if top_level in legacy_bundled_packages:
-        return True
-    if top_level in non_bundled_packages_flat:
-        return True
-    if top_level in non_bundled_packages_namespace:
-        namespace = non_bundled_packages_namespace[top_level]
-        components = module.split(".")
-        for i in range(len(components), 0, -1):
-            module = ".".join(components[:i])
-            if module in namespace:
-                return True
-    return False
-
-
 def stub_distribution_name(module: str) -> str | None:
     top_level = module.split(".", 1)[0]
 

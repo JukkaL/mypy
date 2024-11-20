@@ -503,7 +503,7 @@ accepts one of four string values:
         main.py:1: note: (Using --follow-imports=error, module not passed on command line)
 
 If you are starting a new codebase and plan on using type hints from
-the start, we recommend you use either :option:`--follow-imports=normal <mypy --follow-imports>`
+the start, we **recommend** you use either :option:`--follow-imports=normal <mypy --follow-imports>`
 (the default) or :option:`--follow-imports=error <mypy --follow-imports>`. Either option will help
 make sure you are not skipping checking any part of your codebase by
 accident.
@@ -514,16 +514,27 @@ files that do not use type hints) pass under :option:`--follow-imports=normal <m
 This is usually not too difficult to do: mypy is designed to report as
 few error messages as possible when it is looking at unannotated code.
 
-Only if doing this is intractable, we recommend passing mypy just the files
-you want to type check and use :option:`--follow-imports=silent <mypy --follow-imports>`. Even if
-mypy is unable to perfectly type check a file, it can still glean some
+Only if doing this is intractable, try passing mypy just the files
+you want to type check and using :option:`--follow-imports=silent <mypy --follow-imports>`.
+Even if mypy is unable to perfectly type check a file, it can still glean some
 useful information by parsing it (for example, understanding what methods
 a given object has). See :ref:`existing-code` for more recommendations.
-
-We do not recommend using ``skip`` unless you know what you are doing:
-while this option can be quite powerful, it can also cause many
-hard-to-debug errors.
 
 Adjusting import following behaviour is often most useful when restricted to
 specific modules. This can be accomplished by setting a per-module
 :confval:`follow_imports` config option.
+
+.. warning::
+
+    We do not recommend using ``follow_imports=skip`` unless you're really sure
+    you know what you are doing. This option greatly restricts the analysis mypy
+    can perform and you will lose a lot of the benefits of type checking.
+
+    This is especially true at the global level. Setting a per-module
+    ``follow_imports=skip`` for a specific problematic module can be
+    useful without causing too much harm.
+
+.. note::
+
+    If you're looking to resolve import errors related to libraries, try following
+    the advice in :ref:`fix-missing-imports` before messing with ``follow_imports``.

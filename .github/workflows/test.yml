@@ -126,6 +126,7 @@ jobs:
           toxenv: lint
 
     name: ${{ matrix.name }}
+    timeout-minutes: 60
     env:
       TOX_SKIP_MISSING_INTERPRETERS: False
       # Rich (pip) -- Disable color for windows + pytest
@@ -205,6 +206,7 @@ jobs:
   python_32bits:
     runs-on: ubuntu-latest
     name: Test mypyc suite with 32-bit Python
+    timeout-minutes: 60
     env:
       TOX_SKIP_MISSING_INTERPRETERS: False
       # Rich (pip)

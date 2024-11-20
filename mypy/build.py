@@ -1050,7 +1050,10 @@ PLUGIN_SNAPSHOT_FILE: Final = "@plugins_snapshot.json"
 def write_plugins_snapshot(manager: BuildManager) -> None:
     """Write snapshot of versions and hashes of currently active plugins."""
     snapshot = json_dumps(manager.plugins_snapshot)
-    if not manager.metastore.write(PLUGIN_SNAPSHOT_FILE, snapshot):
+    if (
+        not manager.metastore.write(PLUGIN_SNAPSHOT_FILE, snapshot)
+        and manager.options.cache_dir != os.devnull
+    ):
         manager.errors.set_file(_cache_dir_prefix(manager.options), None, manager.options)
         manager.errors.report(0, 0, "Error writing plugins snapshot", blocker=True)
 
@@ -2140,10 +2143,12 @@ class State:
                     # other systems, but os.strerror(ioerr.errno) does not, so we use that.
                     # (We want the error messages to be platform-independent so that the
                     # tests have predictable output.)
+                    assert ioerr.errno is not None
                     raise CompileError(
                         [
                             "mypy: can't read file '{}': {}".format(
-                                self.path, os.strerror(ioerr.errno)
+                                self.path.replace(os.getcwd() + os.sep, ""),
+                                os.strerror(ioerr.errno),
                             )
                         ],
                         module_with_blocker=self.id,
@@ -2861,7 +2866,7 @@ def log_configuration(manager: BuildManager, sources: list[BuildSource]) -> None
         manager.log(f"{'Found source:':24}{source}")
 
     # Complete list of searched paths can get very long, put them under TRACE
-    for path_type, paths in manager.search_paths._asdict().items():
+    for path_type, paths in manager.search_paths.asdict().items():
         if not paths:
             manager.trace(f"No {path_type}")
             continue

@@ -32,6 +32,7 @@ jobs:
       matrix:
         shard-index: [0, 1, 2, 3, 4]
       fail-fast: false
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:

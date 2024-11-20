@@ -6,12 +6,8 @@
 #
 attrs==24.2.0
     # via -r test-requirements.in
-black==24.8.0
-    # via -r test-requirements.in
 cfgv==3.4.0
     # via pre-commit
-click==8.1.7
-    # via black
 coverage==7.6.1
     # via pytest-cov
 distlib==0.3.9
@@ -29,21 +25,13 @@ iniconfig==2.0.0
 lxml==4.9.2 ; (python_version < "3.11" or sys_platform != "win32") and python_version < "3.12"
     # via -r test-requirements.in
 mypy-extensions==1.0.0
-    # via
-    #   -r mypy-requirements.txt
-    #   black
+    # via -r mypy-requirements.txt
 nodeenv==1.9.1
     # via pre-commit
 packaging==24.1
-    # via
-    #   black
-    #   pytest
-pathspec==0.12.1
-    # via black
+    # via pytest
 platformdirs==4.3.6
-    # via
-    #   black
-    #   virtualenv
+    # via virtualenv
 pluggy==1.5.0
     # via pytest
 pre-commit==3.5.0
@@ -61,8 +49,6 @@ pytest-xdist==3.6.1
     # via -r test-requirements.in
 pyyaml==6.0.2
     # via pre-commit
-ruff==0.6.9
-    # via -r test-requirements.in
 tomli==2.0.2
     # via -r test-requirements.in
 types-psutil==6.0.0.20241011

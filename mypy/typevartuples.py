@@ -7,12 +7,10 @@ from typing import Sequence
 from mypy.types import (
     AnyType,
     Instance,
-    ProperType,
     Type,
     TypeVarLikeType,
     TypeVarTupleType,
     UnpackType,
-    get_proper_type,
     split_with_prefix_and_suffix,
 )
 
@@ -25,14 +23,6 @@ def split_with_instance(
     return split_with_prefix_and_suffix(
         typ.args, typ.type.type_var_tuple_prefix, typ.type.type_var_tuple_suffix
     )
-
-
-def extract_unpack(types: Sequence[Type]) -> ProperType | None:
-    """Given a list of types, extracts either a single type from an unpack, or returns None."""
-    if len(types) == 1:
-        if isinstance(types[0], UnpackType):
-            return get_proper_type(types[0].type)
-    return None
 
 
 def erased_vars(type_vars: Sequence[TypeVarLikeType], type_of_any: int) -> list[Type]:

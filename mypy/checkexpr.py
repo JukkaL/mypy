@@ -2377,7 +2377,11 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                 # Positional argument when expecting a keyword argument.
                 self.msg.too_many_positional_arguments(callee, context)
                 ok = False
-            elif callee.param_spec() is not None and not formal_to_actual[i]:
+            elif (
+                callee.param_spec() is not None
+                and not formal_to_actual[i]
+                and callee.special_sig != "partial"
+            ):
                 self.msg.too_few_arguments(callee, context, actual_names)
                 ok = False
         return ok
@@ -2781,7 +2785,7 @@ class ExpressionChecker(ExpressionVisitor[Type]):
     ) -> list[CallableType]:
         """Returns all overload call targets that having matching argument counts.
 
-        If the given args contains a star-arg (*arg or **kwarg argument, including
+        If the given args contains a star-arg (*arg or **kwarg argument, except for
         ParamSpec), this method will ensure all star-arg overloads appear at the start
         of the list, instead of their usual location.
 
@@ -2816,7 +2820,9 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                     # ParamSpec can be expanded in a lot of different ways. We may try
                     # to expand it here instead, but picking an impossible overload
                     # is safe: it will be filtered out later.
-                    star_matches.append(typ)
+                    # Unlike other var-args signatures, ParamSpec produces essentially
+                    # a fixed signature, so there's no need to push them to the top.
+                    matches.append(typ)
                 elif self.check_argument_count(
                     typ, arg_types, arg_kinds, arg_names, formal_to_actual, None
                 ):
@@ -5666,11 +5672,15 @@ class ExpressionChecker(ExpressionVisitor[Type]):
         except KeyError:
             supports_index = self.chk.named_type("builtins.int")  # thanks, fixture life
         expected = make_optional_type(supports_index)
+        type_args = []
         for index in [e.begin_index, e.end_index, e.stride]:
             if index:
                 t = self.accept(index)
                 self.chk.check_subtype(t, expected, index, message_registry.INVALID_SLICE_INDEX)
-        return self.named_type("builtins.slice")
+                type_args.append(t)
+            else:
+                type_args.append(NoneType())
+        return self.chk.named_generic_type("builtins.slice", type_args)
 
     def visit_list_comprehension(self, e: ListComprehension) -> Type:
         return self.check_generator_or_comprehension(
@@ -5865,6 +5875,12 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                 context=if_type_fallback,
                 allow_none_return=allow_none_return,
             )
+
+        # In most cases using if_type as a context for right branch gives better inferred types.
+        # This is however not the case for literal types, so use the full context instead.
+        if is_literal_type_like(full_context_else_type) and not is_literal_type_like(else_type):
+            else_type = full_context_else_type
+
         res: Type = make_simplified_union([if_type, else_type])
         if has_uninhabited_component(res) and not isinstance(
             get_proper_type(self.type_context[-1]), UnionType

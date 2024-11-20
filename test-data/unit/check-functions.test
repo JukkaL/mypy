@@ -1474,7 +1474,7 @@ def dec(f) -> Callable[[int], None]: pass
 
 x = int()
 if x:
-    def f(x: int) -> None: pass
+    def f(x: int, /) -> None: pass
 else:
     @dec
     def f(): pass
@@ -1489,9 +1489,12 @@ x = int()
 if x:
     def f(x: str) -> None: pass
 else:
-    # TODO: Complain about incompatible redefinition
     @dec
-    def f(): pass
+    def f(): pass   # E: All conditional function variants must have identical signatures \
+                    # N: Original: \
+                    # N:     def f(x: str) -> None \
+                    # N: Redefinition: \
+                    # N:     def f(int, /) -> None
 
 [case testConditionalFunctionDefinitionUnreachable]
 def bar() -> None:
@@ -1599,7 +1602,7 @@ else:
     def f():
         yield
 [file m.py]
-def f(): pass
+def f() -> None: pass
 
 [case testDefineConditionallyAsImportedAndDecoratedWithInference]
 if int():

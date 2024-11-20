@@ -469,8 +469,7 @@ class InspectionEngine:
 
     def missing_node(self, expression: Expression) -> str:
         return (
-            f'Cannot find definition for "{type(expression).__name__}"'
-            f" at {expr_span(expression)}"
+            f'Cannot find definition for "{type(expression).__name__}" at {expr_span(expression)}'
         )
 
     def add_prefixes(self, result: str, expression: Expression) -> str:

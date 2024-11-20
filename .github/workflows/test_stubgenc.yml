@@ -25,6 +25,7 @@ jobs:
     # Check stub file generation for a small pybind11 project
     # (full text match is required to pass)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
 
     - uses: actions/checkout@v4
