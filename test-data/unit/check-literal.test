@@ -1432,6 +1432,7 @@ reveal_type('bar' + d)  # N: Revealed type is "Literal['barfoo']"
 
 reveal_type(a.__add__(b))  # N: Revealed type is "builtins.int"
 reveal_type(b.__add__(a))  # N: Revealed type is "builtins.int"
+reveal_type(a.__add__(a))  # N: Revealed type is "builtins.int"
 
 a *= b                  # E: Incompatible types in assignment (expression has type "int", variable has type "Literal[3]")
 b *= a
@@ -2986,13 +2987,19 @@ class C(Base):
 [builtins fixtures/tuple.pyi]
 
 [case testLiteralAddition]
-from typing import Union
+from typing import Any, Union
 from typing_extensions import Literal
+
+class A:
+    def __add__(self, other: str) -> str: ...
+    def __radd__(self, other: str) -> str: ...
 
 str_a: Literal["a"]
 str_b: Literal["b"]
 str_union_1: Literal["a", "b"]
 str_union_2: Literal["d", "c"]
+str_union_mixed_1: Union[Literal["a"], Any]
+str_union_mixed_2: Union[Literal["a"], A]
 s: str
 int_1: Literal[1]
 int_2: Literal[2]
@@ -3020,6 +3027,10 @@ reveal_type(str_a + s)  # N: Revealed type is "builtins.str"
 reveal_type(s + str_a)  # N: Revealed type is "builtins.str"
 reveal_type(str_union_1 + s)  # N: Revealed type is "builtins.str"
 reveal_type(s + str_union_1)  # N: Revealed type is "builtins.str"
+reveal_type(str_a + str_union_mixed_1)  # N: Revealed type is "builtins.str"
+reveal_type(str_union_mixed_1 + str_a)  # N: Revealed type is "Union[builtins.str, Any]"
+reveal_type(str_a + str_union_mixed_2)  # N: Revealed type is "builtins.str"
+reveal_type(str_union_mixed_2 + str_a)  # N: Revealed type is "builtins.str"
 
 reveal_type(1 + 2)  # N: Revealed type is "builtins.int"
 reveal_type(int_1 + int_2)  # N: Revealed type is "Literal[3]"
@@ -3055,6 +3066,21 @@ reveal_type(misc_union + "a")  # N: Revealed type is "Union[builtins.str, builti
 reveal_type("a" + misc_union)  # E: Unsupported operand types for + ("str" and "Literal[1]") \
     # N: Right operand is of type "Literal['a', 1]" \
     # N: Revealed type is "builtins.str"
+[builtins fixtures/primitives.pyi]
+
+[case testLiteralAdditionInheritance]
+class A:
+    a = ""
+
+class B(A):
+    a = "a" + "b"
+
+class C:
+    a = "a" + "b"
+
+reveal_type(A.a)  # N: Revealed type is "builtins.str"
+reveal_type(B.a)  # N: Revealed type is "builtins.str"
+reveal_type(C.a)  # N: Revealed type is "builtins.str"
 [builtins fixtures/primitives.pyi]
 
 [case testLiteralAdditionTypedDict]
