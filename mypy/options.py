@@ -42,6 +42,7 @@ PER_MODULE_OPTIONS: Final = {
     "extra_checks",
     "follow_imports_for_stubs",
     "follow_imports",
+    "ignore_comment_errors",
     "ignore_errors",
     "ignore_missing_imports",
     "implicit_optional",
@@ -184,6 +185,9 @@ class Options:
 
         # Files in which to ignore all non-fatal errors
         self.ignore_errors = False
+
+        # Ignore syntax errors in type comments
+        self.ignore_comment_errors = False
 
         # Apply strict None checking
         self.strict_optional = True

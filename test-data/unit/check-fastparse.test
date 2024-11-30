@@ -6,6 +6,30 @@
 
 x = None # type: a : b  # E: Syntax error in type comment "a : b"
 
+[case testFastParseIgnoreTypeCommentSyntaxError]
+# flags: --ignore-comment-errors
+x: int = "1"  # type: bad
+y: str = 1  # type: bad
+[out]
+main:2: error: Incompatible types in assignment (expression has type "str", variable has type "int")
+main:2: note: Ignored bad type comment: x: int = "1"  # type: bad
+main:3: error: Incompatible types in assignment (expression has type "int", variable has type "str")
+main:3: note: Ignored bad type comment: y: str = 1  # type: bad
+
+[case testFastParseIgnoreTypeCommentSyntaxError2]
+# flags: --ignore-comment-errors
+s = "# type: not bad"
+# type: bad
+[out]
+main:3: note: Ignored bad type comment: # type: bad
+
+[case testFastParseIgnoreTypeCommentSyntaxError3]
+# flags: --ignore-comment-errors
+s = "# type: This syntax error is not due to a bad type comment'
+[out]
+main:2: note: Ignored bad type comment: s = "# type: This syntax error is not due to a bad type comment'
+main:2: error: unterminated string literal (detected at line 2)
+
 [case testFastParseInvalidTypeComment]
 
 x = None # type: a + b  # E: Invalid type comment or annotation

@@ -1116,6 +1116,11 @@ def process_options(
         group=other_group,
         inverse="--interactive",
     )
+    other_group.add_argument(
+        "--ignore-comment-errors",
+        action="store_true",
+        help="Ignore syntax errors in type comments",
+    )
 
     if server_options:
         # TODO: This flag is superfluous; remove after a short transition (2018-03-16)
