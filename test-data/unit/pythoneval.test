@@ -2163,3 +2163,21 @@ class C3[T1, T2](tuple[T1, ...]):
 
 def func3(p: C3[int, object]):
     x: C3[int, int] = p
+
+
+[case testDynamicClassAttribute]
+# Some things that can break if DynamicClassAttribute isn't handled properly
+from types import DynamicClassAttribute
+from enum import Enum
+
+class TestClass:
+    @DynamicClassAttribute
+    def name(self) -> str: ...
+
+class TestClass2(TestClass, Enum): ...
+
+class Status(Enum):
+    ABORTED = -1
+
+def imperfect(status: Status) -> str:
+    return status.name.lower()

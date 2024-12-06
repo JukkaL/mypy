@@ -245,4 +245,4 @@ Mypy ships ``mypy.plugins.proper_plugin`` plugin which can be useful
 for plugin authors, since it finds missing ``get_proper_type()`` calls,
 which is a pretty common mistake.
 
-It is recommended to enable it is a part of your plugin's CI.
+It is recommended to enable it as a part of your plugin's CI.

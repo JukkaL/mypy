@@ -1452,6 +1452,17 @@ y: C[int, str]
 reveal_type(y)  # N: Revealed type is "def (builtins.int, builtins.int, builtins.str) -> builtins.int"
 [builtins fixtures/paramspec.pyi]
 
+[case testParamSpecInTypeAliasIllegalBare]
+from typing import ParamSpec
+from typing_extensions import Concatenate, TypeAlias
+
+P = ParamSpec("P")
+Bad1: TypeAlias = P                     # E: Invalid location for ParamSpec "P" \
+                                        # N: You can use ParamSpec as the first argument to Callable, e.g., "Callable[P, int]"
+Bad2: TypeAlias = Concatenate[int, P]   # E: Invalid location for Concatenate \
+                                        # N: You can use Concatenate as the first argument to Callable
+[builtins fixtures/paramspec.pyi]
+
 [case testParamSpecInTypeAliasRecursive]
 from typing import ParamSpec, Callable, Union
 

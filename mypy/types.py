@@ -3612,6 +3612,8 @@ class LocationSetter(TypeTraverserVisitor):
 
 
 class HasTypeVars(BoolTypeQuery):
+    """Visitor for querying whether a type has a type variable component."""
+
     def __init__(self) -> None:
         super().__init__(ANY_STRATEGY)
         self.skip_alias_target = True

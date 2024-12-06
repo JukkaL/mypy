@@ -268,17 +268,19 @@ f(a, *(b, cc))
 [builtins fixtures/tuple.pyi]
 
 [case testInvalidVarArg]
-# flags: --no-strict-optional
 def f(a: 'A') -> None:
     pass
 
 class A: pass
 
-a = None # type: A
+a = A()
 
-f(*None)
-f(*a)    # E: List or tuple expected as variadic arguments
+f(*None)  # E: Expected iterable as variadic argument
+f(*a)    # E: Expected iterable as variadic argument
 f(*(a,))
+
+f(*4)  # E: Expected iterable as variadic argument
+f(a, *4)  # E: Expected iterable as variadic argument
 [builtins fixtures/tuple.pyi]
 
 
@@ -543,9 +545,9 @@ if int():
 if int():
     b, b = f(b, b, *aa) # E: Argument 3 to "f" has incompatible type "*List[A]"; expected "B"
 if int():
-    a, b = f(a, *a)  # E: List or tuple expected as variadic arguments
+    a, b = f(a, *a)  # E: Expected iterable as variadic argument
 if int():
-    a, b = f(*a)     # E: List or tuple expected as variadic arguments
+    a, b = f(*a)     # E: Expected iterable as variadic argument
 
 if int():
     a, a = f(*aa)
@@ -737,7 +739,7 @@ bar(*good1)
 bar(*good2)
 bar(*good3)
 bar(*bad1)  # E: Argument 1 to "bar" has incompatible type "*I[str]"; expected "float"
-bar(*bad2)  # E: List or tuple expected as variadic arguments
+bar(*bad2)  # E: Expected iterable as variadic argument
 [builtins fixtures/dict.pyi]
 
 -- Keyword arguments unpacking

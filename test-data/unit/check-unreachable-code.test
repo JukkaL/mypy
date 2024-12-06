@@ -1000,6 +1000,16 @@ class Test4(Generic[T3]):
 
 [builtins fixtures/isinstancelist.pyi]
 
+[case testUnreachableBlockStaysUnreachableWithTypeVarConstraints]
+# flags: --always-false COMPILE_TIME_FALSE
+from typing import TypeVar
+COMPILE_TIME_FALSE = False
+T = TypeVar("T", int, str)
+def foo(x: T) -> T:
+    if COMPILE_TIME_FALSE:
+        return "bad"
+    return x
+
 [case testUnreachableFlagContextManagersNoSuppress]
 # flags: --warn-unreachable
 from contextlib import contextmanager

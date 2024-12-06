@@ -17,6 +17,17 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mypy"
 description = "Optional static typing for Python"
+readme = {text = """
+Mypy -- Optional Static Typing for Python
+=========================================
+
+Add type annotations to your Python programs, and use mypy to type
+check them.  Mypy is essentially a Python linter on steroids, and it
+can catch many programming errors by analyzing your program, without
+actually having to run it.  Mypy has a powerful type system with
+features such as type inference, gradual typing, generics and union
+types.
+""", content-type = "text/x-rst"}
 authors = [{name = "Jukka Lehtosalo", email = "jukka.lehtosalo@iki.fi"}]
 license = {text = "MIT"}
 classifiers = [
@@ -41,7 +52,7 @@ dependencies = [
   "mypy_extensions>=1.0.0",
   "tomli>=1.1.0; python_version<'3.11'",
 ]
-dynamic = ["version", "readme"]
+dynamic = ["version"]
 
 [project.optional-dependencies]
 dmypy = ["psutil>=4.0"]

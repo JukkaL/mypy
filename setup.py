@@ -26,18 +26,6 @@ from mypy.version import __version__ as version
 if TYPE_CHECKING:
     from typing_extensions import TypeGuard
 
-long_description = """
-Mypy -- Optional Static Typing for Python
-=========================================
-
-Add type annotations to your Python programs, and use mypy to type
-check them.  Mypy is essentially a Python linter on steroids, and it
-can catch many programming errors by analyzing your program, without
-actually having to run it.  Mypy has a powerful type system with
-features such as type inference, gradual typing, generics and union
-types.
-""".lstrip()
-
 
 def is_list_of_setuptools_extension(items: list[Any]) -> TypeGuard[list[Extension]]:
     return all(isinstance(item, Extension) for item in items)
@@ -171,6 +159,4 @@ else:
     ext_modules = []
 
 
-setup(
-    version=version, long_description=long_description, ext_modules=ext_modules, cmdclass=cmdclass
-)
+setup(version=version, ext_modules=ext_modules, cmdclass=cmdclass)

@@ -58,6 +58,7 @@ from mypyc.ir.ops import (
     LoadLiteral,
     LoadStatic,
     MethodCall,
+    PrimitiveDescription,
     RaiseStandardError,
     Register,
     Return,
@@ -757,7 +758,7 @@ def transform_with(
         value = builder.add(MethodCall(mgr_v, f"__{al}enter__", args=[], line=line))
         exit_ = None
     else:
-        typ = builder.call_c(type_op, [mgr_v], line)
+        typ = builder.primitive_op(type_op, [mgr_v], line)
         exit_ = builder.maybe_spill(builder.py_get_attr(typ, f"__{al}exit__", line))
         value = builder.py_call(builder.py_get_attr(typ, f"__{al}enter__", line), [mgr_v], line)
 
@@ -876,7 +877,7 @@ def transform_del_item(builder: IRBuilder, target: AssignmentTarget, line: int) 
                     line,
                 )
         key = builder.load_str(target.attr)
-        builder.call_c(py_delattr_op, [target.obj, key], line)
+        builder.primitive_op(py_delattr_op, [target.obj, key], line)
     elif isinstance(target, AssignmentTargetRegister):
         # Delete a local by assigning an error value to it, which will
         # prompt the insertion of uninit checks.
@@ -924,7 +925,10 @@ def emit_yield_from_or_await(
     received_reg = Register(object_rprimitive)
 
     get_op = coro_op if is_await else iter_op
-    iter_val = builder.call_c(get_op, [val], line)
+    if isinstance(get_op, PrimitiveDescription):
+        iter_val = builder.primitive_op(get_op, [val], line)
+    else:
+        iter_val = builder.call_c(get_op, [val], line)
 
     iter_reg = builder.maybe_spill_assignable(iter_val)
 

@@ -1178,8 +1178,8 @@ class B: pass
 [case testSlicingWithInvalidBase]
 
 a: A
-a[1:2] # E: Invalid index type "slice" for "A"; expected type "int"
-a[:]   # E: Invalid index type "slice" for "A"; expected type "int"
+a[1:2] # E: Invalid index type "slice[int, int, None]" for "A"; expected type "int"
+a[:]   # E: Invalid index type "slice[None, None, None]" for "A"; expected type "int"
 class A:
   def __getitem__(self, n: int) -> 'A': pass
 [builtins fixtures/slice.pyi]

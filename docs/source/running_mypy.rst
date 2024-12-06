@@ -321,6 +321,12 @@ not catch errors in its use.
     recommend avoiding ``--ignore-missing-imports`` if possible: it's equivalent
     to adding a ``# type: ignore`` to all unresolved imports in your codebase.
 
+4.  To make mypy typecheck imports from modules without stubs or a py.typed
+    marker, you can set the :option:`--follow-untyped-imports <mypy --follow-untyped-imports>`
+    command line flag or set the :confval:`follow_untyped_imports` config file option to True,
+    either in the global section of your mypy config file, or individually on a
+    per-module basis.
+
 
 Library stubs not installed
 ---------------------------

@@ -290,6 +290,7 @@ from mypy.types import (
     UnpackType,
     get_proper_type,
     get_proper_types,
+    has_type_vars,
     is_named_instance,
     remove_dups,
     type_vars_as_args,
@@ -484,6 +485,12 @@ class SemanticAnalyzer(
         # Used to pass information about current overload index to visit_func_def().
         self.current_overload_item: int | None = None
 
+        # Used to track whether currently inside an except* block. This helps
+        # to invoke errors when continue/break/return is used inside except* block.
+        self.inside_except_star_block: bool = False
+        # Used to track edge case when return is still inside except* if it enters a loop
+        self.return_stmt_inside_except_star_block: bool = False
+
     # mypyc doesn't properly handle implementing an abstractproperty
     # with a regular attribute so we make them properties
     @property
@@ -510,6 +517,25 @@ class SemanticAnalyzer(
             yield
         finally:
             self.allow_unbound_tvars = old
+
+    @contextmanager
+    def inside_except_star_block_set(
+        self, value: bool, entering_loop: bool = False
+    ) -> Iterator[None]:
+        old = self.inside_except_star_block
+        self.inside_except_star_block = value
+
+        # Return statement would still be in except* scope if entering loops
+        if not entering_loop:
+            old_return_stmt_flag = self.return_stmt_inside_except_star_block
+            self.return_stmt_inside_except_star_block = value
+
+        try:
+            yield
+        finally:
+            self.inside_except_star_block = old
+            if not entering_loop:
+                self.return_stmt_inside_except_star_block = old_return_stmt_flag
 
     #
     # Preparing module (performed before semantic analysis)
@@ -877,7 +903,8 @@ class SemanticAnalyzer(
             return
 
         with self.scope.function_scope(defn):
-            self.analyze_func_def(defn)
+            with self.inside_except_star_block_set(value=False):
+                self.analyze_func_def(defn)
 
     def function_fullname(self, fullname: str) -> str:
         if self.current_overload_item is None:
@@ -1684,6 +1711,7 @@ class SemanticAnalyzer(
                     "abc.abstractproperty",
                     "functools.cached_property",
                     "enum.property",
+                    "types.DynamicClassAttribute",
                 ),
             ):
                 removed.append(i)
@@ -1829,13 +1857,17 @@ class SemanticAnalyzer(
         else:
             default = AnyType(TypeOfAny.from_omitted_generics)
         if type_param.kind == TYPE_VAR_KIND:
-            values = []
+            values: list[Type] = []
             if type_param.values:
                 for value in type_param.values:
                     analyzed = self.anal_type(value, allow_placeholder=True)
                     if analyzed is None:
                         analyzed = PlaceholderType(None, [], context.line)
-                    values.append(analyzed)
+                    if has_type_vars(analyzed):
+                        self.fail(message_registry.TYPE_VAR_GENERIC_CONSTRAINT_TYPE, context)
+                        values.append(AnyType(TypeOfAny.from_error))
+                    else:
+                        values.append(analyzed)
             return TypeVarExpr(
                 name=type_param.name,
                 fullname=fullname,
@@ -5017,7 +5049,11 @@ class SemanticAnalyzer(
                     # soon, even if some value is not ready yet, see process_typevar_parameters()
                     # for an example.
                     analyzed = PlaceholderType(None, [], node.line)
-                result.append(analyzed)
+                if has_type_vars(analyzed):
+                    self.fail(message_registry.TYPE_VAR_GENERIC_CONSTRAINT_TYPE, node)
+                    result.append(AnyType(TypeOfAny.from_error))
+                else:
+                    result.append(analyzed)
             except TypeTranslationError:
                 self.fail("Type expected", node)
                 result.append(AnyType(TypeOfAny.from_error))
@@ -5263,6 +5299,8 @@ class SemanticAnalyzer(
         self.statement = s
         if not self.is_func_scope():
             self.fail('"return" outside function', s)
+        if self.return_stmt_inside_except_star_block:
+            self.fail('"return" not allowed in except* block', s, serious=True)
         if s.expr:
             s.expr.accept(self)
 
@@ -5296,7 +5334,8 @@ class SemanticAnalyzer(
         self.statement = s
         s.expr.accept(self)
         self.loop_depth[-1] += 1
-        s.body.accept(self)
+        with self.inside_except_star_block_set(value=False, entering_loop=True):
+            s.body.accept(self)
         self.loop_depth[-1] -= 1
         self.visit_block_maybe(s.else_body)
 
@@ -5320,20 +5359,24 @@ class SemanticAnalyzer(
                 s.index_type = analyzed
 
         self.loop_depth[-1] += 1
-        self.visit_block(s.body)
+        with self.inside_except_star_block_set(value=False, entering_loop=True):
+            self.visit_block(s.body)
         self.loop_depth[-1] -= 1
-
         self.visit_block_maybe(s.else_body)
 
     def visit_break_stmt(self, s: BreakStmt) -> None:
         self.statement = s
         if self.loop_depth[-1] == 0:
             self.fail('"break" outside loop', s, serious=True, blocker=True)
+        if self.inside_except_star_block:
+            self.fail('"break" not allowed in except* block', s, serious=True)
 
     def visit_continue_stmt(self, s: ContinueStmt) -> None:
         self.statement = s
         if self.loop_depth[-1] == 0:
             self.fail('"continue" outside loop', s, serious=True, blocker=True)
+        if self.inside_except_star_block:
+            self.fail('"continue" not allowed in except* block', s, serious=True)
 
     def visit_if_stmt(self, s: IfStmt) -> None:
         self.statement = s
@@ -5354,7 +5397,8 @@ class SemanticAnalyzer(
                 type.accept(visitor)
             if var:
                 self.analyze_lvalue(var)
-            handler.accept(visitor)
+            with self.inside_except_star_block_set(self.inside_except_star_block or s.is_star):
+                handler.accept(visitor)
         if s.else_body:
             s.else_body.accept(visitor)
         if s.finally_body:

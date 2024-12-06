@@ -236,13 +236,13 @@ incorrect control flow or conditional checks that are accidentally always true o
 Check that imported or used feature is deprecated [deprecated]
 --------------------------------------------------------------
 
-By default, mypy generates a note if your code imports a deprecated feature explicitly with a
+If you use :option:`--enable-error-code deprecated <mypy --enable-error-code>`,
+mypy generates an error if your code imports a deprecated feature explicitly with a
 ``from mod import depr`` statement or uses a deprecated feature imported otherwise or defined
 locally.  Features are considered deprecated when decorated with ``warnings.deprecated``, as
-specified in `PEP 702 <https://peps.python.org/pep-0702>`_.  You can silence single notes via
-``# type: ignore[deprecated]`` or turn off this check completely via ``--disable-error-code=deprecated``.
-Use the :option:`--report-deprecated-as-error <mypy --report-deprecated-as-error>` option for
-more strictness, which turns all such notes into errors.
+specified in `PEP 702 <https://peps.python.org/pep-0702>`_.
+Use the :option:`--report-deprecated-as-note <mypy --report-deprecated-as-note>` option to
+turn all such errors into notes.
 
 .. note::
 

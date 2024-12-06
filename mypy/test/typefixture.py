@@ -216,6 +216,7 @@ class TypeFixture:
         self.type_d = TypeType.make_normalized(self.d)
         self.type_t = TypeType.make_normalized(self.t)
         self.type_any = TypeType.make_normalized(self.anyt)
+        self.type_never = TypeType.make_normalized(UninhabitedType())
 
         self._add_bool_dunder(self.bool_type_info)
         self._add_bool_dunder(self.ai)

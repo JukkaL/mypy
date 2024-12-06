@@ -691,7 +691,7 @@ class TypeMeetVisitor(TypeVisitor[ProperType]):
     def visit_unbound_type(self, t: UnboundType) -> ProperType:
         if isinstance(self.s, NoneType):
             if state.strict_optional:
-                return AnyType(TypeOfAny.special_form)
+                return UninhabitedType()
             else:
                 return self.s
         elif isinstance(self.s, UninhabitedType):

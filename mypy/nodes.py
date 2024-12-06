@@ -1263,7 +1263,7 @@ class Block(Statement):
 
     __match_args__ = ("body", "is_unreachable")
 
-    def __init__(self, body: list[Statement]) -> None:
+    def __init__(self, body: list[Statement], *, is_unreachable: bool = False) -> None:
         super().__init__()
         self.body = body
         # True if we can determine that this block is not executed during semantic
@@ -1271,7 +1271,7 @@ class Block(Statement):
         # something like "if PY3:" when using Python 2. However, some code is
         # only considered unreachable during type checking and this is not true
         # in those cases.
-        self.is_unreachable = False
+        self.is_unreachable = is_unreachable
 
     def accept(self, visitor: StatementVisitor[T]) -> T:
         return visitor.visit_block(self)

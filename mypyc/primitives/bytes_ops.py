@@ -99,3 +99,11 @@ bytes_build_op = custom_op(
     error_kind=ERR_MAGIC,
     var_arg_type=bytes_rprimitive,
 )
+
+function_op(
+    name="builtins.ord",
+    arg_types=[bytes_rprimitive],
+    return_type=int_rprimitive,
+    c_function_name="CPyBytes_Ord",
+    error_kind=ERR_MAGIC,
+)

@@ -345,10 +345,10 @@ delAttribute()
 delAttributeMultiple()
 with assertRaises(AttributeError):
     native.global_var
-with assertRaises(NameError, 'local variable "dummy" referenced before assignment'):
+with assertRaises(UnboundLocalError, 'local variable "dummy" referenced before assignment'):
     delLocal(True)
 assert delLocal(False) == 10
-with assertRaises(NameError, 'local variable "dummy" referenced before assignment'):
+with assertRaises(UnboundLocalError, 'local variable "dummy" referenced before assignment'):
     delLocalLoop()
 [out]
 (1, 2, 3)

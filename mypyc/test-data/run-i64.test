@@ -1307,28 +1307,28 @@ def test_many_locals() -> None:
         a31: i64 = 31
         a32: i64 = 32
         a33: i64 = 33
-    with assertRaises(NameError):
+    with assertRaises(UnboundLocalError):
         print(a0)
-    with assertRaises(NameError):
+    with assertRaises(UnboundLocalError):
         print(a31)
-    with assertRaises(NameError):
+    with assertRaises(UnboundLocalError):
         print(a32)
-    with assertRaises(NameError):
+    with assertRaises(UnboundLocalError):
         print(a33)
     a0 = 5
     assert a0 == 5
-    with assertRaises(NameError):
+    with assertRaises(UnboundLocalError):
         print(a31)
-    with assertRaises(NameError):
+    with assertRaises(UnboundLocalError):
         print(a32)
-    with assertRaises(NameError):
+    with assertRaises(UnboundLocalError):
         print(a33)
     a32 = 55
     assert a0 == 5
     assert a32 == 55
-    with assertRaises(NameError):
+    with assertRaises(UnboundLocalError):
         print(a31)
-    with assertRaises(NameError):
+    with assertRaises(UnboundLocalError):
         print(a33)
     a31 = 10
     a33 = 20

@@ -815,7 +815,7 @@ elif x is Foo.C:
     reveal_type(x)  # N: Revealed type is "Literal[__main__.Foo.C]"
 else:
     reveal_type(x)  # No output here: this branch is unreachable
-reveal_type(x) # N: Revealed type is "__main__.Foo"
+reveal_type(x) # N: Revealed type is "Union[Literal[__main__.Foo.A], Literal[__main__.Foo.B], Literal[__main__.Foo.C]]"
 
 if Foo.A is x:
     reveal_type(x)  # N: Revealed type is "Literal[__main__.Foo.A]"
@@ -825,7 +825,7 @@ elif Foo.C is x:
     reveal_type(x)  # N: Revealed type is "Literal[__main__.Foo.C]"
 else:
     reveal_type(x)  # No output here: this branch is unreachable
-reveal_type(x) # N: Revealed type is "__main__.Foo"
+reveal_type(x) # N: Revealed type is "Union[Literal[__main__.Foo.A], Literal[__main__.Foo.B], Literal[__main__.Foo.C]]"
 
 y: Foo
 if y is Foo.A:

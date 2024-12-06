@@ -565,25 +565,32 @@ def test_chr() -> None:
     assert try_invalid(1114112)
 
 [case testOrd]
+from testutil import assertRaises
+
 def test_ord() -> None:
+    assert ord(' ') == 32
+    assert ord(' ' + str()) == 32
+    assert ord('\x00') == 0
+    assert ord('\x00' + str()) == 0
     assert ord('\ue000') == 57344
-    s = "a\xac\u1234\u20ac\U00008000"
-    # ^^^^ two-digit hex escape
-    #   ^^^^^^ four-digit Unicode escape
-    #           ^^^^^^^^^^ eight-digit Unicode escape
+    assert ord('\ue000' + str()) == 57344
+    s = "a\xac\u1234\u20ac\U00010000"
+    #     ^^^^ two-digit hex escape
+    #         ^^^^^^ four-digit Unicode escape
+    #                     ^^^^^^^^^^ eight-digit Unicode escape
     l1 = [ord(c) for c in s]
-    assert l1 == [97, 172, 4660, 8364, 32768]
+    assert l1 == [97, 172, 4660, 8364, 65536]
     u = 'abcdé'
     assert ord(u[-1]) == 233
     assert ord(b'a') == 97
     assert ord(b'a' + bytes()) == 97
-    u2 = '\U0010ffff'
+    u2 = '\U0010ffff' + str()
     assert ord(u2) == 1114111
-    try:
+    assert ord('\U0010ffff') == 1114111
+    with assertRaises(TypeError, "ord() expected a character, but a string of length 2 found"):
         ord('aa')
-        assert False
-    except TypeError:
-        pass
+    with assertRaises(TypeError):
+        ord('')
 
 [case testDecode]
 def test_decode() -> None:
@@ -639,3 +646,12 @@ def test_encode() -> None:
     assert u'\u00E1'.encode('latin1') == b'\xe1'
     with assertRaises(UnicodeEncodeError):
         u.encode('latin1')
+
+[case testUnicodeSurrogate]
+def f() -> str:
+    return "\ud800"
+
+def test_surrogate() -> None:
+    assert ord(f()) == 0xd800
+    assert ord("\udfff") == 0xdfff
+    assert repr("foobar\x00\xab\ud912\U00012345") == r"'foobar\x00«\ud912𒍅'"

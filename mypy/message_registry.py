@@ -350,6 +350,10 @@ TYPE_VAR_AWAIT_EXPRESSION_IN_BOUND: Final = ErrorMessage(
     "Await expression cannot be used as a type variable bound", codes.SYNTAX
 )
 
+TYPE_VAR_GENERIC_CONSTRAINT_TYPE: Final = ErrorMessage(
+    "TypeVar constraint type cannot be parametrized by type variables", codes.MISC
+)
+
 TYPE_ALIAS_WITH_YIELD_EXPRESSION: Final = ErrorMessage(
     "Yield expression cannot be used within a type alias", codes.SYNTAX
 )

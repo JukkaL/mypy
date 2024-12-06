@@ -358,6 +358,9 @@ f(**d)         # E: Keywords must be strings
 f(**A())       # E: Argument after ** must be a mapping, not "A"
 kwargs: Optional[Any]
 f(**kwargs)    # E: Argument after ** must be a mapping, not "Optional[Any]"
+
+def g(a: int) -> None: pass
+g(a=1, **4)  # E: Argument after ** must be a mapping, not "int"
 [builtins fixtures/dict.pyi]
 
 [case testPassingKeywordVarArgsToNonVarArgsFunction]

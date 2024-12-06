@@ -146,12 +146,12 @@ def convert_format_expr_to_str(
             if is_str_rprimitive(node_type):
                 var_str = builder.accept(x)
             elif is_int_rprimitive(node_type) or is_short_int_rprimitive(node_type):
-                var_str = builder.call_c(int_to_str_op, [builder.accept(x)], line)
+                var_str = builder.primitive_op(int_to_str_op, [builder.accept(x)], line)
             else:
-                var_str = builder.call_c(str_op, [builder.accept(x)], line)
+                var_str = builder.primitive_op(str_op, [builder.accept(x)], line)
         elif format_op == FormatOp.INT:
             if is_int_rprimitive(node_type) or is_short_int_rprimitive(node_type):
-                var_str = builder.call_c(int_to_str_op, [builder.accept(x)], line)
+                var_str = builder.primitive_op(int_to_str_op, [builder.accept(x)], line)
             else:
                 return None
         else:

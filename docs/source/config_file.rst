@@ -315,6 +315,18 @@ section of the command line docs.
     match the name of the *imported* module, not the module containing the
     import statement.
 
+.. confval:: follow_untyped_imports
+
+    :type: boolean
+    :default: False
+
+    Typechecks imports from modules that do not have stubs or a py.typed marker.
+
+    If this option is used in a per-module section, the module name should
+    match the name of the *imported* module, not the module containing the
+    import statement. Note that scanning all unannotated modules might
+    significantly increase the runtime of your mypy calls.
+
 .. confval:: follow_imports
 
     :type: string

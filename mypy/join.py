@@ -317,7 +317,7 @@ class TypeJoinVisitor(TypeVisitor[ProperType]):
         if state.strict_optional:
             if isinstance(self.s, (NoneType, UninhabitedType)):
                 return t
-            elif isinstance(self.s, UnboundType):
+            elif isinstance(self.s, (UnboundType, AnyType)):
                 return AnyType(TypeOfAny.special_form)
             else:
                 return mypy.typeops.make_simplified_union([self.s, t])

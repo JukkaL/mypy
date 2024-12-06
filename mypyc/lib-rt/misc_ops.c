@@ -563,7 +563,7 @@ int CPyStatics_Initialize(PyObject **statics,
             while (num-- > 0) {
                 size_t len;
                 data = parse_int(data, &len);
-                PyObject *obj = PyUnicode_FromStringAndSize(data, len);
+                PyObject *obj = PyUnicode_DecodeUTF8(data, len, "surrogatepass");
                 if (obj == NULL) {
                     return -1;
                 }

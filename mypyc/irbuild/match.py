@@ -131,7 +131,7 @@ class MatchVisitor(TraverserVisitor):
             else slow_isinstance_op
         )
 
-        cond = self.builder.call_c(
+        cond = self.builder.primitive_op(
             isinstance_op, [self.subject, self.builder.accept(pattern.class_ref)], pattern.line
         )
 
@@ -246,7 +246,7 @@ class MatchVisitor(TraverserVisitor):
             self.builder.activate_block(self.code_block)
             self.code_block = BasicBlock()
 
-            rest = self.builder.call_c(dict_copy, [self.subject], pattern.rest.line)
+            rest = self.builder.primitive_op(dict_copy, [self.subject], pattern.rest.line)
 
             target = self.builder.get_assignment_target(pattern.rest)
 

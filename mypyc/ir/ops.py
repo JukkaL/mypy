@@ -625,7 +625,7 @@ class PrimitiveDescription:
             assert error_kind == ERR_NEVER
 
     def __repr__(self) -> str:
-        return f"<PrimitiveDescription {self.name}>"
+        return f"<PrimitiveDescription {self.name!r}: {self.arg_types}>"
 
 
 class PrimitiveOp(RegisterOp):

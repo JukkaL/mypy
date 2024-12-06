@@ -111,6 +111,29 @@ def test_len() -> None:
     assert len(b) == 3
     assert len(bytes()) == 0
 
+def test_ord() -> None:
+    assert ord(b'a') == ord('a')
+    assert ord(b'a' + bytes()) == ord('a')
+    assert ord(b'\x00') == 0
+    assert ord(b'\x00' + bytes()) == 0
+    assert ord(b'\xfe') == 254
+    assert ord(b'\xfe' + bytes()) == 254
+
+    with assertRaises(TypeError):
+        ord(b'aa')
+    with assertRaises(TypeError):
+        ord(b'')
+
+def test_ord_bytesarray() -> None:
+    assert ord(bytearray(b'a')) == ord('a')
+    assert ord(bytearray(b'\x00')) == 0
+    assert ord(bytearray(b'\xfe')) == 254
+
+    with assertRaises(TypeError):
+        ord(bytearray(b'aa'))
+    with assertRaises(TypeError):
+        ord(bytearray(b''))
+
 [case testBytesSlicing]
 def test_bytes_slicing() -> None:
     b = b'abcdefg'

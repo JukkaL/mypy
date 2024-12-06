@@ -182,13 +182,31 @@ def int_to_int(n):
 L0:
     return n
 
-[case testIntUnaryPlus]
+[case testIntUnaryOps]
+def unary_minus(n: int) -> int:
+    x = -n
+    return x
 def unary_plus(n: int) -> int:
     x = +n
     return x
+def unary_invert(n: int) -> int:
+    x = ~n
+    return x
 [out]
+def unary_minus(n):
+    n, r0, x :: int
+L0:
+    r0 = CPyTagged_Negate(n)
+    x = r0
+    return x
 def unary_plus(n):
     n, x :: int
 L0:
     x = n
+    return x
+def unary_invert(n):
+    n, r0, x :: int
+L0:
+    r0 = CPyTagged_Invert(n)
+    x = r0
     return x

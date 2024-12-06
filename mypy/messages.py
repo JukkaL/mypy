@@ -870,7 +870,10 @@ class MessageBuilder:
             )
             if call:
                 self.note_call(original_caller_type, call, context, code=code)
-
+        if isinstance(callee_type, Instance) and callee_type.type.is_protocol:
+            call = find_member("__call__", callee_type, callee_type, is_operator=True)
+            if call:
+                self.note_call(callee_type, call, context, code=code)
         self.maybe_note_concatenate_pos_args(original_caller_type, callee_type, context, code)
 
     def maybe_note_concatenate_pos_args(
@@ -1394,7 +1397,7 @@ class MessageBuilder:
             self.fail("Cannot infer function type argument", context)
 
     def invalid_var_arg(self, typ: Type, context: Context) -> None:
-        self.fail("List or tuple expected as variadic arguments", context)
+        self.fail("Expected iterable as variadic argument", context)
 
     def invalid_keyword_var_arg(self, typ: Type, is_mapping: bool, context: Context) -> None:
         typ = get_proper_type(typ)

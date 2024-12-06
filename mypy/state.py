@@ -24,5 +24,5 @@ class StrictOptionalState:
             self.strict_optional = saved
 
 
-state: Final = StrictOptionalState(strict_optional=False)
+state: Final = StrictOptionalState(strict_optional=True)
 find_occurrences: tuple[str, str] | None = None

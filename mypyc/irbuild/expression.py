@@ -10,6 +10,7 @@ import math
 from typing import Callable, Sequence
 
 from mypy.nodes import (
+    ARG_NAMED,
     ARG_POS,
     LDEF,
     AssertTypeExpr,
@@ -59,6 +60,7 @@ from mypyc.ir.ops import (
     Integer,
     LoadAddress,
     LoadLiteral,
+    PrimitiveDescription,
     RaiseStandardError,
     Register,
     TupleGet,
@@ -98,7 +100,7 @@ from mypyc.primitives.dict_ops import dict_get_item_op, dict_new_op, dict_set_it
 from mypyc.primitives.generic_ops import iter_op
 from mypyc.primitives.list_ops import list_append_op, list_extend_op, list_slice_op
 from mypyc.primitives.misc_ops import ellipsis_op, get_module_dict_op, new_slice_op, type_op
-from mypyc.primitives.registry import CFunctionDescription, builtin_names
+from mypyc.primitives.registry import builtin_names
 from mypyc.primitives.set_ops import set_add_op, set_in_op, set_update_op
 from mypyc.primitives.str_ops import str_slice_op
 from mypyc.primitives.tuple_ops import list_tuple_op, tuple_slice_op
@@ -181,7 +183,7 @@ def transform_name_expr(builder: IRBuilder, expr: NameExpr) -> Value:
             # AST doesn't include a Var node for the module. We
             # instead load the module separately on each access.
             mod_dict = builder.call_c(get_module_dict_op, [], expr.line)
-            obj = builder.call_c(
+            obj = builder.primitive_op(
                 dict_get_item_op, [mod_dict, builder.load_str(expr.node.fullname)], expr.line
             )
             return obj
@@ -355,6 +357,7 @@ def translate_method_call(builder: IRBuilder, expr: CallExpr, callee: MemberExpr
         and isinstance(callee.expr.node, TypeInfo)
         and callee.expr.node in builder.mapper.type_to_ir
         and builder.mapper.type_to_ir[callee.expr.node].has_method(callee.name)
+        and all(kind in (ARG_POS, ARG_NAMED) for kind in expr.arg_kinds)
     ):
         # Call a method via the *class*
         assert isinstance(callee.expr.node, TypeInfo)
@@ -476,7 +479,7 @@ def translate_super_method_call(builder: IRBuilder, expr: CallExpr, callee: Supe
         # Grab first argument
         vself: Value = builder.self()
         if decl.kind == FUNC_CLASSMETHOD:
-            vself = builder.call_c(type_op, [vself], expr.line)
+            vself = builder.primitive_op(type_op, [vself], expr.line)
         elif builder.fn_info.is_generator:
             # For generator classes, the self target is the 6th value
             # in the symbol table (which is an ordered dict). This is sort
@@ -953,7 +956,7 @@ def transform_tuple_expr(builder: IRBuilder, expr: TupleExpr) -> Value:
 def _visit_tuple_display(builder: IRBuilder, expr: TupleExpr) -> Value:
     """Create a list, then turn it into a tuple."""
     val_as_list = _visit_list_display(builder, expr.items, expr.line)
-    return builder.call_c(list_tuple_op, [val_as_list], expr.line)
+    return builder.primitive_op(list_tuple_op, [val_as_list], expr.line)
 
 
 def transform_dict_expr(builder: IRBuilder, expr: DictExpr) -> Value:
@@ -977,8 +980,8 @@ def _visit_display(
     builder: IRBuilder,
     items: list[Expression],
     constructor_op: Callable[[list[Value], int], Value],
-    append_op: CFunctionDescription,
-    extend_op: CFunctionDescription,
+    append_op: PrimitiveDescription,
+    extend_op: PrimitiveDescription,
     line: int,
     is_list: bool,
 ) -> Value:
@@ -999,7 +1002,7 @@ def _visit_display(
         if result is None:
             result = constructor_op(initial_items, line)
 
-        builder.call_c(extend_op if starred else append_op, [result, value], line)
+        builder.primitive_op(extend_op if starred else append_op, [result, value], line)
 
     if result is None:
         result = constructor_op(initial_items, line)
@@ -1028,7 +1031,7 @@ def transform_dictionary_comprehension(builder: IRBuilder, o: DictionaryComprehe
     def gen_inner_stmts() -> None:
         k = builder.accept(o.key)
         v = builder.accept(o.value)
-        builder.call_c(dict_set_item_op, [builder.read(d), k, v], o.line)
+        builder.primitive_op(dict_set_item_op, [builder.read(d), k, v], o.line)
 
     comprehension_helper(builder, loop_params, gen_inner_stmts, o.line)
     return builder.read(d)
@@ -1045,12 +1048,12 @@ def transform_slice_expr(builder: IRBuilder, expr: SliceExpr) -> Value:
             return builder.accept(arg)
 
     args = [get_arg(expr.begin_index), get_arg(expr.end_index), get_arg(expr.stride)]
-    return builder.call_c(new_slice_op, args, expr.line)
+    return builder.primitive_op(new_slice_op, args, expr.line)
 
 
 def transform_generator_expr(builder: IRBuilder, o: GeneratorExpr) -> Value:
     builder.warning("Treating generator comprehension as list", o.line)
-    return builder.call_c(iter_op, [translate_list_comprehension(builder, o)], o.line)
+    return builder.primitive_op(iter_op, [translate_list_comprehension(builder, o)], o.line)
 
 
 def transform_assignment_expr(builder: IRBuilder, o: AssignmentExpr) -> Value:

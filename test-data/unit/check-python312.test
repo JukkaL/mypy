@@ -1525,6 +1525,29 @@ reveal_type(E[str]().a)  # N: Revealed type is "builtins.list[Any]"
 [builtins fixtures/type.pyi]
 [typing fixtures/typing-full.pyi]
 
+[case testPEP695TypeAliasInvalidGenericConstraint]
+class A[T]:
+    class a[S: (int, list[T])]: pass                # E: Name "T" is not defined
+    type b[S: (int, list[T])] = S                   # E: TypeVar constraint type cannot be parametrized by type variables
+    def c[S: (int, list[T])](self) -> None: ...     # E: TypeVar constraint type cannot be parametrized by type variables
+[builtins fixtures/tuple.pyi]
+[typing fixtures/typing-full.pyi]
+
+[case testPEP695TypeAliasUnboundTypeVarConstraint]
+from typing import TypeVar
+T = TypeVar("T")
+class a[S: (int, list[T])]: pass                # E: Type variable "__main__.T" is unbound \
+                                                # N: (Hint: Use "Generic[T]" or "Protocol[T]" base class to bind "T" inside a class) \
+                                                # N: (Hint: Use "T" in function signature to bind "T" inside a function)
+type b[S: (int, list[T])] = S                   # E: Type variable "__main__.T" is unbound \
+                                                # N: (Hint: Use "Generic[T]" or "Protocol[T]" base class to bind "T" inside a class) \
+                                                # N: (Hint: Use "T" in function signature to bind "T" inside a function)
+def c[S: (int, list[T])](self) -> None: ...     # E: Type variable "__main__.T" is unbound \
+                                                # N: (Hint: Use "Generic[T]" or "Protocol[T]" base class to bind "T" inside a class) \
+                                                # N: (Hint: Use "T" in function signature to bind "T" inside a function)
+[builtins fixtures/tuple.pyi]
+[typing fixtures/typing-full.pyi]
+
 [case testPEP695RedefineAsTypeAlias1]
 class C: pass
 type C = int  # E: Name "C" already defined on line 1

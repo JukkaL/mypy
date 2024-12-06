@@ -2473,7 +2473,8 @@ def func(caller: Caller) -> None:
     pass
 
 func(call)
-func(bad)  # E: Argument 1 to "func" has incompatible type "Callable[[int, VarArg(str)], None]"; expected "Caller"
+func(bad)  # E: Argument 1 to "func" has incompatible type "Callable[[int, VarArg(str)], None]"; expected "Caller" \
+           # N: "Caller.__call__" has type "Callable[[Arg(str, 'x'), VarArg(int)], None]"
 [builtins fixtures/tuple.pyi]
 [out]
 
@@ -2510,7 +2511,8 @@ def func(caller: Caller) -> None:
     pass
 
 func(call)
-func(bad)  # E: Argument 1 to "func" has incompatible type "Callable[[int], int]"; expected "Caller"
+func(bad)  # E: Argument 1 to "func" has incompatible type "Callable[[int], int]"; expected "Caller" \
+           # N: "Caller.__call__" has type "Callable[[Arg(T, 'x')], T]"
 [builtins fixtures/tuple.pyi]
 [out]
 
@@ -2530,7 +2532,8 @@ def func(caller: Caller) -> None:
     pass
 
 func(call)
-func(bad)  # E: Argument 1 to "func" has incompatible type "Callable[[T], Tuple[T, T]]"; expected "Caller"
+func(bad)  # E: Argument 1 to "func" has incompatible type "Callable[[T], Tuple[T, T]]"; expected "Caller" \
+           # N: "Caller.__call__" has type "Callable[[Arg(int, 'x')], int]"
 [builtins fixtures/tuple.pyi]
 [out]
 
@@ -2557,7 +2560,8 @@ def func(caller: Caller) -> None:
     pass
 
 func(call)
-func(bad)  # E: Argument 1 to "func" has incompatible type "Callable[[Union[int, str]], Union[int, str]]"; expected "Caller"
+func(bad)  # E: Argument 1 to "func" has incompatible type "Callable[[Union[int, str]], Union[int, str]]"; expected "Caller" \
+           # N: "Caller.__call__" has type overloaded function
 [out]
 
 [case testCallableImplementsProtocolExtraNote]
@@ -2596,7 +2600,8 @@ def anon(caller: CallerAnon) -> None:
 
 
 func(call)
-func(bad)  # E: Argument 1 to "func" has incompatible type "Callable[[str], None]"; expected "Caller"
+func(bad)  # E: Argument 1 to "func" has incompatible type "Callable[[str], None]"; expected "Caller" \
+           # N: "Caller.__call__" has type "Callable[[Arg(str, 'x')], None]"
 anon(bad)
 [out]
 
@@ -2619,7 +2624,8 @@ a: Other
 b: Bad
 
 func(a)
-func(b)  # E: Argument 1 to "func" has incompatible type "Bad"; expected "One"
+func(b)  # E: Argument 1 to "func" has incompatible type "Bad"; expected "One" \
+         # N: "One.__call__" has type "Callable[[Arg(str, 'x')], None]"
 [out]
 
 [case testJoinProtocolCallback]
@@ -3589,7 +3595,8 @@ test(C)  # E: Argument 1 to "test" has incompatible type "Type[C]"; expected "P"
          # N:     Expected: \
          # N:         def __call__(x: int, y: int) -> Any \
          # N:     Got: \
-         # N:         def __init__(x: int, y: str) -> C
+         # N:         def __init__(x: int, y: str) -> C \
+         # N: "P.__call__" has type "Callable[[Arg(int, 'x'), Arg(int, 'y')], Any]"
 
 [case testProtocolClassObjectPureCallback]
 from typing import Any, ClassVar, Protocol
@@ -3610,7 +3617,8 @@ test(C)  # E: Argument 1 to "test" has incompatible type "Type[C]"; expected "P"
          # N:     Expected: \
          # N:         def __call__(x: int, y: int) -> Any \
          # N:     Got: \
-         # N:         def __init__(x: int, y: str) -> C
+         # N:         def __init__(x: int, y: str) -> C \
+         # N: "P.__call__" has type "Callable[[Arg(int, 'x'), Arg(int, 'y')], Any]"
 [builtins fixtures/type.pyi]
 
 [case testProtocolClassObjectCallableError]

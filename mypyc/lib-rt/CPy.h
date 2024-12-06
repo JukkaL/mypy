@@ -730,6 +730,7 @@ bool CPyStr_IsTrue(PyObject *obj);
 Py_ssize_t CPyStr_Size_size_t(PyObject *str);
 PyObject *CPy_Decode(PyObject *obj, PyObject *encoding, PyObject *errors);
 PyObject *CPy_Encode(PyObject *obj, PyObject *encoding, PyObject *errors);
+CPyTagged CPyStr_Ord(PyObject *obj);
 
 
 // Bytes operations
@@ -740,6 +741,7 @@ PyObject *CPyBytes_GetSlice(PyObject *obj, CPyTagged start, CPyTagged end);
 CPyTagged CPyBytes_GetItem(PyObject *o, CPyTagged index);
 PyObject *CPyBytes_Concat(PyObject *a, PyObject *b);
 PyObject *CPyBytes_Join(PyObject *sep, PyObject *iter);
+CPyTagged CPyBytes_Ord(PyObject *obj);
 
 
 int CPyBytes_Compare(PyObject *left, PyObject *right);

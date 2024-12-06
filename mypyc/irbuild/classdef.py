@@ -256,7 +256,7 @@ class NonExtClassBuilder(ClassBuilder):
         )
 
         # Add the non-extension class to the dict
-        self.builder.call_c(
+        self.builder.primitive_op(
             dict_set_item_op,
             [
                 self.builder.load_globals_dict(),
@@ -292,7 +292,7 @@ class ExtClassBuilder(ClassBuilder):
             return
         typ = self.builder.load_native_type_object(self.cdef.fullname)
         value = self.builder.accept(stmt.rvalue)
-        self.builder.call_c(
+        self.builder.primitive_op(
             py_setattr_op, [typ, self.builder.load_str(lvalue.name), value], stmt.line
         )
         if self.builder.non_function_scope() and stmt.is_final_def:
@@ -452,7 +452,7 @@ def allocate_class(builder: IRBuilder, cdef: ClassDef) -> Value:
             )
         )
     # Populate a '__mypyc_attrs__' field containing the list of attrs
-    builder.call_c(
+    builder.primitive_op(
         py_setattr_op,
         [
             tp,
@@ -466,7 +466,7 @@ def allocate_class(builder: IRBuilder, cdef: ClassDef) -> Value:
     builder.add(InitStatic(tp, cdef.name, builder.module_name, NAMESPACE_TYPE))
 
     # Add it to the dict
-    builder.call_c(
+    builder.primitive_op(
         dict_set_item_op, [builder.load_globals_dict(), builder.load_str(cdef.name), tp], cdef.line
     )
 
@@ -483,7 +483,7 @@ def make_generic_base_class(
     for tv, type_param in zip(tvs, type_args):
         if type_param.kind == TYPE_VAR_TUPLE_KIND:
             # Evaluate *Ts for a TypeVarTuple
-            it = builder.call_c(iter_op, [tv], line)
+            it = builder.primitive_op(iter_op, [tv], line)
             tv = builder.call_c(next_op, [it], line)
         args.append(tv)
 
@@ -493,7 +493,7 @@ def make_generic_base_class(
     else:
         arg = builder.new_tuple(args, line)
 
-    base = builder.call_c(py_get_item_op, [gent, arg], line)
+    base = builder.primitive_op(py_get_item_op, [gent, arg], line)
     return base
 
 
@@ -513,7 +513,7 @@ def populate_non_ext_bases(builder: IRBuilder, cdef: ClassDef) -> Value:
     is_named_tuple = cdef.info.is_named_tuple
     ir = builder.mapper.type_to_ir[cdef.info]
     bases = []
-    for cls in cdef.info.mro[1:]:
+    for cls in (b.type for b in cdef.info.bases):
         if cls.fullname == "builtins.object":
             continue
         if is_named_tuple and cls.fullname in (
@@ -603,7 +603,7 @@ def setup_non_ext_dict(
     This class dictionary is passed to the metaclass constructor.
     """
     # Check if the metaclass defines a __prepare__ method, and if so, call it.
-    has_prepare = builder.call_c(
+    has_prepare = builder.primitive_op(
         py_hasattr_op, [metaclass, builder.load_str("__prepare__")], cdef.line
     )
 
@@ -661,7 +661,7 @@ def add_non_ext_class_attr_ann(
             typ = builder.add(LoadAddress(type_object_op.type, type_object_op.src, stmt.line))
 
     key = builder.load_str(lvalue.name)
-    builder.call_c(dict_set_item_op, [non_ext.anns, key, typ], stmt.line)
+    builder.primitive_op(dict_set_item_op, [non_ext.anns, key, typ], stmt.line)
 
 
 def add_non_ext_class_attr(
@@ -682,7 +682,7 @@ def add_non_ext_class_attr(
         # are final.
         if (
             cdef.info.bases
-            and cdef.info.bases[0].type.fullname == "enum.Enum"
+            and cdef.info.bases[0].type.is_enum
             # Skip these since Enum will remove it
             and lvalue.name not in EXCLUDED_ENUM_ATTRIBUTES
         ):

@@ -219,11 +219,43 @@ method_op(
     extra_int_constants=[(0, pointer_rprimitive)],
 )
 
+# str.encode(encoding) - utf8 strict specialization
+str_encode_utf8_strict = custom_op(
+    arg_types=[str_rprimitive],
+    return_type=bytes_rprimitive,
+    c_function_name="PyUnicode_AsUTF8String",
+    error_kind=ERR_MAGIC,
+)
+
+# str.encode(encoding) - ascii strict specialization
+str_encode_ascii_strict = custom_op(
+    arg_types=[str_rprimitive],
+    return_type=bytes_rprimitive,
+    c_function_name="PyUnicode_AsASCIIString",
+    error_kind=ERR_MAGIC,
+)
+
+# str.encode(encoding) - latin1 strict specialization
+str_encode_latin1_strict = custom_op(
+    arg_types=[str_rprimitive],
+    return_type=bytes_rprimitive,
+    c_function_name="PyUnicode_AsLatin1String",
+    error_kind=ERR_MAGIC,
+)
+
 # str.encode(encoding, errors)
 method_op(
     name="encode",
     arg_types=[str_rprimitive, str_rprimitive, str_rprimitive],
     return_type=bytes_rprimitive,
     c_function_name="CPy_Encode",
+    error_kind=ERR_MAGIC,
+)
+
+function_op(
+    name="builtins.ord",
+    arg_types=[str_rprimitive],
+    return_type=int_rprimitive,
+    c_function_name="CPyStr_Ord",
     error_kind=ERR_MAGIC,
 )

@@ -2619,3 +2619,39 @@ def test_final_attribute() -> None:
     assert C.a['x'] == 'y'
     assert C.b['x'] == 'y'
     assert C.a is C.b
+
+[case testClassDerivedFromIntEnum]
+from enum import IntEnum, auto
+
+class Player(IntEnum):
+    MIN = auto()
+
+print(f'{Player.MIN = }')
+[file driver.py]
+from native import Player
+[out]
+Player.MIN = <Player.MIN: 1>
+
+[case testStaticCallsWithUnpackingArgs]
+from typing import Tuple
+
+class Foo:
+  @staticmethod
+  def static(a: int, b: int, c: int) -> Tuple[int, int, int]:
+    return (c+1, a+2, b+3)
+
+  @classmethod
+  def clsmethod(cls, a: int, b: int, c: int) -> Tuple[int, int, int]:
+    return (c+1, a+2, b+3)
+
+
+print(Foo.static(*[10, 20, 30]))
+print(Foo.static(*(40, 50), *[60]))
+assert Foo.static(70, 80, *[90]) == Foo.clsmethod(70, *(80, 90))
+
+[file driver.py]
+import native
+
+[out]
+(31, 12, 23)
+(61, 42, 53)

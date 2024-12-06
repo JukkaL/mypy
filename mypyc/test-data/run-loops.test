@@ -228,6 +228,7 @@ def nested_enumerate() -> None:
             assert i == inner
             inner += 1
         outer += 1
+    assert i == 2
     assert outer_seen == l1
 
 def nested_range() -> None:
@@ -464,6 +465,29 @@ assert f([6, 7], [8, 9]) == [(0, 6, 8), (1, 7, 9)]
 assert g([6, 7], ['a', 'b']) == [(0, 6, 'a'), (1, 7, 'b')]
 assert f([6, 7], [8]) == [(0, 6, 8)]
 assert f([6], [8, 9]) == [(0, 6, 8)]
+
+[case testEnumerateEmptyList]
+from typing import List
+
+def get_enumerate_locals(iterable: List[int]) -> int:
+    for i, j in enumerate(iterable):
+        pass
+    try:
+        return i
+    except NameError:
+        return -100
+
+[file driver.py]
+from native import get_enumerate_locals
+
+print(get_enumerate_locals([]))
+print(get_enumerate_locals([55]))
+print(get_enumerate_locals([551, 552]))
+
+[out]
+-100
+0
+1
 
 [case testIterTypeTrickiness]
 # Test inferring the type of a for loop body doesn't cause us grief

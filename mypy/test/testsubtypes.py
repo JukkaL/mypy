@@ -4,7 +4,7 @@ from mypy.nodes import CONTRAVARIANT, COVARIANT, INVARIANT
 from mypy.subtypes import is_subtype
 from mypy.test.helpers import Suite
 from mypy.test.typefixture import InterfaceTypeFixture, TypeFixture
-from mypy.types import Instance, Type, UnpackType
+from mypy.types import Instance, Type, UninhabitedType, UnpackType
 
 
 class SubtypingSuite(Suite):
@@ -87,7 +87,7 @@ class SubtypingSuite(Suite):
         )
 
         self.assert_strict_subtype(
-            self.fx.callable(self.fx.a, self.fx.nonet), self.fx.callable(self.fx.a, self.fx.a)
+            self.fx.callable(self.fx.a, UninhabitedType()), self.fx.callable(self.fx.a, self.fx.a)
         )
 
         self.assert_unrelated(

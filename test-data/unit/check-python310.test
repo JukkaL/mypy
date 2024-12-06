@@ -2409,3 +2409,33 @@ def f(x: T) -> None:
         case _:
             accept_seq_int(x)  # E: Argument 1 to "accept_seq_int" has incompatible type "T"; expected "Sequence[int]"
 [builtins fixtures/tuple.pyi]
+
+[case testNarrowingTypeVarMatch]
+# flags: --warn-unreachable
+
+# https://github.com/python/mypy/issues/18126
+from typing import TypeVar
+
+T = TypeVar("T")
+
+def fn_case(arg: T) -> None:
+    match arg:
+        case None:
+            return None
+    return None
+[builtins fixtures/primitives.pyi]
+
+[case testNoneCheckDoesNotMakeTypeVarOptionalMatch]
+from typing import TypeVar
+
+T = TypeVar('T')
+
+def foo(x: T) -> T:
+    out = None
+    out = x
+    match out:
+        case None:
+            pass
+    return out
+
+[builtins fixtures/isinstance.pyi]

@@ -581,6 +581,11 @@ def process_options(
         help="Silently ignore imports of missing modules",
     )
     imports_group.add_argument(
+        "--follow-untyped-imports",
+        action="store_true",
+        help="Typecheck modules without stubs or py.typed marker",
+    )
+    imports_group.add_argument(
         "--follow-imports",
         choices=["normal", "silent", "skip", "error"],
         default="normal",
@@ -805,10 +810,10 @@ def process_options(
         group=lint_group,
     )
     add_invertible_flag(
-        "--report-deprecated-as-error",
+        "--report-deprecated-as-note",
         default=False,
         strict_flag=False,
-        help="Report importing or using deprecated features as errors instead of notes",
+        help="Report importing or using deprecated features as notes instead of errors",
         group=lint_group,
     )
 

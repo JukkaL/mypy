@@ -37,9 +37,9 @@ from testutil import assertRaises
 
 f(True, True)
 f(False, False)
-with assertRaises(NameError):
+with assertRaises(UnboundLocalError):
     f(False, True)
-with assertRaises(NameError):
+with assertRaises(UnboundLocalError):
     g()
 [out]
 lol

@@ -766,18 +766,19 @@ class JoinSuite(Suite):
         self.assert_join(self.fx.t, self.fx.s, self.fx.o)
 
     def test_none(self) -> None:
-        # Any type t joined with None results in t.
-        for t in [
-            NoneType(),
-            self.fx.a,
-            self.fx.o,
-            UnboundType("x"),
-            self.fx.t,
-            self.tuple(),
-            self.callable(self.fx.a, self.fx.b),
-            self.fx.anyt,
-        ]:
-            self.assert_join(t, NoneType(), t)
+        with state.strict_optional_set(False):
+            # Any type t joined with None results in t.
+            for t in [
+                NoneType(),
+                self.fx.a,
+                self.fx.o,
+                UnboundType("x"),
+                self.fx.t,
+                self.tuple(),
+                self.callable(self.fx.a, self.fx.b),
+                self.fx.anyt,
+            ]:
+                self.assert_join(t, NoneType(), t)
 
     def test_unbound_type(self) -> None:
         self.assert_join(UnboundType("x"), UnboundType("x"), self.fx.anyt)
@@ -798,6 +799,9 @@ class JoinSuite(Suite):
 
     def test_any_type(self) -> None:
         # Join against 'Any' type always results in 'Any'.
+        with state.strict_optional_set(False):
+            self.assert_join(NoneType(), self.fx.anyt, self.fx.anyt)
+
         for t in [
             self.fx.anyt,
             self.fx.a,
@@ -834,7 +838,11 @@ class JoinSuite(Suite):
                     self.assert_join(t1, t2, self.fx.o)
 
     def test_simple_generics(self) -> None:
-        self.assert_join(self.fx.ga, self.fx.nonet, self.fx.ga)
+        with state.strict_optional_set(False):
+            self.assert_join(self.fx.ga, self.fx.nonet, self.fx.ga)
+        with state.strict_optional_set(True):
+            self.assert_join(self.fx.ga, self.fx.nonet, UnionType([self.fx.ga, NoneType()]))
+
         self.assert_join(self.fx.ga, self.fx.anyt, self.fx.anyt)
 
         for t in [
@@ -1105,8 +1113,8 @@ class MeetSuite(Suite):
         self.assert_meet(self.fx.a, self.fx.o, self.fx.a)
         self.assert_meet(self.fx.a, self.fx.b, self.fx.b)
         self.assert_meet(self.fx.b, self.fx.o, self.fx.b)
-        self.assert_meet(self.fx.a, self.fx.d, NoneType())
-        self.assert_meet(self.fx.b, self.fx.c, NoneType())
+        self.assert_meet(self.fx.a, self.fx.d, UninhabitedType())
+        self.assert_meet(self.fx.b, self.fx.c, UninhabitedType())
 
     def test_tuples(self) -> None:
         self.assert_meet(self.tuple(), self.tuple(), self.tuple())
@@ -1114,13 +1122,15 @@ class MeetSuite(Suite):
         self.assert_meet(
             self.tuple(self.fx.b, self.fx.c),
             self.tuple(self.fx.a, self.fx.d),
-            self.tuple(self.fx.b, NoneType()),
+            self.tuple(self.fx.b, UninhabitedType()),
         )
 
         self.assert_meet(
             self.tuple(self.fx.a, self.fx.a), self.fx.std_tuple, self.tuple(self.fx.a, self.fx.a)
         )
-        self.assert_meet(self.tuple(self.fx.a), self.tuple(self.fx.a, self.fx.a), NoneType())
+        self.assert_meet(
+            self.tuple(self.fx.a), self.tuple(self.fx.a, self.fx.a), UninhabitedType()
+        )
 
     def test_function_types(self) -> None:
         self.assert_meet(
@@ -1143,7 +1153,7 @@ class MeetSuite(Suite):
     def test_type_vars(self) -> None:
         self.assert_meet(self.fx.t, self.fx.t, self.fx.t)
         self.assert_meet(self.fx.s, self.fx.s, self.fx.s)
-        self.assert_meet(self.fx.t, self.fx.s, NoneType())
+        self.assert_meet(self.fx.t, self.fx.s, UninhabitedType())
 
     def test_none(self) -> None:
         self.assert_meet(NoneType(), NoneType(), NoneType())
@@ -1151,15 +1161,27 @@ class MeetSuite(Suite):
         self.assert_meet(NoneType(), self.fx.anyt, NoneType())
 
         # Any type t joined with None results in None, unless t is Any.
-        for t in [
-            self.fx.a,
-            self.fx.o,
-            UnboundType("x"),
-            self.fx.t,
-            self.tuple(),
-            self.callable(self.fx.a, self.fx.b),
-        ]:
-            self.assert_meet(t, NoneType(), NoneType())
+        with state.strict_optional_set(False):
+            for t in [
+                self.fx.a,
+                self.fx.o,
+                UnboundType("x"),
+                self.fx.t,
+                self.tuple(),
+                self.callable(self.fx.a, self.fx.b),
+            ]:
+                self.assert_meet(t, NoneType(), NoneType())
+
+        with state.strict_optional_set(True):
+            self.assert_meet(self.fx.o, NoneType(), NoneType())
+            for t in [
+                self.fx.a,
+                UnboundType("x"),
+                self.fx.t,
+                self.tuple(),
+                self.callable(self.fx.a, self.fx.b),
+            ]:
+                self.assert_meet(t, NoneType(), UninhabitedType())
 
     def test_unbound_type(self) -> None:
         self.assert_meet(UnboundType("x"), UnboundType("x"), self.fx.anyt)
@@ -1197,28 +1219,28 @@ class MeetSuite(Suite):
         self.assert_meet(self.fx.ga, self.fx.ga, self.fx.ga)
         self.assert_meet(self.fx.ga, self.fx.o, self.fx.ga)
         self.assert_meet(self.fx.ga, self.fx.gb, self.fx.gb)
-        self.assert_meet(self.fx.ga, self.fx.gd, self.fx.nonet)
-        self.assert_meet(self.fx.ga, self.fx.g2a, self.fx.nonet)
+        self.assert_meet(self.fx.ga, self.fx.gd, UninhabitedType())
+        self.assert_meet(self.fx.ga, self.fx.g2a, UninhabitedType())
 
-        self.assert_meet(self.fx.ga, self.fx.nonet, self.fx.nonet)
+        self.assert_meet(self.fx.ga, self.fx.nonet, UninhabitedType())
         self.assert_meet(self.fx.ga, self.fx.anyt, self.fx.ga)
 
         for t in [self.fx.a, self.fx.t, self.tuple(), self.callable(self.fx.a, self.fx.b)]:
-            self.assert_meet(t, self.fx.ga, self.fx.nonet)
+            self.assert_meet(t, self.fx.ga, UninhabitedType())
 
     def test_generics_with_multiple_args(self) -> None:
         self.assert_meet(self.fx.hab, self.fx.hab, self.fx.hab)
         self.assert_meet(self.fx.hab, self.fx.haa, self.fx.hab)
-        self.assert_meet(self.fx.hab, self.fx.had, self.fx.nonet)
+        self.assert_meet(self.fx.hab, self.fx.had, UninhabitedType())
         self.assert_meet(self.fx.hab, self.fx.hbb, self.fx.hbb)
 
     def test_generics_with_inheritance(self) -> None:
         self.assert_meet(self.fx.gsab, self.fx.gb, self.fx.gsab)
-        self.assert_meet(self.fx.gsba, self.fx.gb, self.fx.nonet)
+        self.assert_meet(self.fx.gsba, self.fx.gb, UninhabitedType())
 
     def test_generics_with_inheritance_and_shared_supertype(self) -> None:
-        self.assert_meet(self.fx.gsba, self.fx.gs2a, self.fx.nonet)
-        self.assert_meet(self.fx.gsab, self.fx.gs2a, self.fx.nonet)
+        self.assert_meet(self.fx.gsba, self.fx.gs2a, UninhabitedType())
+        self.assert_meet(self.fx.gsab, self.fx.gs2a, UninhabitedType())
 
     def test_generic_types_and_dynamic(self) -> None:
         self.assert_meet(self.fx.gdyn, self.fx.ga, self.fx.ga)
@@ -1232,33 +1254,33 @@ class MeetSuite(Suite):
 
     def test_meet_interface_types(self) -> None:
         self.assert_meet(self.fx.f, self.fx.f, self.fx.f)
-        self.assert_meet(self.fx.f, self.fx.f2, self.fx.nonet)
+        self.assert_meet(self.fx.f, self.fx.f2, UninhabitedType())
         self.assert_meet(self.fx.f, self.fx.f3, self.fx.f3)
 
     def test_meet_interface_and_class_types(self) -> None:
         self.assert_meet(self.fx.o, self.fx.f, self.fx.f)
-        self.assert_meet(self.fx.a, self.fx.f, self.fx.nonet)
+        self.assert_meet(self.fx.a, self.fx.f, UninhabitedType())
 
         self.assert_meet(self.fx.e, self.fx.f, self.fx.e)
 
     def test_meet_class_types_with_shared_interfaces(self) -> None:
         # These have nothing special with respect to meets, unlike joins. These
         # are for completeness only.
-        self.assert_meet(self.fx.e, self.fx.e2, self.fx.nonet)
-        self.assert_meet(self.fx.e2, self.fx.e3, self.fx.nonet)
+        self.assert_meet(self.fx.e, self.fx.e2, UninhabitedType())
+        self.assert_meet(self.fx.e2, self.fx.e3, UninhabitedType())
 
     def test_meet_with_generic_interfaces(self) -> None:
         fx = InterfaceTypeFixture()
         self.assert_meet(fx.gfa, fx.m1, fx.m1)
         self.assert_meet(fx.gfa, fx.gfa, fx.gfa)
-        self.assert_meet(fx.gfb, fx.m1, fx.nonet)
+        self.assert_meet(fx.gfb, fx.m1, UninhabitedType())
 
     def test_type_type(self) -> None:
         self.assert_meet(self.fx.type_a, self.fx.type_b, self.fx.type_b)
         self.assert_meet(self.fx.type_b, self.fx.type_any, self.fx.type_b)
         self.assert_meet(self.fx.type_b, self.fx.type_type, self.fx.type_b)
-        self.assert_meet(self.fx.type_b, self.fx.type_c, self.fx.nonet)
-        self.assert_meet(self.fx.type_c, self.fx.type_d, self.fx.nonet)
+        self.assert_meet(self.fx.type_b, self.fx.type_c, self.fx.type_never)
+        self.assert_meet(self.fx.type_c, self.fx.type_d, self.fx.type_never)
         self.assert_meet(self.fx.type_type, self.fx.type_any, self.fx.type_any)
         self.assert_meet(self.fx.type_b, self.fx.anyt, self.fx.type_b)
 

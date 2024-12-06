@@ -4725,11 +4725,11 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
 
                 # XXX Issue a warning if condition is always False?
                 with self.binder.frame_context(can_skip=True, fall_through=2):
-                    self.push_type_map(if_map)
+                    self.push_type_map(if_map, from_assignment=False)
                     self.accept(b)
 
                 # XXX Issue a warning if condition is always True?
-                self.push_type_map(else_map)
+                self.push_type_map(else_map, from_assignment=False)
 
             with self.binder.frame_context(can_skip=False, fall_through=2):
                 if s.else_body:
@@ -5310,18 +5310,21 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                     if b.is_unreachable or isinstance(
                         get_proper_type(pattern_type.type), UninhabitedType
                     ):
-                        self.push_type_map(None)
+                        self.push_type_map(None, from_assignment=False)
                         else_map: TypeMap = {}
                     else:
                         pattern_map, else_map = conditional_types_to_typemaps(
                             named_subject, pattern_type.type, pattern_type.rest_type
                         )
                         self.remove_capture_conflicts(pattern_type.captures, inferred_types)
-                        self.push_type_map(pattern_map)
+                        self.push_type_map(pattern_map, from_assignment=False)
                         if pattern_map:
                             for expr, typ in pattern_map.items():
-                                self.push_type_map(self._get_recursive_sub_patterns_map(expr, typ))
-                        self.push_type_map(pattern_type.captures)
+                                self.push_type_map(
+                                    self._get_recursive_sub_patterns_map(expr, typ),
+                                    from_assignment=False,
+                                )
+                        self.push_type_map(pattern_type.captures, from_assignment=False)
                     if g is not None:
                         with self.binder.frame_context(can_skip=False, fall_through=3):
                             gt = get_proper_type(self.expr_checker.accept(g))
@@ -5347,11 +5350,11 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                                                 continue
                                             type_map[named_subject] = type_map[expr]
 
-                            self.push_type_map(guard_map)
+                            self.push_type_map(guard_map, from_assignment=False)
                             self.accept(b)
                     else:
                         self.accept(b)
-                self.push_type_map(else_map)
+                self.push_type_map(else_map, from_assignment=False)
 
             # This is needed due to a quirk in frame_context. Without it types will stay narrowed
             # after the match.
@@ -6274,10 +6277,6 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                 coerce_only_in_literal_context,
             )
 
-        # Strictly speaking, we should also skip this check if the objects in the expr
-        # chain have custom __eq__ or __ne__ methods. But we (maybe optimistically)
-        # assume nobody would actually create a custom objects that considers itself
-        # equal to None.
         if if_map == {} and else_map == {}:
             if_map, else_map = self.refine_away_none_in_comparison(
                 operands, operand_types, expr_indices, narrowable_operand_index_to_hash.keys()
@@ -6602,25 +6601,36 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         For more details about what the different arguments mean, see the
         docstring of 'refine_identity_comparison_expression' up above.
         """
+
         non_optional_types = []
         for i in chain_indices:
             typ = operand_types[i]
             if not is_overlapping_none(typ):
                 non_optional_types.append(typ)
 
-        # Make sure we have a mixture of optional and non-optional types.
-        if len(non_optional_types) == 0 or len(non_optional_types) == len(chain_indices):
-            return {}, {}
+        if_map, else_map = {}, {}
 
-        if_map = {}
-        for i in narrowable_operand_indices:
-            expr_type = operand_types[i]
-            if not is_overlapping_none(expr_type):
-                continue
-            if any(is_overlapping_erased_types(expr_type, t) for t in non_optional_types):
-                if_map[operands[i]] = remove_optional(expr_type)
+        if not non_optional_types or (len(non_optional_types) != len(chain_indices)):
 
-        return if_map, {}
+            # Narrow e.g. `Optional[A] == "x"` or `Optional[A] is "x"` to `A` (which may be
+            # convenient but is strictly not type-safe):
+            for i in narrowable_operand_indices:
+                expr_type = operand_types[i]
+                if not is_overlapping_none(expr_type):
+                    continue
+                if any(is_overlapping_erased_types(expr_type, t) for t in non_optional_types):
+                    if_map[operands[i]] = remove_optional(expr_type)
+
+            # Narrow e.g. `Optional[A] != None` to `A` (which is stricter than the above step and
+            # so type-safe but less convenient, because e.g. `Optional[A] == None` still results
+            # in `Optional[A]`):
+            if any(isinstance(get_proper_type(ot), NoneType) for ot in operand_types):
+                for i in narrowable_operand_indices:
+                    expr_type = operand_types[i]
+                    if is_overlapping_none(expr_type):
+                        else_map[operands[i]] = remove_optional(expr_type)
+
+        return if_map, else_map
 
     def is_len_of_tuple(self, expr: Expression) -> bool:
         """Is this expression a `len(x)` call where x is a tuple or union of tuples?"""
@@ -7365,12 +7375,12 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
     def function_type(self, func: FuncBase) -> FunctionLike:
         return function_type(func, self.named_type("builtins.function"))
 
-    def push_type_map(self, type_map: TypeMap) -> None:
+    def push_type_map(self, type_map: TypeMap, *, from_assignment: bool = True) -> None:
         if type_map is None:
             self.binder.unreachable()
         else:
             for expr, type in type_map.items():
-                self.binder.put(expr, type)
+                self.binder.put(expr, type, from_assignment=from_assignment)
 
     def infer_issubclass_maps(self, node: CallExpr, expr: Expression) -> tuple[TypeMap, TypeMap]:
         """Infer type restrictions for an expression in issubclass call."""
@@ -7686,7 +7696,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             and ((deprecated := node.deprecated) is not None)
             and not self.is_typeshed_stub
         ):
-            warn = self.msg.fail if self.options.report_deprecated_as_error else self.msg.note
+            warn = self.msg.note if self.options.report_deprecated_as_note else self.msg.fail
             warn(deprecated, context, code=codes.DEPRECATED)
 
 
@@ -7743,9 +7753,7 @@ def conditional_types(
         ) and is_proper_subtype(current_type, proposed_type, ignore_promotions=True):
             # Expression is always of one of the types in proposed_type_ranges
             return default, UninhabitedType()
-        elif not is_overlapping_types(
-            current_type, proposed_type, prohibit_none_typevar_overlap=True, ignore_promotions=True
-        ):
+        elif not is_overlapping_types(current_type, proposed_type, ignore_promotions=True):
             # Expression is never of any type in proposed_type_ranges
             return UninhabitedType(), default
         else:

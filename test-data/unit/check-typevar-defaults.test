@@ -728,3 +728,24 @@ class C(Generic[_I]): pass
 
 t: type[C] | int = C
 [builtins fixtures/tuple.pyi]
+
+
+
+[case testGenericTypeAliasWithDefaultTypeVarPreservesNoneInDefault]
+from typing_extensions import TypeVar
+from typing import Generic, Union
+
+T1 = TypeVar("T1", default=Union[int, None])
+T2 = TypeVar("T2", default=Union[int, None])
+
+
+class A(Generic[T1, T2]):
+    def __init__(self, a: T1, b: T2) -> None:
+        self.a = a
+        self.b = b
+
+
+MyA = A[T1, int]
+a: MyA = A(None, 10)
+reveal_type(a.a)  # N: Revealed type is "Union[builtins.int, None]"
+[builtins fixtures/tuple.pyi]

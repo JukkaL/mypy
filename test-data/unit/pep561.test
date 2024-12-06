@@ -187,6 +187,13 @@ b.bf(1)
 testNamespacePkgWStubsWithNamespacePackagesFlag.py:7: error: Argument 1 to "bf" has incompatible type "int"; expected "bool"
 testNamespacePkgWStubsWithNamespacePackagesFlag.py:8: error: Argument 1 to "bf" has incompatible type "int"; expected "bool"
 
+[case testMissingPytypedFlag]
+# pkgs: typedpkg_ns_b
+# flags: --namespace-packages --follow-untyped-imports
+import typedpkg_ns.b.bbb as b
+b.bf("foo", "bar")
+[out]
+testMissingPytypedFlag.py:4: error: Too many arguments for "bf"
 
 [case testTypedPkgNamespaceRegFromImportTwiceMissing]
 # pkgs: typedpkg_ns_a

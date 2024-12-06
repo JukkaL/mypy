@@ -1,8 +1,7 @@
 -- Type checker test cases for reporting deprecations.
 
 
-[case testDeprecatedDisableNotes]
-# flags: --disable-error-code=deprecated
+[case testDeprecatedDisabled]
 
 from typing_extensions import deprecated
 
@@ -15,7 +14,7 @@ f()
 
 
 [case testDeprecatedAsNoteWithErrorCode]
-# flags: --show-error-codes
+# flags: --enable-error-code=deprecated --show-error-codes --report-deprecated-as-note
 
 from typing_extensions import deprecated
 
@@ -29,7 +28,7 @@ f() # N: function __main__.f is deprecated: use f2 instead  [deprecated]
 
 
 [case testDeprecatedAsErrorWithErrorCode]
-# flags: --report-deprecated-as-error --show-error-codes
+# flags: --enable-error-code=deprecated --show-error-codes
 
 from typing_extensions import deprecated
 
@@ -43,41 +42,43 @@ f() # E: function __main__.f is deprecated: use f2 instead  [deprecated]
 
 
 [case testDeprecatedFunction]
+# flags: --enable-error-code=deprecated
 
 from typing_extensions import deprecated
 
 @deprecated("use f2 instead")
 def f() -> None: ...
 
-f  # N: function __main__.f is deprecated: use f2 instead  # type: ignore[deprecated]
-f(1)  # N: function __main__.f is deprecated: use f2 instead \
+f  # E: function __main__.f is deprecated: use f2 instead  # type: ignore[deprecated]
+f(1)  # E: function __main__.f is deprecated: use f2 instead \
       # E: Too many arguments for "f"
-f[1]  # N: function __main__.f is deprecated: use f2 instead \
+f[1]  # E: function __main__.f is deprecated: use f2 instead \
       # E: Value of type "Callable[[], None]" is not indexable
-g = f  # N: function __main__.f is deprecated: use f2 instead
+g = f  # E: function __main__.f is deprecated: use f2 instead
 g()
-t = (f, f, g)  # N: function __main__.f is deprecated: use f2 instead
+t = (f, f, g)  # E: function __main__.f is deprecated: use f2 instead
 
 [builtins fixtures/tuple.pyi]
 
 
 [case testDeprecatedFunctionDifferentModule]
+# flags: --enable-error-code=deprecated
 
 import m
 import p.s
 import m as n
 import p.s as ps
-from m import f  # N: function m.f is deprecated: use f2 instead
-from p.s import g  # N: function p.s.g is deprecated: use g2 instead
+from m import f  # E: function m.f is deprecated: use f2 instead
+from p.s import g  # E: function p.s.g is deprecated: use g2 instead
 from k import *
 
-m.f()  # N: function m.f is deprecated: use f2 instead
-p.s.g()  # N: function p.s.g is deprecated: use g2 instead
-n.f()  # N: function m.f is deprecated: use f2 instead
-ps.g()  # N: function p.s.g is deprecated: use g2 instead
+m.f()  # E: function m.f is deprecated: use f2 instead
+p.s.g()  # E: function p.s.g is deprecated: use g2 instead
+n.f()  # E: function m.f is deprecated: use f2 instead
+ps.g()  # E: function p.s.g is deprecated: use g2 instead
 f()
 g()
-h()  # N: function k.h is deprecated: use h2 instead
+h()  # E: function k.h is deprecated: use h2 instead
 
 [file m.py]
 from typing_extensions import deprecated
@@ -101,6 +102,7 @@ def h() -> None: ...
 
 
 [case testDeprecatedClass]
+# flags: --enable-error-code=deprecated
 
 from typing import Callable, List, Optional, Tuple, Union
 from typing_extensions import deprecated, TypeAlias, TypeVar
@@ -108,65 +110,67 @@ from typing_extensions import deprecated, TypeAlias, TypeVar
 @deprecated("use C2 instead")
 class C: ...
 
-c: C  # N: class __main__.C is deprecated: use C2 instead
-C()  # N: class __main__.C is deprecated: use C2 instead
-C.missing()  # N: class __main__.C is deprecated: use C2 instead \
+c: C  # E: class __main__.C is deprecated: use C2 instead
+C()  # E: class __main__.C is deprecated: use C2 instead
+C.missing()  # E: class __main__.C is deprecated: use C2 instead \
              # E: "Type[C]" has no attribute "missing"
-C.__init__(c)  # N: class __main__.C is deprecated: use C2 instead
-C(1)  # N: class __main__.C is deprecated: use C2 instead \
+C.__init__(c)  # E: class __main__.C is deprecated: use C2 instead
+C(1)  # E: class __main__.C is deprecated: use C2 instead \
       # E: Too many arguments for "C"
 
-D = C  # N: class __main__.C is deprecated: use C2 instead
+D = C  # E: class __main__.C is deprecated: use C2 instead
 D()
-t = (C, C, D)  # N: class __main__.C is deprecated: use C2 instead
+t = (C, C, D)  # E: class __main__.C is deprecated: use C2 instead
 
-u1: Union[C, int] = 1  # N: class __main__.C is deprecated: use C2 instead
+u1: Union[C, int] = 1  # E: class __main__.C is deprecated: use C2 instead
 u1 = 1
-u2 = 1  # type: Union[C, int]  # N: class __main__.C is deprecated: use C2 instead
+u2 = 1  # type: Union[C, int]  # E: class __main__.C is deprecated: use C2 instead
 u2 = 1
 
-c1 = c2 = C()  # N: class __main__.C is deprecated: use C2 instead
-i, c3 = 1, C()  # N: class __main__.C is deprecated: use C2 instead
+c1 = c2 = C()  # E: class __main__.C is deprecated: use C2 instead
+i, c3 = 1, C()  # E: class __main__.C is deprecated: use C2 instead
 
 class E: ...
 
-x1: Optional[C]  # N: class __main__.C is deprecated: use C2 instead
-x2: Union[D, C, E]  # N: class __main__.C is deprecated: use C2 instead
-x3: Union[D, Optional[C], E]  # N: class __main__.C is deprecated: use C2 instead
-x4: Tuple[D, C, E]  # N: class __main__.C is deprecated: use C2 instead
-x5: Tuple[Tuple[D, C], E]  # N: class __main__.C is deprecated: use C2 instead
-x6: List[C]  # N: class __main__.C is deprecated: use C2 instead
-x7: List[List[C]]  # N: class __main__.C is deprecated: use C2 instead
-x8: List[Optional[Tuple[Union[List[C], int]]]]  # N: class __main__.C is deprecated: use C2 instead
-x9: Callable[[int], C]  # N: class __main__.C is deprecated: use C2 instead
-x10: Callable[[int, C, int], int]  # N: class __main__.C is deprecated: use C2 instead
+x1: Optional[C]  # E: class __main__.C is deprecated: use C2 instead
+x2: Union[D, C, E]  # E: class __main__.C is deprecated: use C2 instead
+x3: Union[D, Optional[C], E]  # E: class __main__.C is deprecated: use C2 instead
+x4: Tuple[D, C, E]  # E: class __main__.C is deprecated: use C2 instead
+x5: Tuple[Tuple[D, C], E]  # E: class __main__.C is deprecated: use C2 instead
+x6: List[C]  # E: class __main__.C is deprecated: use C2 instead
+x7: List[List[C]]  # E: class __main__.C is deprecated: use C2 instead
+x8: List[Optional[Tuple[Union[List[C], int]]]]  # E: class __main__.C is deprecated: use C2 instead
+x9: Callable[[int], C]  # E: class __main__.C is deprecated: use C2 instead
+x10: Callable[[int, C, int], int]  # E: class __main__.C is deprecated: use C2 instead
 
 T = TypeVar("T")
-A1: TypeAlias = Optional[C]  # N: class __main__.C is deprecated: use C2 instead
+A1: TypeAlias = Optional[C]  # E: class __main__.C is deprecated: use C2 instead
 x11: A1
-A2: TypeAlias = List[Union[A2, C]]  # N: class __main__.C is deprecated: use C2 instead
+A2: TypeAlias = List[Union[A2, C]]  # E: class __main__.C is deprecated: use C2 instead
 x12: A2
 A3: TypeAlias = List[Optional[T]]
-x13: A3[C]  # N: class __main__.C is deprecated: use C2 instead
+x13: A3[C]  # E: class __main__.C is deprecated: use C2 instead
 
 [builtins fixtures/tuple.pyi]
 
 
 [case testDeprecatedBaseClass]
+# flags: --enable-error-code=deprecated
 
 from typing_extensions import deprecated
 
 @deprecated("use C2 instead")
 class C: ...
 
-class D(C): ...  # N: class __main__.C is deprecated: use C2 instead
+class D(C): ...  # E: class __main__.C is deprecated: use C2 instead
 class E(D): ...
-class F(D, C): ...  # N: class __main__.C is deprecated: use C2 instead
+class F(D, C): ...  # E: class __main__.C is deprecated: use C2 instead
 
 [builtins fixtures/tuple.pyi]
 
 
 [case testDeprecatedClassInTypeVar]
+# flags: --enable-error-code=deprecated
 
 from typing import Generic, TypeVar
 from typing_extensions import deprecated
@@ -175,11 +179,11 @@ class B: ...
 @deprecated("use C2 instead")
 class C: ...
 
-T = TypeVar("T", bound=C)  # N: class __main__.C is deprecated: use C2 instead
+T = TypeVar("T", bound=C)  # E: class __main__.C is deprecated: use C2 instead
 def f(x: T) -> T: ...
 class D(Generic[T]): ...
 
-V = TypeVar("V", B, C)  # N: class __main__.C is deprecated: use C2 instead
+V = TypeVar("V", B, C)  # E: class __main__.C is deprecated: use C2 instead
 def g(x: V) -> V: ...
 class E(Generic[V]): ...
 
@@ -187,6 +191,7 @@ class E(Generic[V]): ...
 
 
 [case testDeprecatedClassInCast]
+# flags: --enable-error-code=deprecated
 
 from typing import cast, Generic
 from typing_extensions import deprecated
@@ -195,13 +200,14 @@ class B: ...
 @deprecated("use C2 instead")
 class C: ...
 
-c = C()  # N: class __main__.C is deprecated: use C2 instead
+c = C()  # E: class __main__.C is deprecated: use C2 instead
 b = cast(B, c)
 
 [builtins fixtures/tuple.pyi]
 
 
 [case testDeprecatedInstanceInFunctionDefinition]
+# flags: --enable-error-code=deprecated
 
 from typing import Generic, List, Optional, TypeVar
 from typing_extensions import deprecated
@@ -209,75 +215,76 @@ from typing_extensions import deprecated
 @deprecated("use C2 instead")
 class C: ...
 
-def f1(c: C) -> None:  # N: class __main__.C is deprecated: use C2 instead
+def f1(c: C) -> None:  # E: class __main__.C is deprecated: use C2 instead
     def g1() -> None: ...
 
-def f2(c: List[Optional[C]]) -> None:  # N: class __main__.C is deprecated: use C2 instead
+def f2(c: List[Optional[C]]) -> None:  # E: class __main__.C is deprecated: use C2 instead
     def g2() -> None: ...
 
-def f3() -> C:  # N: class __main__.C is deprecated: use C2 instead
+def f3() -> C:  # E: class __main__.C is deprecated: use C2 instead
     def g3() -> None: ...
-    return C()  # N: class __main__.C is deprecated: use C2 instead
+    return C()  # E: class __main__.C is deprecated: use C2 instead
 
-def f4() -> List[Optional[C]]:  # N: class __main__.C is deprecated: use C2 instead
+def f4() -> List[Optional[C]]:  # E: class __main__.C is deprecated: use C2 instead
     def g4() -> None: ...
     return []
 
 def f5() -> None:
-    def g5(c: C) -> None: ...  # N: class __main__.C is deprecated: use C2 instead
+    def g5(c: C) -> None: ...  # E: class __main__.C is deprecated: use C2 instead
 
 def f6() -> None:
-    def g6() -> C: ...  # N: class __main__.C is deprecated: use C2 instead
+    def g6() -> C: ...  # E: class __main__.C is deprecated: use C2 instead
 
 
 @deprecated("use D2 instead")
 class D:
 
-    def f1(self, c: C) -> None:  # N: class __main__.C is deprecated: use C2 instead
+    def f1(self, c: C) -> None:  # E: class __main__.C is deprecated: use C2 instead
         def g1() -> None: ...
 
-    def f2(self, c: List[Optional[C]]) -> None:  # N: class __main__.C is deprecated: use C2 instead
+    def f2(self, c: List[Optional[C]]) -> None:  # E: class __main__.C is deprecated: use C2 instead
         def g2() -> None: ...
 
     def f3(self) -> None:
-        def g3(c: C) -> None: ...  # N: class __main__.C is deprecated: use C2 instead
+        def g3(c: C) -> None: ...  # E: class __main__.C is deprecated: use C2 instead
 
     def f4(self) -> None:
-        def g4() -> C: ...  # N: class __main__.C is deprecated: use C2 instead
+        def g4() -> C: ...  # E: class __main__.C is deprecated: use C2 instead
 
 T = TypeVar("T")
 
 @deprecated("use E2 instead")
 class E(Generic[T]):
 
-    def f1(self: E[C]) -> None: ...  # N: class __main__.C is deprecated: use C2 instead
-    def f2(self, e: E[C]) -> None: ...  # N: class __main__.C is deprecated: use C2 instead
-    def f3(self) -> E[C]: ...  # N: class __main__.C is deprecated: use C2 instead
+    def f1(self: E[C]) -> None: ...  # E: class __main__.C is deprecated: use C2 instead
+    def f2(self, e: E[C]) -> None: ...  # E: class __main__.C is deprecated: use C2 instead
+    def f3(self) -> E[C]: ...  # E: class __main__.C is deprecated: use C2 instead
 
 [builtins fixtures/tuple.pyi]
 
 
 [case testDeprecatedClassDifferentModule]
+# flags: --enable-error-code=deprecated
 
 import m
 import p.s
 import m as n
 import p.s as ps
-from m import B, C  # N: class m.B is deprecated: use B2 instead \
-                    # N: class m.C is deprecated: use C2 instead
-from p.s import D  # N: class p.s.D is deprecated: use D2 instead
+from m import B, C  # E: class m.B is deprecated: use B2 instead \
+                    # E: class m.C is deprecated: use C2 instead
+from p.s import D  # E: class p.s.D is deprecated: use D2 instead
 from k import *
 
-m.C()  # N: class m.C is deprecated: use C2 instead
-p.s.D()  # N: class p.s.D is deprecated: use D2 instead
-n.C()  # N: class m.C is deprecated: use C2 instead
-ps.D()  # N: class p.s.D is deprecated: use D2 instead
+m.C()  # E: class m.C is deprecated: use C2 instead
+p.s.D()  # E: class p.s.D is deprecated: use D2 instead
+n.C()  # E: class m.C is deprecated: use C2 instead
+ps.D()  # E: class p.s.D is deprecated: use D2 instead
 C()
 D()
-E()  # N: class k.E is deprecated: use E2 instead
+E()  # E: class k.E is deprecated: use E2 instead
 
-x1: m.A  # N: class m.A is deprecated: use A2 instead
-x2: m.A = m.A()  # N: class m.A is deprecated: use A2 instead
+x1: m.A  # E: class m.A is deprecated: use A2 instead
+x2: m.A = m.A()  # E: class m.A is deprecated: use A2 instead
 y1: B
 y2: B = B()
 
@@ -309,6 +316,7 @@ class E: ...
 
 
 [case testDeprecatedClassInitMethod]
+# flags: --enable-error-code=deprecated
 
 from typing_extensions import deprecated
 
@@ -316,14 +324,15 @@ from typing_extensions import deprecated
 class C:
     def __init__(self) -> None: ...
 
-c: C  # N: class __main__.C is deprecated: use C2 instead
-C()  # N: class __main__.C is deprecated: use C2 instead
-C.__init__(c)  # N: class __main__.C is deprecated: use C2 instead
+c: C  # E: class __main__.C is deprecated: use C2 instead
+C()  # E: class __main__.C is deprecated: use C2 instead
+C.__init__(c)  # E: class __main__.C is deprecated: use C2 instead
 
 [builtins fixtures/tuple.pyi]
 
 
 [case testDeprecatedSpecialMethods]
+# flags: --enable-error-code=deprecated
 
 from typing import Iterator
 from typing_extensions import deprecated
@@ -356,19 +365,20 @@ class B:
 
 a = A()
 b = B()
-a + 1  # N: function __main__.A.__add__ is deprecated: no A + int
-1 + a  # N: function __main__.A.__radd__ is deprecated: no int + A
-a += 1  # N: function __main__.A.__iadd__ is deprecated: no A = A + int
-for i in a:  # N: function __main__.A.__iter__ is deprecated: no iteration
+a + 1  # E: function __main__.A.__add__ is deprecated: no A + int
+1 + a  # E: function __main__.A.__radd__ is deprecated: no int + A
+a += 1  # E: function __main__.A.__iadd__ is deprecated: no A = A + int
+for i in a:  # E: function __main__.A.__iter__ is deprecated: no iteration
     reveal_type(i)  # N: Revealed type is "builtins.int"
-1 in a  # N: function __main__.A.__contains__ is deprecated: no in
-1 in b  # N: function __main__.B.__contains__ is deprecated: still no in
-~a  # N: function __main__.A.__invert__ is deprecated: no inversion
+1 in a  # E: function __main__.A.__contains__ is deprecated: no in
+1 in b  # E: function __main__.B.__contains__ is deprecated: still no in
+~a  # E: function __main__.A.__invert__ is deprecated: no inversion
 
 [builtins fixtures/tuple.pyi]
 
 
 [case testDeprecatedOverloadedSpecialMethods]
+# flags: --enable-error-code=deprecated
 
 from typing import Iterator, Union
 from typing_extensions import deprecated, overload
@@ -396,17 +406,18 @@ class A:
     def __iadd__(self, v: Union[int, str]) -> A: ...
 
 a = A()
-a + 1  # N: overload def (__main__.A, builtins.int) of function __main__.A.__add__ is deprecated: no A + int
+a + 1  # E: overload def (__main__.A, builtins.int) of function __main__.A.__add__ is deprecated: no A + int
 a + "x"
 1 + a
-"x" + a  # N: overload def (__main__.A, builtins.str) of function __main__.A.__radd__ is deprecated: no str + A
-a += 1  # N: function __main__.A.__iadd__ is deprecated: no A += Any
-a += "x"  # N: function __main__.A.__iadd__ is deprecated: no A += Any
+"x" + a  # E: overload def (__main__.A, builtins.str) of function __main__.A.__radd__ is deprecated: no str + A
+a += 1  # E: function __main__.A.__iadd__ is deprecated: no A += Any
+a += "x"  # E: function __main__.A.__iadd__ is deprecated: no A += Any
 
 [builtins fixtures/tuple.pyi]
 
 
 [case testDeprecatedMethod]
+# flags: --enable-error-code=deprecated
 
 from typing_extensions import deprecated
 
@@ -424,23 +435,24 @@ class C:
     @staticmethod
     def k() -> None: ...
 
-C.f  # N: function __main__.C.f is deprecated: use g instead
-C().f  # N: function __main__.C.f is deprecated: use g instead
-C().f()  # N: function __main__.C.f is deprecated: use g instead
-C().f(1)  # N: function __main__.C.f is deprecated: use g instead \
+C.f  # E: function __main__.C.f is deprecated: use g instead
+C().f  # E: function __main__.C.f is deprecated: use g instead
+C().f()  # E: function __main__.C.f is deprecated: use g instead
+C().f(1)  # E: function __main__.C.f is deprecated: use g instead \
           # E: Too many arguments for "f" of "C"
-f = C().f  # N: function __main__.C.f is deprecated: use g instead
+f = C().f  # E: function __main__.C.f is deprecated: use g instead
 f()
-t = (C.f, C.f, C.g)  # N: function __main__.C.f is deprecated: use g instead
+t = (C.f, C.f, C.g)  # E: function __main__.C.f is deprecated: use g instead
 
 C().g()
-C().h()  # N: function __main__.C.h is deprecated: use g instead
-C().k()  # N: function __main__.C.k is deprecated: use g instead
+C().h()  # E: function __main__.C.h is deprecated: use g instead
+C().k()  # E: function __main__.C.k is deprecated: use g instead
 
 [builtins fixtures/callable.pyi]
 
 
 [case testDeprecatedClassWithDeprecatedMethod]
+# flags: --enable-error-code=deprecated
 
 from typing_extensions import deprecated
 
@@ -450,14 +462,15 @@ class C:
     def f(self) -> None: ...
     def g(self) -> None: ...
 
-C().f()  # N: class __main__.C is deprecated: use D instead \
-         # N: function __main__.C.f is deprecated: use g instead
-C().g()  # N: class __main__.C is deprecated: use D instead
+C().f()  # E: class __main__.C is deprecated: use D instead \
+         # E: function __main__.C.f is deprecated: use g instead
+C().g()  # E: class __main__.C is deprecated: use D instead
 
 [builtins fixtures/callable.pyi]
 
 
 [case testDeprecatedProperty]
+# flags: --enable-error-code=deprecated
 
 from typing_extensions import deprecated
 
@@ -473,24 +486,25 @@ class C:
     def g(self, v: int) -> None: ...
 
 
-C.f  # N: function __main__.C.f is deprecated: use f2 instead
-C().f  # N: function __main__.C.f is deprecated: use f2 instead
-C().f()  # N: function __main__.C.f is deprecated: use f2 instead \
+C.f  # E: function __main__.C.f is deprecated: use f2 instead
+C().f  # E: function __main__.C.f is deprecated: use f2 instead
+C().f()  # E: function __main__.C.f is deprecated: use f2 instead \
          # E: "int" not callable
-C().f = 1  # N: function __main__.C.f is deprecated: use f2 instead \
+C().f = 1  # E: function __main__.C.f is deprecated: use f2 instead \
            # E: Property "f" defined in "C" is read-only
 
 
 C.g
 C().g
-C().g = 1  # N: function __main__.C.g is deprecated: use g2 instead
-C().g = "x"  # N: function __main__.C.g is deprecated: use g2 instead \
+C().g = 1  # E: function __main__.C.g is deprecated: use g2 instead
+C().g = "x"  # E: function __main__.C.g is deprecated: use g2 instead \
              # E: Incompatible types in assignment (expression has type "str", variable has type "int")
 
 [builtins fixtures/property.pyi]
 
 
 [case testDeprecatedOverloadedFunction]
+# flags: --enable-error-code=deprecated
 
 from typing import Union
 from typing_extensions import deprecated, overload
@@ -502,10 +516,10 @@ def f(x: str) -> str: ...
 @deprecated("use f2 instead")
 def f(x: Union[int, str]) -> Union[int, str]: ...
 
-f  # N: function __main__.f is deprecated: use f2 instead
-f(1)  # N: function __main__.f is deprecated: use f2 instead
-f("x")  # N: function __main__.f is deprecated: use f2 instead
-f(1.0)  # N: function __main__.f is deprecated: use f2 instead \
+f  # E: function __main__.f is deprecated: use f2 instead
+f(1)  # E: function __main__.f is deprecated: use f2 instead
+f("x")  # E: function __main__.f is deprecated: use f2 instead
+f(1.0)  # E: function __main__.f is deprecated: use f2 instead \
         # E: No overload variant of "f" matches argument type "float" \
         # N: Possible overload variants: \
         # N:     def f(x: int) -> int \
@@ -519,7 +533,7 @@ def g(x: str) -> str: ...
 def g(x: Union[int, str]) -> Union[int, str]: ...
 
 g
-g(1)  # N: overload def (x: builtins.int) -> builtins.int of function __main__.g is deprecated: work with str instead
+g(1)  # E: overload def (x: builtins.int) -> builtins.int of function __main__.g is deprecated: work with str instead
 g("x")
 g(1.0)  # E: No overload variant of "g" matches argument type "float" \
         # N: Possible overload variants: \
@@ -535,7 +549,7 @@ def h(x: Union[int, str]) -> Union[int, str]: ...
 
 h
 h(1)
-h("x")  # N: overload def (x: builtins.str) -> builtins.str of function __main__.h is deprecated: work with int instead
+h("x")  # E: overload def (x: builtins.str) -> builtins.str of function __main__.h is deprecated: work with int instead
 h(1.0)  # E: No overload variant of "h" matches argument type "float" \
         # N: Possible overload variants: \
         # N:     def h(x: int) -> int \

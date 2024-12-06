@@ -2492,12 +2492,14 @@ class Child(Base):
 
 [case testDunderReplacePresent]
 # flags: --python-version 3.13
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 @dataclass
 class Coords:
     x: int
     y: int
+    # non-init fields are not allowed with replace:
+    z: int = field(init=False)
 
 
 replaced = Coords(2, 4).__replace__(x=2, y=5)

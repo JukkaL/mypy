@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from contextlib import contextmanager
-from typing import DefaultDict, Iterator, List, Optional, Tuple, Union, cast
+from typing import DefaultDict, Iterator, List, NamedTuple, Optional, Tuple, Union
 from typing_extensions import TypeAlias as _TypeAlias
 
 from mypy.erasetype import remove_instance_last_known_values
@@ -30,6 +30,11 @@ from mypy.typevars import fill_typevars_with_any
 BindableExpression: _TypeAlias = Union[IndexExpr, MemberExpr, NameExpr]
 
 
+class CurrentType(NamedTuple):
+    type: Type
+    from_assignment: bool
+
+
 class Frame:
     """A Frame represents a specific point in the execution of a program.
     It carries information about the current types of expressions at
@@ -44,7 +49,7 @@ class Frame:
 
     def __init__(self, id: int, conditional_frame: bool = False) -> None:
         self.id = id
-        self.types: dict[Key, Type] = {}
+        self.types: dict[Key, CurrentType] = {}
         self.unreachable = False
         self.conditional_frame = conditional_frame
         self.suppress_unreachable_warnings = False
@@ -132,10 +137,10 @@ class ConditionalTypeBinder:
         self.options_on_return.append([])
         return f
 
-    def _put(self, key: Key, type: Type, index: int = -1) -> None:
-        self.frames[index].types[key] = type
+    def _put(self, key: Key, type: Type, from_assignment: bool, index: int = -1) -> None:
+        self.frames[index].types[key] = CurrentType(type, from_assignment)
 
-    def _get(self, key: Key, index: int = -1) -> Type | None:
+    def _get(self, key: Key, index: int = -1) -> CurrentType | None:
         if index < 0:
             index += len(self.frames)
         for i in range(index, -1, -1):
@@ -143,7 +148,7 @@ class ConditionalTypeBinder:
                 return self.frames[i].types[key]
         return None
 
-    def put(self, expr: Expression, typ: Type) -> None:
+    def put(self, expr: Expression, typ: Type, *, from_assignment: bool = True) -> None:
         if not isinstance(expr, (IndexExpr, MemberExpr, NameExpr)):
             return
         if not literal(expr):
@@ -153,7 +158,7 @@ class ConditionalTypeBinder:
         if key not in self.declarations:
             self.declarations[key] = get_declaration(expr)
             self._add_dependencies(key)
-        self._put(key, typ)
+        self._put(key, typ, from_assignment)
 
     def unreachable(self) -> None:
         self.frames[-1].unreachable = True
@@ -164,7 +169,10 @@ class ConditionalTypeBinder:
     def get(self, expr: Expression) -> Type | None:
         key = literal_hash(expr)
         assert key is not None, "Internal error: binder tried to get non-literal"
-        return self._get(key)
+        found = self._get(key)
+        if found is None:
+            return None
+        return found.type
 
     def is_unreachable(self) -> bool:
         # TODO: Copy the value of unreachable into new frames to avoid
@@ -193,7 +201,7 @@ class ConditionalTypeBinder:
         If a key is declared as AnyType, only update it if all the
         options are the same.
         """
-
+        all_reachable = all(not f.unreachable for f in frames)
         frames = [f for f in frames if not f.unreachable]
         changed = False
         keys = {key for f in frames for key in f.types}
@@ -207,17 +215,30 @@ class ConditionalTypeBinder:
                 # know anything about key in at least one possible frame.
                 continue
 
-            type = resulting_values[0]
-            assert type is not None
+            if all_reachable and all(
+                x is not None and not x.from_assignment for x in resulting_values
+            ):
+                # Do not synthesize a new type if we encountered a conditional block
+                # (if, while or match-case) without assignments.
+                # See check-isinstance.test::testNoneCheckDoesNotMakeTypeVarOptional
+                # This is a safe assumption: the fact that we checked something with `is`
+                # or `isinstance` does not change the type of the value.
+                continue
+
+            current_type = resulting_values[0]
+            assert current_type is not None
+            type = current_type.type
             declaration_type = get_proper_type(self.declarations.get(key))
             if isinstance(declaration_type, AnyType):
                 # At this point resulting values can't contain None, see continue above
-                if not all(is_same_type(type, cast(Type, t)) for t in resulting_values[1:]):
+                if not all(
+                    t is not None and is_same_type(type, t.type) for t in resulting_values[1:]
+                ):
                     type = AnyType(TypeOfAny.from_another_any, source_any=declaration_type)
             else:
                 for other in resulting_values[1:]:
                     assert other is not None
-                    type = join_simple(self.declarations[key], type, other)
+                    type = join_simple(self.declarations[key], type, other.type)
                     # Try simplifying resulting type for unions involving variadic tuples.
                     # Technically, everything is still valid without this step, but if we do
                     # not do this, this may create long unions after exiting an if check like:
@@ -236,8 +257,8 @@ class ConditionalTypeBinder:
                         )
                         if simplified == self.declarations[key]:
                             type = simplified
-            if current_value is None or not is_same_type(type, current_value):
-                self._put(key, type)
+            if current_value is None or not is_same_type(type, current_value[0]):
+                self._put(key, type, from_assignment=True)
                 changed = True
 
         self.frames[-1].unreachable = not frames
@@ -374,7 +395,9 @@ class ConditionalTypeBinder:
         key = literal_hash(expr)
         assert key is not None
         enclosers = [get_declaration(expr)] + [
-            f.types[key] for f in self.frames if key in f.types and is_subtype(type, f.types[key])
+            f.types[key].type
+            for f in self.frames
+            if key in f.types and is_subtype(type, f.types[key][0])
         ]
         return enclosers[-1]
 

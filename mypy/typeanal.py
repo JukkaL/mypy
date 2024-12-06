@@ -180,7 +180,7 @@ def analyze_type_alias(
     )
     analyzer.in_dynamic_func = in_dynamic_func
     analyzer.global_scope = global_scope
-    res = type.accept(analyzer)
+    res = analyzer.anal_type(type, nested=False)
     return res, analyzer.aliases_used
 
 
@@ -688,7 +688,9 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
                     code=codes.VALID_TYPE,
                 )
                 return AnyType(TypeOfAny.from_error)
-            return self.anal_type(t.args[0])
+            return self.anal_type(
+                t.args[0], allow_typed_dict_special_forms=self.allow_typed_dict_special_forms
+            )
         elif fullname in ("typing_extensions.Required", "typing.Required"):
             if not self.allow_typed_dict_special_forms:
                 self.fail(
@@ -788,7 +790,7 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
                 if isinstance(imp, ImportFrom) and any(info.name == n[0] for n in imp.names):
                     break
             else:
-                warn = self.fail if self.options.report_deprecated_as_error else self.note
+                warn = self.note if self.options.report_deprecated_as_note else self.fail
                 warn(deprecated, ctx, code=codes.DEPRECATED)
 
     def analyze_type_with_type_info(
@@ -2275,7 +2277,8 @@ def set_any_tvars(
         env[tv.id] = arg
     t = TypeAliasType(node, args, newline, newcolumn)
     if not has_type_var_tuple_type:
-        fixed = expand_type(t, env)
+        with state.strict_optional_set(options.strict_optional):
+            fixed = expand_type(t, env)
         assert isinstance(fixed, TypeAliasType)
         t.args = fixed.args
 

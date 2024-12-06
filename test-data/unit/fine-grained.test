@@ -10682,6 +10682,8 @@ main:4: error: Incompatible types in assignment (expression has type "f", variab
 
 
 [case testDeprecatedAddKeepChangeAndRemoveFunctionDeprecation]
+# flags: --enable-error-code=deprecated
+
 from a import f
 f()
 import a
@@ -10711,18 +10713,19 @@ def f() -> None: ...
 [builtins fixtures/tuple.pyi]
 [out]
 ==
-main:1: note: function a.f is deprecated: use f2 instead
-main:4: note: function a.f is deprecated: use f2 instead
+main:3: error: function a.f is deprecated: use f2 instead
+main:6: error: function a.f is deprecated: use f2 instead
 ==
-main:1: note: function a.f is deprecated: use f2 instead
-main:4: note: function a.f is deprecated: use f2 instead
+main:3: error: function a.f is deprecated: use f2 instead
+main:6: error: function a.f is deprecated: use f2 instead
 ==
-main:1: note: function a.f is deprecated: use f3 instead
-main:4: note: function a.f is deprecated: use f3 instead
+main:3: error: function a.f is deprecated: use f3 instead
+main:6: error: function a.f is deprecated: use f3 instead
 ==
 
 
 [case testDeprecatedRemoveFunctionDeprecation]
+# flags: --enable-error-code=deprecated
 from a import f
 f()
 import a
@@ -10738,11 +10741,12 @@ def f() -> None: ...
 
 [builtins fixtures/tuple.pyi]
 [out]
-main:1: note: function a.f is deprecated: use f2 instead
-main:4: note: function a.f is deprecated: use f2 instead
+main:2: error: function a.f is deprecated: use f2 instead
+main:5: error: function a.f is deprecated: use f2 instead
 ==
 
 [case testDeprecatedKeepFunctionDeprecation]
+# flags: --enable-error-code=deprecated
 from a import f
 f()
 import a
@@ -10760,14 +10764,15 @@ def f() -> None: ...
 
 [builtins fixtures/tuple.pyi]
 [out]
-main:1: note: function a.f is deprecated: use f2 instead
-main:4: note: function a.f is deprecated: use f2 instead
+main:2: error: function a.f is deprecated: use f2 instead
+main:5: error: function a.f is deprecated: use f2 instead
 ==
-main:1: note: function a.f is deprecated: use f2 instead
-main:4: note: function a.f is deprecated: use f2 instead
+main:2: error: function a.f is deprecated: use f2 instead
+main:5: error: function a.f is deprecated: use f2 instead
 
 
 [case testDeprecatedAddFunctionDeprecationIndirectImport]
+# flags: --enable-error-code=deprecated
 from b import f
 f()
 import b
@@ -10787,12 +10792,13 @@ def f() -> int: ...
 [builtins fixtures/tuple.pyi]
 [out]
 ==
-b.py:1: note: function a.f is deprecated: use f2 instead
-main:1: note: function a.f is deprecated: use f2 instead
-main:4: note: function a.f is deprecated: use f2 instead
+b.py:1: error: function a.f is deprecated: use f2 instead
+main:2: error: function a.f is deprecated: use f2 instead
+main:5: error: function a.f is deprecated: use f2 instead
 
 
 [case testDeprecatedChangeFunctionDeprecationIndirectImport]
+# flags: --enable-error-code=deprecated
 from b import f
 f()
 import b
@@ -10813,15 +10819,16 @@ def f() -> int: ...
 
 [builtins fixtures/tuple.pyi]
 [out]
-b.py:1: note: function a.f is deprecated: use f1 instead
-main:1: note: function a.f is deprecated: use f1 instead
-main:4: note: function a.f is deprecated: use f1 instead
+b.py:1: error: function a.f is deprecated: use f1 instead
+main:2: error: function a.f is deprecated: use f1 instead
+main:5: error: function a.f is deprecated: use f1 instead
 ==
-b.py:1: note: function a.f is deprecated: use f2 instead
-main:1: note: function a.f is deprecated: use f2 instead
-main:4: note: function a.f is deprecated: use f2 instead
+b.py:1: error: function a.f is deprecated: use f2 instead
+main:2: error: function a.f is deprecated: use f2 instead
+main:5: error: function a.f is deprecated: use f2 instead
 
 [case testDeprecatedRemoveFunctionDeprecationIndirectImport]
+# flags: --enable-error-code=deprecated
 from b import f
 f()
 import b
@@ -10840,13 +10847,14 @@ def f() -> int: ...
 
 [builtins fixtures/tuple.pyi]
 [out]
-b.py:1: note: function a.f is deprecated: use f1 instead
-main:1: note: function a.f is deprecated: use f1 instead
-main:4: note: function a.f is deprecated: use f1 instead
+b.py:1: error: function a.f is deprecated: use f1 instead
+main:2: error: function a.f is deprecated: use f1 instead
+main:5: error: function a.f is deprecated: use f1 instead
 ==
 
 
 [case testDeprecatedFunctionAlreadyDecorated1-only_when_cache]
+# flags: --enable-error-code=deprecated
 from b import f
 x: str = f()
 import b
@@ -10876,12 +10884,13 @@ def f() -> str: ...
 [builtins fixtures/tuple.pyi]
 [out]
 ==
-b.py:1: note: function a.f is deprecated: deprecated decorated function
-main:1: note: function a.f is deprecated: deprecated decorated function
-main:4: note: function a.f is deprecated: deprecated decorated function
+b.py:1: error: function a.f is deprecated: deprecated decorated function
+main:2: error: function a.f is deprecated: deprecated decorated function
+main:5: error: function a.f is deprecated: deprecated decorated function
 
 
 [case testDeprecatedFunctionAlreadyDecorated2-only_when_nocache]
+# flags: --enable-error-code=deprecated
 from b import f
 x: str = f()
 import b
@@ -10911,12 +10920,13 @@ def f() -> str: ...
 [builtins fixtures/tuple.pyi]
 [out]
 ==
-main:1: note: function a.f is deprecated: deprecated decorated function
-main:4: note: function a.f is deprecated: deprecated decorated function
-b.py:1: note: function a.f is deprecated: deprecated decorated function
+main:2: error: function a.f is deprecated: deprecated decorated function
+main:5: error: function a.f is deprecated: deprecated decorated function
+b.py:1: error: function a.f is deprecated: deprecated decorated function
 
 
 [case testDeprecatedAddClassDeprecationIndirectImport1-only_when_cache]
+# flags: --enable-error-code=deprecated
 from b import C
 x: C
 C()
@@ -10944,14 +10954,15 @@ class D: ...
 [builtins fixtures/tuple.pyi]
 [out]
 ==
-b.py:1: note: class a.C is deprecated: use C2 instead
-b.py:2: note: class a.D is deprecated: use D2 instead
-main:1: note: class a.C is deprecated: use C2 instead
-main:5: note: class a.D is deprecated: use D2 instead
-main:6: note: class a.D is deprecated: use D2 instead
+b.py:1: error: class a.C is deprecated: use C2 instead
+b.py:2: error: class a.D is deprecated: use D2 instead
+main:2: error: class a.C is deprecated: use C2 instead
+main:6: error: class a.D is deprecated: use D2 instead
+main:7: error: class a.D is deprecated: use D2 instead
 
 
 [case testDeprecatedAddClassDeprecationIndirectImport2-only_when_nocache]
+# flags: --enable-error-code=deprecated
 from b import C
 x: C
 C()
@@ -10979,14 +10990,15 @@ class D: ...
 [builtins fixtures/tuple.pyi]
 [out]
 ==
-main:1: note: class a.C is deprecated: use C2 instead
-main:5: note: class a.D is deprecated: use D2 instead
-main:6: note: class a.D is deprecated: use D2 instead
-b.py:1: note: class a.C is deprecated: use C2 instead
-b.py:2: note: class a.D is deprecated: use D2 instead
+main:2: error: class a.C is deprecated: use C2 instead
+main:6: error: class a.D is deprecated: use D2 instead
+main:7: error: class a.D is deprecated: use D2 instead
+b.py:1: error: class a.C is deprecated: use C2 instead
+b.py:2: error: class a.D is deprecated: use D2 instead
 
 
 [case testDeprecatedChangeClassDeprecationIndirectImport]
+# flags: --enable-error-code=deprecated
 from b import C
 x: C
 C()
@@ -11017,20 +11029,21 @@ class D: ...
 
 [builtins fixtures/tuple.pyi]
 [out]
-b.py:1: note: class a.C is deprecated: use C1 instead
-b.py:2: note: class a.D is deprecated: use D1 instead
-main:1: note: class a.C is deprecated: use C1 instead
-main:5: note: class a.D is deprecated: use D1 instead
-main:6: note: class a.D is deprecated: use D1 instead
+b.py:1: error: class a.C is deprecated: use C1 instead
+b.py:2: error: class a.D is deprecated: use D1 instead
+main:2: error: class a.C is deprecated: use C1 instead
+main:6: error: class a.D is deprecated: use D1 instead
+main:7: error: class a.D is deprecated: use D1 instead
 ==
-b.py:1: note: class a.C is deprecated: use C2 instead
-b.py:2: note: class a.D is deprecated: use D2 instead
-main:1: note: class a.C is deprecated: use C2 instead
-main:5: note: class a.D is deprecated: use D2 instead
-main:6: note: class a.D is deprecated: use D2 instead
+b.py:1: error: class a.C is deprecated: use C2 instead
+b.py:2: error: class a.D is deprecated: use D2 instead
+main:2: error: class a.C is deprecated: use C2 instead
+main:6: error: class a.D is deprecated: use D2 instead
+main:7: error: class a.D is deprecated: use D2 instead
 
 
 [case testDeprecatedRemoveClassDeprecationIndirectImport]
+# flags: --enable-error-code=deprecated
 from b import C
 x: C
 C()
@@ -11056,15 +11069,16 @@ class D: ...
 
 [builtins fixtures/tuple.pyi]
 [out]
-b.py:1: note: class a.C is deprecated: use C1 instead
-b.py:2: note: class a.D is deprecated: use D1 instead
-main:1: note: class a.C is deprecated: use C1 instead
-main:5: note: class a.D is deprecated: use D1 instead
-main:6: note: class a.D is deprecated: use D1 instead
+b.py:1: error: class a.C is deprecated: use C1 instead
+b.py:2: error: class a.D is deprecated: use D1 instead
+main:2: error: class a.C is deprecated: use C1 instead
+main:6: error: class a.D is deprecated: use D1 instead
+main:7: error: class a.D is deprecated: use D1 instead
 ==
 
 
 [case testDeprecatedAddClassDeprecationIndirectImportAlreadyDecorated1-only_when_cache]
+# flags: --enable-error-code=deprecated
 from b import C
 x: C
 C()
@@ -11099,14 +11113,15 @@ class D: ...
 [builtins fixtures/tuple.pyi]
 [out]
 ==
-b.py:1: note: class a.C is deprecated: use C2 instead
-b.py:2: note: class a.D is deprecated: use D2 instead
-main:1: note: class a.C is deprecated: use C2 instead
-main:5: note: class a.D is deprecated: use D2 instead
-main:6: note: class a.D is deprecated: use D2 instead
+b.py:1: error: class a.C is deprecated: use C2 instead
+b.py:2: error: class a.D is deprecated: use D2 instead
+main:2: error: class a.C is deprecated: use C2 instead
+main:6: error: class a.D is deprecated: use D2 instead
+main:7: error: class a.D is deprecated: use D2 instead
 
 
 [case testDeprecatedAddClassDeprecationIndirectImportAlreadyDecorated2-only_when_nocache]
+# flags: --enable-error-code=deprecated
 from b import C
 x: C
 C()
@@ -11141,8 +11156,8 @@ class D: ...
 [builtins fixtures/tuple.pyi]
 [out]
 ==
-main:1: note: class a.C is deprecated: use C2 instead
-main:5: note: class a.D is deprecated: use D2 instead
-main:6: note: class a.D is deprecated: use D2 instead
-b.py:1: note: class a.C is deprecated: use C2 instead
-b.py:2: note: class a.D is deprecated: use D2 instead
+main:2: error: class a.C is deprecated: use C2 instead
+main:6: error: class a.D is deprecated: use D2 instead
+main:7: error: class a.D is deprecated: use D2 instead
+b.py:1: error: class a.C is deprecated: use C2 instead
+b.py:2: error: class a.D is deprecated: use D2 instead

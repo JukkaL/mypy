@@ -91,7 +91,7 @@ else:
     reveal_type(x)  # N: Revealed type is "builtins.complex"
 
 # Note we make type precise, since type promotions are involved
-reveal_type(x)  # N: Revealed type is "Union[builtins.complex, builtins.int, builtins.float]"
+reveal_type(x)  # N: Revealed type is "builtins.complex"
 [builtins fixtures/primitives.pyi]
 
 [case testIntersectionUsingPromotion3]
@@ -127,7 +127,7 @@ if isinstance(x, int):
     reveal_type(x)  # N: Revealed type is "builtins.int"
 else:
     reveal_type(x)  # N: Revealed type is "Union[builtins.float, builtins.complex]"
-reveal_type(x)  # N: Revealed type is "Union[builtins.int, builtins.float, builtins.complex]"
+reveal_type(x)  # N: Revealed type is "Union[builtins.float, builtins.complex]"
 [builtins fixtures/primitives.pyi]
 
 [case testIntersectionUsingPromotion6]
@@ -139,7 +139,7 @@ if isinstance(x, int):
     reveal_type(x)  # N: Revealed type is "builtins.int"
 else:
     reveal_type(x)  # N: Revealed type is "Union[builtins.str, builtins.complex]"
-reveal_type(x)  # N: Revealed type is "Union[builtins.str, builtins.int, builtins.complex]"
+reveal_type(x)  # N: Revealed type is "Union[builtins.str, builtins.complex]"
 [builtins fixtures/primitives.pyi]
 
 [case testIntersectionUsingPromotion7]

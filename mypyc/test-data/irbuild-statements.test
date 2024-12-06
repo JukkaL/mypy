@@ -864,18 +864,16 @@ def g(x: Iterable[int]) -> None:
 [out]
 def f(a):
     a :: list
-    r0 :: short_int
-    i :: int
-    r1 :: short_int
+    r0, r1 :: short_int
     r2 :: native_int
     r3 :: short_int
     r4 :: bit
+    i :: int
     r5 :: object
     r6, x, r7 :: int
     r8, r9 :: short_int
 L0:
     r0 = 0
-    i = 0
     r1 = 0
 L1:
     r2 = var_object_size a
@@ -883,6 +881,7 @@ L1:
     r4 = int_lt r1, r3
     if r4 goto L2 else goto L4 :: bool
 L2:
+    i = r0
     r5 = CPyList_GetItemUnsafe(a, r1)
     r6 = unbox(int, r5)
     x = r6
@@ -890,7 +889,6 @@ L2:
 L3:
     r8 = r0 + 2
     r0 = r8
-    i = r8
     r9 = r1 + 2
     r1 = r9
     goto L1
@@ -900,25 +898,23 @@ L5:
 def g(x):
     x :: object
     r0 :: short_int
-    i :: int
     r1, r2 :: object
-    r3, n :: int
+    i, r3, n :: int
     r4 :: short_int
     r5 :: bit
 L0:
     r0 = 0
-    i = 0
     r1 = PyObject_GetIter(x)
 L1:
     r2 = PyIter_Next(r1)
     if is_error(r2) goto L4 else goto L2
 L2:
+    i = r0
     r3 = unbox(int, r2)
     n = r3
 L3:
     r4 = r0 + 2
     r0 = r4
-    i = r4
     goto L1
 L4:
     r5 = CPy_NoErrOccured()
