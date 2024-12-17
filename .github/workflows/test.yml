@@ -94,16 +94,13 @@ jobs:
           os: macos-13
           toxenv: py
           tox_extra_args: "-n 3 mypyc/test/test_run.py mypyc/test/test_external.py"
-        # This is broken. See
-        # - https://github.com/python/mypy/issues/17819
-        # - https://github.com/python/mypy/pull/17822
-        # - name: mypyc runtime tests with py38-debug-build-ubuntu
-        #   python: '3.8.17'
-        #   arch: x64
-        #   os: ubuntu-latest
-        #   toxenv: py
-        #   tox_extra_args: "-n 4 mypyc/test/test_run.py mypyc/test/test_external.py"
-        #   debug_build: true
+        - name: mypyc runtime tests with py38-debug-build-ubuntu
+          python: '3.8'
+          debug_build: true
+          arch: x64
+          os: ubuntu-latest
+          toxenv: py
+          tox_extra_args: "-n 4 mypyc/test/test_run.py mypyc/test/test_external.py"
 
         - name: Type check our own code (py38-ubuntu)
           python: '3.8'
@@ -143,15 +140,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Debug build
-      if: ${{ matrix.debug_build }}
-      run: |
-        PYTHONVERSION=${{ matrix.python }}
-        PYTHONDIR=~/python-debug/python-$PYTHONVERSION
-        VENV=$PYTHONDIR/env
-        ./misc/build-debug-python.sh $PYTHONVERSION $PYTHONDIR $VENV
-        # TODO: does this do anything? env vars aren't passed to the next step right
-        source $VENV/bin/activate
     - name: Latest dev build
       if: ${{ endsWith(matrix.python, '-dev') }}
       run: |
@@ -159,11 +147,28 @@ jobs:
           cd /tmp/cpython
           echo git rev-parse HEAD; git rev-parse HEAD
           git show --no-patch
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sudo apt-get update -q
+          sudo apt-get install -q -y --no-install-recommends \
             build-essential gdb lcov libbz2-dev libffi-dev libgdbm-dev liblzma-dev libncurses5-dev \
             libreadline6-dev libsqlite3-dev libssl-dev lzma lzma-dev tk-dev uuid-dev zlib1g-dev
           ./configure --prefix=/opt/pythondev
+          make -j$(nproc)
+          sudo make install
+          sudo ln -s /opt/pythondev/bin/python3 /opt/pythondev/bin/python
+          sudo ln -s /opt/pythondev/bin/pip3 /opt/pythondev/bin/pip
+          echo "/opt/pythondev/bin" >> $GITHUB_PATH
+    - name: Debug build
+      if: ${{ matrix.debug_build }}
+      run: |
+          git clone --depth 1 https://github.com/python/cpython.git /tmp/cpython --branch ${{ matrix.python }}
+          cd /tmp/cpython
+          echo git rev-parse HEAD; git rev-parse HEAD
+          git show --no-patch
+          sudo apt-get update -q
+          sudo apt-get install -q -y --no-install-recommends \
+            build-essential gdb lcov libbz2-dev libffi-dev libgdbm-dev liblzma-dev libncurses5-dev \
+            libreadline6-dev libsqlite3-dev libssl-dev lzma lzma-dev tk-dev uuid-dev zlib1g-dev
+          ./configure CFLAGS="-DPy_DEBUG -DPy_TRACE_REFS -DPYMALLOC_DEBUG" --with-pydebug -with-trace-refs --prefix=/opt/pythondev
           make -j$(nproc)
           sudo make install
           sudo ln -s /opt/pythondev/bin/python3 /opt/pythondev/bin/python
