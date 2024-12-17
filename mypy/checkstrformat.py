@@ -13,7 +13,20 @@ implementation simple.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Callable, Dict, Final, Match, Pattern, Tuple, Union, cast
+from itertools import chain
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Dict,
+    Final,
+    Iterator,
+    Match,
+    Pattern,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+)
 from typing_extensions import TypeAlias as _TypeAlias
 
 import mypy.errorcodes as codes
@@ -343,6 +356,54 @@ class StringFormatterChecker:
             return
         self.check_specs_in_format_call(call, conv_specs, format_value)
 
+    def _spec_expression_with_peek(
+        self, specs: list[ConversionSpecifier], expressions: list[Expression]
+    ) -> Iterator[tuple[ConversionSpecifier, Expression, Expression | None]]:
+        """
+        Basically zip specs with expressions and the next expression
+        """
+        optional_expression: Sequence[Expression | None] = expressions
+        expression_it = chain(optional_expression, [None])
+        next(expression_it)
+        return zip(specs, expressions, expression_it)
+
+    def inline_semi_dynamic_specs(
+        self, call: CallExpr, specs: list[ConversionSpecifier], expressions: list[Expression]
+    ) -> tuple[list[ConversionSpecifier], list[Expression]]:
+        """
+        Try to inline literal expressions into "dynamic" format specifiers
+
+        e.g. "{:{}}".format(123, "foo") becomes "{:foo}.format(123)"
+
+        This works by checking if a spec if a simple dynamic specifier and if the next expression is a literal string.
+        If so, the literal string is inlined into the spec and the next spec-expression pair is dropped
+
+        This is useful for f-strings
+        """
+        inlined_specs = []
+        inlined_expressions = []
+
+        spec_with_pairwise_expression = self._spec_expression_with_peek(specs, expressions)
+        for spec, expression, next_expression in spec_with_pairwise_expression:
+            if spec.format_spec == ":{}":  # most simple dynamic case
+                assert (
+                    expression is not None
+                )  # dynamic spec cannot be last, this should have been detected earlier
+
+                if isinstance(next_expression, StrExpr):  # now inline the literal
+                    new_format_string = f"{{{spec.conversion or ''}:{next_expression.value}}}"
+                    parsed = parse_format_value(new_format_string, call, self.msg)
+                    if parsed is None or len(parsed) != 1:
+                        continue
+                    spec = parsed[0]
+                    next(spec_with_pairwise_expression)
+
+            inlined_specs.append(spec)
+            inlined_expressions.append(expression)
+
+        self.auto_generate_keys(inlined_specs, call)
+        return inlined_specs, inlined_expressions
+
     def check_specs_in_format_call(
         self, call: CallExpr, specs: list[ConversionSpecifier], format_value: str
     ) -> None:
@@ -353,6 +414,7 @@ class StringFormatterChecker:
         assert all(s.key for s in specs), "Keys must be auto-generated first!"
         replacements = self.find_replacements_in_call(call, [cast(str, s.key) for s in specs])
         assert len(replacements) == len(specs)
+        specs, replacements = self.inline_semi_dynamic_specs(call, specs, replacements)
         for spec, repl in zip(specs, replacements):
             repl = self.apply_field_accessors(spec, repl, ctx=call)
             actual_type = repl.type if isinstance(repl, TempNode) else self.chk.lookup_type(repl)

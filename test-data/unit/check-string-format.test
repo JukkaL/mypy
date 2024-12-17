@@ -1,0 +1,20 @@
+[case acceptFstringWithoutSpecs]
+[builtins fixtures/f_string.pyi]
+reveal_type(f"{123} {True} {1 + 2} {'foo'}")  # N: Revealed type is "builtins.str"
+
+[case acceptFstringWithValidSpecs]
+[builtins fixtures/f_string.pyi]
+f"{123:+04} {True!r} {1 + 2:+} {'foo':3<}"
+
+[case denyFstringsWithInvalidSpecs]
+[builtins fixtures/f_string.pyi]
+f"{'hi':+}"  # E: Numeric flags are only allowed for numeric types
+f"{123:foo}"  # E: Unrecognized format specification "foo"
+
+class MyClass:
+    pass
+
+f"{MyClass:abc}"  # E: Unrecognized format specification "abc"
+
+
+f"{1} {2} {3:x} {4:y} {5:z}"  # E: Unsupported format character "y"  # E: Unsupported format character "z"
