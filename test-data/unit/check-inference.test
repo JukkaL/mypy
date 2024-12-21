@@ -873,13 +873,7 @@ def g(x: Union[T, List[T]]) -> List[T]: pass
 def h(x: List[str]) -> None: pass
 g('a')() # E: "List[str]" not callable
 
-# The next line is a case where there are multiple ways to satisfy a constraint
-# involving a Union. Either T = List[str] or T = str would turn out to be valid,
-# but mypy doesn't know how to branch on these two options (and potentially have
-# to backtrack later) and defaults to T = Never. The result is an
-# awkward error message. Either a better error message, or simply accepting the
-# call, would be preferable here.
-g(['a']) # E: Argument 1 to "g" has incompatible type "List[str]"; expected "List[Never]"
+g(['a'])
 
 h(g(['a']))
 
@@ -890,6 +884,53 @@ i(a, a, b)
 i(b, a, b)
 i(a, b, b) # E: Argument 1 to "i" has incompatible type "List[int]"; expected "List[str]"
 [builtins fixtures/list.pyi]
+
+[case testInferenceOfUnionOfGenericClassAndItsGenericType]
+from typing import Generic, TypeVar, Union
+
+T = TypeVar('T')
+
+class GenericClass(Generic[T]):
+    def __init__(self, value: T) -> None:
+        self.value = value
+
+def method_with_union(arg: Union[GenericClass[T], T]) -> GenericClass[T]:
+    if not isinstance(arg, GenericClass):
+        arg = GenericClass(arg)
+    return arg
+
+result_1 = method_with_union(GenericClass("test"))
+reveal_type(result_1) # N: Revealed type is "__main__.GenericClass[builtins.str]"
+
+result_2 = method_with_union("test")
+reveal_type(result_2) # N: Revealed type is "__main__.GenericClass[builtins.str]"
+
+[builtins fixtures/isinstance.pyi]
+
+[case testInferenceOfUnionOfSequenceOfAnyAndSequenceOfSequence]
+from typing import Sequence, Iterable, TypeVar, Union
+
+T = TypeVar("T")
+S = TypeVar("S")
+
+def sub_method(value: Union[S, Iterable[S]]) -> Iterable[S]:
+    pass
+
+def method(value: Union[Sequence[T], Sequence[Sequence[T]]]) -> None:
+    reveal_type(sub_method(value)) # N: Revealed type is "typing.Iterable[typing.Sequence[T`-1]]"
+
+[case testInferenceOfUnionOfUnionWithSequenceAndSequenceOfThatUnion]
+from typing import Sequence, Iterable, TypeVar, Union
+
+T = Union[str, Sequence[int]]
+S = TypeVar("S", bound=T)
+
+def sub_method(value: Union[S, Iterable[S]]) -> Iterable[S]:
+    pass
+
+def method(value: Union[T, Sequence[T]]) -> None:
+    reveal_type(sub_method(value)) # N: Revealed type is "typing.Iterable[Union[builtins.str, typing.Sequence[builtins.int]]]"
+
 
 [case testCallableListJoinInference]
 from typing import Any, Callable
