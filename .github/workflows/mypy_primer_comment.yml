@@ -48,28 +48,34 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const MAX_CHARACTERS = 30000
+            // not really max characters, more like 'max bytes'
+            const MAX_CHARACTERS = 262144
             const MAX_CHARACTERS_PER_PROJECT = MAX_CHARACTERS / 3
 
             const fs = require('fs')
             let data = fs.readFileSync('fulldiff.txt', { encoding: 'utf8' })
 
+            function bytesLength(string) {
+                return new TextEncoder().encode(string).length
+            }
+
             function truncateIfNeeded(original, maxLength) {
-              if (original.length <= maxLength) {
+              const bytes = new TextEncoder().encode(original)
+              if (bytes.length <= maxLength) {
                 return original
               }
-              let truncated = original.substring(0, maxLength)
+              let truncated = new TextDecoder().decode(bytes.slice(0, maxLength)).replace('\uFFFD', '')
               // further, remove last line that might be truncated
               truncated = truncated.substring(0, truncated.lastIndexOf('\n'))
               let lines_truncated = original.split('\n').length - truncated.split('\n').length
               return `${truncated}\n\n... (truncated ${lines_truncated} lines) ...`
             }
 
-            const projects = data.split('\n\n')
-            // don't let one project dominate
-            data = projects.map(project => truncateIfNeeded(project, MAX_CHARACTERS_PER_PROJECT)).join('\n\n')
-            // posting comment fails if too long, so truncate
-            data = truncateIfNeeded(data, MAX_CHARACTERS)
+            if (bytesLength(data) > maxLength) {
+              const projects = data.split('\n\n')
+              // don't let one project dominate
+              data = projects.map(project => truncateIfNeeded(project, MAX_CHARACTERS_PER_PROJECT)).join('\n\n')
+            }
 
             console.log("Diff from mypy_primer:")
             console.log(data)
