@@ -25,7 +25,7 @@ else:
     from _csv import _reader as Reader, _writer as Writer
 
 from _typeshed import SupportsWrite
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from typing import Any, Generic, Literal, TypeVar, overload
 from typing_extensions import Self
 
@@ -75,7 +75,7 @@ class excel(Dialect): ...
 class excel_tab(excel): ...
 class unix_dialect(Dialect): ...
 
-class DictReader(Generic[_T]):
+class DictReader(Iterator[dict[_T | Any, str | Any]], Generic[_T]):
     fieldnames: Sequence[_T] | None
     restkey: _T | None
     restval: str | Any | None

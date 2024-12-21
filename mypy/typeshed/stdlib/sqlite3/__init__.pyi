@@ -397,7 +397,7 @@ class Connection:
         self, type: type[BaseException] | None, value: BaseException | None, traceback: TracebackType | None, /
     ) -> Literal[False]: ...
 
-class Cursor:
+class Cursor(Iterator[Any]):
     arraysize: int
     @property
     def connection(self) -> Connection: ...
