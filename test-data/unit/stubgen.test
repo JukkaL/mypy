@@ -385,7 +385,7 @@ class A:
 [out]
 class A:
     @property
-    def f(self): ...
+    def f(self) -> int: ...
     @f.setter
     def f(self, x) -> None: ...
     @f.deleter
@@ -407,7 +407,7 @@ class A:
 [out]
 class A:
     @property
-    def f(self): ...
+    def f(self) -> int: ...
     @f.setter
     def f(self, x) -> None: ...
     @f.deleter
@@ -444,7 +444,7 @@ import functools
 
 class A:
     @functools.cached_property
-    def x(self): ...
+    def x(self) -> str: ...
 
 [case testFunctoolsCachedPropertyAlias]
 import functools as ft
@@ -458,7 +458,7 @@ import functools as ft
 
 class A:
     @ft.cached_property
-    def x(self): ...
+    def x(self) -> str: ...
 
 [case testCachedProperty]
 from functools import cached_property
@@ -472,7 +472,7 @@ from functools import cached_property
 
 class A:
     @cached_property
-    def x(self): ...
+    def x(self) -> str: ...
 
 [case testCachedPropertyAlias]
 from functools import cached_property as cp
@@ -486,7 +486,7 @@ from functools import cached_property as cp
 
 class A:
     @cp
-    def x(self): ...
+    def x(self) -> str: ...
 
 [case testStaticMethod]
 class A:
@@ -1611,7 +1611,7 @@ def f():
 def g():
     return
 [out]
-def f(): ...
+def f() -> int: ...
 def g() -> None: ...
 
 [case testFunctionEllipsisInfersReturnNone]
@@ -1754,9 +1754,9 @@ async def g():
     return 2
 [out]
 class F:
-    async def f(self): ...
+    async def f(self) -> int: ...
 
-async def g(): ...
+async def g() -> int: ...
 
 [case testCoroutineImportAsyncio]
 import asyncio
@@ -1778,12 +1778,12 @@ import asyncio
 
 class F:
     @asyncio.coroutine
-    def f(self): ...
+    def f(self) -> int: ...
 
 @asyncio.coroutine
-def g(): ...
+def g() -> int: ...
 @asyncio.coroutine
-def h(): ...
+def h() -> int: ...
 
 [case testCoroutineImportAsyncioCoroutines]
 import asyncio.coroutines
@@ -1801,10 +1801,10 @@ import asyncio.coroutines
 
 class F:
     @asyncio.coroutines.coroutine
-    def f(self): ...
+    def f(self) -> int: ...
 
 @asyncio.coroutines.coroutine
-def g(): ...
+def g() -> int: ...
 
 [case testCoroutineImportAsyncioCoroutinesSub]
 import asyncio
@@ -1822,10 +1822,10 @@ import asyncio
 
 class F:
     @asyncio.coroutines.coroutine
-    def f(self): ...
+    def f(self) -> int: ...
 
 @asyncio.coroutines.coroutine
-def g(): ...
+def g() -> int: ...
 
 [case testCoroutineImportTypes]
 import types
@@ -1843,10 +1843,10 @@ import types
 
 class F:
     @types.coroutine
-    def f(self): ...
+    def f(self) -> int: ...
 
 @types.coroutine
-def g(): ...
+def g() -> int: ...
 
 [case testCoroutineFromAsyncioImportCoroutine]
 from asyncio import coroutine
@@ -1864,10 +1864,10 @@ from asyncio import coroutine
 
 class F:
     @coroutine
-    def f(self): ...
+    def f(self) -> int: ...
 
 @coroutine
-def g(): ...
+def g() -> int: ...
 
 [case testCoroutineFromAsyncioCoroutinesImportCoroutine]
 from asyncio.coroutines import coroutine
@@ -1885,10 +1885,10 @@ from asyncio.coroutines import coroutine
 
 class F:
     @coroutine
-    def f(self): ...
+    def f(self) -> int: ...
 
 @coroutine
-def g(): ...
+def g() -> int: ...
 
 [case testCoroutineFromTypesImportCoroutine]
 from types import coroutine
@@ -1906,10 +1906,10 @@ from types import coroutine
 
 class F:
     @coroutine
-    def f(self): ...
+    def f(self) -> int: ...
 
 @coroutine
-def g(): ...
+def g() -> int: ...
 
 [case testCoroutineFromAsyncioImportCoroutineAsC]
 from asyncio import coroutine as c
@@ -1927,10 +1927,10 @@ from asyncio import coroutine as c
 
 class F:
     @c
-    def f(self): ...
+    def f(self) -> int: ...
 
 @c
-def g(): ...
+def g() -> int: ...
 
 [case testCoroutineFromAsyncioCoroutinesImportCoroutineAsC]
 from asyncio.coroutines import coroutine as c
@@ -1948,10 +1948,10 @@ from asyncio.coroutines import coroutine as c
 
 class F:
     @c
-    def f(self): ...
+    def f(self) -> int: ...
 
 @c
-def g(): ...
+def g() -> int: ...
 
 [case testCoroutineFromTypesImportCoroutineAsC]
 from types import coroutine as c
@@ -1969,10 +1969,10 @@ from types import coroutine as c
 
 class F:
     @c
-    def f(self): ...
+    def f(self) -> int: ...
 
 @c
-def g(): ...
+def g() -> int: ...
 
 [case testCoroutineImportAsyncioAsA]
 import asyncio as a
@@ -1990,10 +1990,10 @@ import asyncio as a
 
 class F:
     @a.coroutine
-    def f(self): ...
+    def f(self) -> int: ...
 
 @a.coroutine
-def g(): ...
+def g() -> int: ...
 
 [case testCoroutineImportAsyncioCoroutinesAsC]
 import asyncio.coroutines as c
@@ -2011,10 +2011,10 @@ import asyncio.coroutines as c
 
 class F:
     @c.coroutine
-    def f(self): ...
+    def f(self) -> int: ...
 
 @c.coroutine
-def g(): ...
+def g() -> int: ...
 
 [case testCoroutineImportAsyncioCoroutinesSubAsA]
 import asyncio as a
@@ -2032,10 +2032,10 @@ import asyncio as a
 
 class F:
     @a.coroutines.coroutine
-    def f(self): ...
+    def f(self) -> int: ...
 
 @a.coroutines.coroutine
-def g(): ...
+def g() -> int: ...
 
 [case testCoroutineImportTypesAsT]
 import types as t
@@ -2053,10 +2053,10 @@ import types as t
 
 class F:
     @t.coroutine
-    def f(self): ...
+    def f(self) -> int: ...
 
 @t.coroutine
-def g(): ...
+def g() -> int: ...
 
 
 -- Tests for stub generation from semantically analyzed trees.
@@ -2302,7 +2302,7 @@ def f(x):
     return ''
 
 [out]
-def f(x): ...
+def f(x) -> str: ...
 
 [case testFunctionPartiallyAnnotated]
 def f(x) -> None:
@@ -2415,11 +2415,11 @@ class B:
 class A:
     y: str
     @property
-    def x(self): ...
+    def x(self) -> str: ...
 
 class B:
     @property
-    def x(self): ...
+    def x(self) -> str: ...
     y: str
     @x.setter
     def x(self, value) -> None: ...
@@ -2592,7 +2592,7 @@ x: _Incomplete
 
 class Incomplete: ...
 
-def Optional(): ...
+def Optional() -> int: ...
 
 [case testExportedNameImported]
 # modules: main a b
@@ -3586,8 +3586,8 @@ def f2():
         yield from [0]
     return 0
 [out]
-def f1(): ...
-def f2(): ...
+def f1() -> int: ...
+def f2() -> int: ...
 
 [case testIncludeDocstrings]
 # flags:  --include-docstrings
@@ -4508,6 +4508,75 @@ class C3[T3 = int]: ...
 class C4[T4: int | float = int](list[T4]): ...
 
 def f5[T5 = int]() -> None: ...
+
+[case testReturnTypeInference]
+def f1():
+    return 1
+def f2():
+    return True
+def f3():
+    return None
+def f4(x):
+    if x > 1:
+        return True
+    else:
+        return False
+def f4(x):
+    if x > 1:
+        return 1
+    else:
+        return None
+def f5(x):
+    if x > 1:
+        return 1
+    elif x < 1:
+        return 0
+    else:
+        return None
+def f6(x):
+    if x > 1:
+        return 1
+    elif x < 1:
+        return None
+    else:
+        return None
+def f7(x):
+    return x > 1
+def f8():
+    return [1, 2, 3]
+def f9():
+    return [1, True]
+def f10():
+    return []
+def f11():
+    return {1, 2, 3}
+def f12():
+    return {1, True}
+def f13():
+    return {}
+def f14():
+    return { "x": 1, "y": 2 }
+def f15():
+    return { "x": 1, "y": True }
+
+[out]
+from typing import Dict, List, Set
+
+def f1() -> int: ...
+def f2() -> bool: ...
+def f3() -> None: ...
+def f4(x) -> bool: ...
+def f5(x) -> int | None: ...
+def f6(x) -> int | None: ...
+def f7(x) -> bool: ...
+def f8() -> List[int]: ...
+def f9(): ...
+def f10(): ...
+def f11() -> Set[int]: ...
+def f12(): ...
+def f13(): ...
+def f14() -> Dict[str, int]: ...
+def f15(): ...
 
 [case testIgnoreMypyGeneratedMethods_semanal]
 # flags: --include-private --python-version=3.13
