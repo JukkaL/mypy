@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from mypy.stubinfo import (
-    non_bundled_packages_flat,
-    stub_distribution_name,
-)
+from mypy.stubinfo import non_bundled_packages_flat, stub_distribution_name
 
 
 class TestStubInfo(unittest.TestCase):

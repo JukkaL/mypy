@@ -19,6 +19,7 @@ def stub_distribution_name(module: str) -> str | None:
 
     return None
 
+
 # Map package name to PyPI stub distribution name from typeshed.
 # Stubs for these packages were never bundled with mypy. Don't
 # include packages that have a release that includes PEP 561 type
