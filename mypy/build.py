@@ -89,7 +89,7 @@ from mypy.plugin import ChainedPlugin, Plugin, ReportConfigContext
 from mypy.plugins.default import DefaultPlugin
 from mypy.renaming import LimitedVariableRenameVisitor, VariableRenameVisitor
 from mypy.stats import dump_type_stats
-from mypy.stubinfo import is_module_from_legacy_bundled_package, stub_distribution_name
+from mypy.stubinfo import stub_distribution_name
 from mypy.types import Type
 from mypy.typestate import reset_global_state, type_state
 from mypy.util import json_dumps, json_loads
@@ -2657,19 +2657,6 @@ def find_module_and_diagnose(
         # search path or the module has not been installed.
 
         ignore_missing_imports = options.ignore_missing_imports
-
-        # Don't honor a global (not per-module) ignore_missing_imports
-        # setting for modules that used to have bundled stubs, as
-        # otherwise updating mypy can silently result in new false
-        # negatives. (Unless there are stubs but they are incomplete.)
-        global_ignore_missing_imports = manager.options.ignore_missing_imports
-        if (
-            is_module_from_legacy_bundled_package(id)
-            and global_ignore_missing_imports
-            and not options.ignore_missing_imports_per_module
-            and result is ModuleNotFoundReason.APPROVED_STUBS_NOT_INSTALLED
-        ):
-            ignore_missing_imports = False
 
         if skip_diagnose:
             raise ModuleNotFound

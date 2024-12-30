@@ -2,20 +2,10 @@ from __future__ import annotations
 
 import unittest
 
-from mypy.stubinfo import (
-    is_module_from_legacy_bundled_package,
-    legacy_bundled_packages,
-    non_bundled_packages_flat,
-    stub_distribution_name,
-)
+from mypy.stubinfo import non_bundled_packages_flat, stub_distribution_name
 
 
 class TestStubInfo(unittest.TestCase):
-    def test_is_legacy_bundled_packages(self) -> None:
-        assert not is_module_from_legacy_bundled_package("foobar_asdf")
-        assert not is_module_from_legacy_bundled_package("PIL")
-        assert is_module_from_legacy_bundled_package("pycurl")
-        assert is_module_from_legacy_bundled_package("dataclasses")
 
     def test_stub_distribution_name(self) -> None:
         assert stub_distribution_name("foobar_asdf") is None
@@ -29,6 +19,6 @@ class TestStubInfo(unittest.TestCase):
         assert stub_distribution_name("google") is None
 
     def test_period_in_top_level(self) -> None:
-        for packages in (non_bundled_packages_flat, legacy_bundled_packages):
+        for packages in non_bundled_packages_flat:
             for top_level_module in packages:
                 assert "." not in top_level_module
