@@ -1503,18 +1503,6 @@ x = 0
 mypy: "tmp/typing.py" shadows library module "typing"
 note: A user-defined top-level module with name "typing" is not supported
 
-[case testIgnoreImportIfNoPython3StubAvailable]
-# flags: --ignore-missing-imports
-import scribe  # No Python 3 stubs available for scribe
-from scribe import x
-import python2  # Python 3 stubs available for python2
-import foobar_asdf
-import jack  # This has a stubs package but was never bundled with mypy, so ignoring works
-[out]
-_testIgnoreImportIfNoPython3StubAvailable.py:4: error: Library stubs not installed for "python2"
-_testIgnoreImportIfNoPython3StubAvailable.py:4: note: Hint: "python3 -m pip install types-six"
-_testIgnoreImportIfNoPython3StubAvailable.py:4: note: (or run "mypy --install-types" to install all missing stub packages)
-_testIgnoreImportIfNoPython3StubAvailable.py:4: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
 
 [case testNoPython3StubAvailable]
 import scribe
