@@ -746,6 +746,11 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             # useful for stubs!
             return
 
+        if len(defn.items) >= 100:
+            # Skip this check for large numbers of overloads, since the following is quadratic.
+            # This constant matches the threshold at which pyright similarly skips this check.
+            return
+
         # Compute some info about the implementation (if it exists) for use below
         impl_type: CallableType | None = None
         if defn.impl:
