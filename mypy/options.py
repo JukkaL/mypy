@@ -158,7 +158,7 @@ class Options:
         self.disallow_incomplete_defs = False
 
         # Type check unannotated functions
-        self.check_untyped_defs = False
+        self.check_untyped_defs = True
 
         # Disallow decorating typed functions with untyped decorators
         self.disallow_untyped_decorators = False

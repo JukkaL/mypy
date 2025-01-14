@@ -698,12 +698,13 @@ def process_options(
         group=disallow_any_group,
     )
 
+    # TODO: is the Note really helpful if --check-untyped-defs is enabled by default? (Maybe
+    # reword it to emphasize that mypy doesn't infer return types?)
     untyped_group = parser.add_argument_group(
         title="Untyped definitions and calls",
         description="Configure how untyped definitions and calls are handled. "
-        "Note: by default, mypy ignores any untyped function definitions "
-        "and assumes any calls to such functions have a return "
-        "type of 'Any'.",
+        "Note: by default, mypy assumes any calls to untyped "
+        "functions have a return type of 'Any'."
     )
     add_invertible_flag(
         "--disallow-untyped-calls",
@@ -738,10 +739,10 @@ def process_options(
         group=untyped_group,
     )
     add_invertible_flag(
-        "--check-untyped-defs",
-        default=False,
-        strict_flag=True,
-        help="Type check the interior of functions without type annotations",
+        "--no-check-untyped-defs",
+        default=True,
+        dest='check_untyped_defs',
+        help="Don't type check the interior of functions without type annotations",
         group=untyped_group,
     )
     add_invertible_flag(
