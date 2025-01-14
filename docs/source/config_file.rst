@@ -1087,6 +1087,21 @@ Miscellaneous
 
 These options may only be set in the global section (``[mypy]``).
 
+.. confval:: install_types
+
+    :type: boolean
+    :default: False
+
+    Causes mypy to install known missing stub packages for third-party libraries using pip.
+
+.. confval:: non_interactive
+
+    :type: boolean
+    :default: False
+
+    When used together with `--install-types`, this causes mypy to install all suggested
+    stub packages using pip without asking for confirmation.
+
 .. confval:: junit_xml
 
     :type: string
