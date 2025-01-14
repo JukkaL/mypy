@@ -29,8 +29,8 @@ precise type signature for this function using ``Literal[...]`` and overloads:
     @overload
     def fetch_data(raw: Literal[False]) -> str: ...
 
-    # The last overload is a fallback in case the caller
-    # provides a regular bool:
+    # The last overload is a fallback due to a limitation in mypy:
+    #  https://github.com/python/mypy/issues/14764
 
     @overload
     def fetch_data(raw: bool) -> Union[bytes, str]: ...
