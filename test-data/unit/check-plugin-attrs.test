@@ -1657,6 +1657,42 @@ reveal_type(A.__attrs_init__)  # N: Revealed type is "def (self: __main__.A, b: 
 
 [builtins fixtures/plugin_attrs.pyi]
 
+[case testAttrsInitMethodGeneratedWhenAutoDetectTrue]
+from typing import Tuple
+import attr
+
+@attr.define(auto_detect=True)
+class A:
+    b: int
+    c: str
+    def __init__(self, bc: Tuple[int, str]) -> None:
+        b, c = bc
+        self.__attrs_init__(b, c)
+
+reveal_type(A)  # N: Revealed type is "def (bc: Tuple[builtins.int, builtins.str]) -> __main__.A"
+reveal_type(A.__init__)  # N: Revealed type is "def (self: __main__.A, bc: Tuple[builtins.int, builtins.str])"
+reveal_type(A.__attrs_init__)  # N: Revealed type is "def (self: __main__.A, b: builtins.int, c: builtins.str)"
+
+[builtins fixtures/plugin_attrs.pyi]
+
+[case testAttrsInitMethodGeneratedWhenAutoDetectTrueDefault]
+from typing import Tuple
+import attr
+
+@attr.define
+class A:
+    b: int
+    c: str
+    def __init__(self, bc: Tuple[int, str]) -> None:
+        b, c = bc
+        self.__attrs_init__(b, c)
+
+reveal_type(A)  # N: Revealed type is "def (bc: Tuple[builtins.int, builtins.str]) -> __main__.A"
+reveal_type(A.__init__)  # N: Revealed type is "def (self: __main__.A, bc: Tuple[builtins.int, builtins.str])"
+reveal_type(A.__attrs_init__)  # N: Revealed type is "def (self: __main__.A, b: builtins.int, c: builtins.str)"
+
+[builtins fixtures/plugin_attrs.pyi]
+
 [case testAttrsClassWithSlots]
 import attr
 
