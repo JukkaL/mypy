@@ -12,7 +12,7 @@ from mypy.graph_utils import prepare_sccs, strongly_connected_components, topsor
 from mypy.join import join_types
 from mypy.meet import meet_type_list, meet_types
 from mypy.subtypes import is_subtype
-from mypy.typeops import get_all_type_vars
+from mypy.typeops import get_all_type_vars, make_simplified_union
 from mypy.types import (
     AnyType,
     Instance,
@@ -277,7 +277,7 @@ def solve_one(lowers: Iterable[Type], uppers: Iterable[Type]) -> Type | None:
             if type_state.infer_unions:
                 # This deviates from the general mypy semantics because
                 # recursive types are union-heavy in 95% of cases.
-                bottom = UnionType.make_union([bottom, target])
+                bottom = make_simplified_union([bottom, target])
             else:
                 bottom = join_types(bottom, target)
 

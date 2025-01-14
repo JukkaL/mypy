@@ -5018,7 +5018,7 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                 self.resolved_type[e] = NoneType()
                 return None
             values.append(self.accept(item))
-        vt = join.join_type_list(values)
+        vt = make_simplified_union(values)
         if not allow_fast_container_literal(vt):
             self.resolved_type[e] = NoneType()
             return None
@@ -5214,8 +5214,8 @@ class ExpressionChecker(ExpressionVisitor[Type]):
             else:
                 keys.append(self.accept(key))
                 values.append(self.accept(value))
-        kt = join.join_type_list(keys)
-        vt = join.join_type_list(values)
+        kt = make_simplified_union(keys)
+        vt = make_simplified_union(values)
         if not (allow_fast_container_literal(kt) and allow_fast_container_literal(vt)):
             self.resolved_type[e] = NoneType()
             return None
