@@ -42,6 +42,7 @@ if TYPE_CHECKING:
 
 orig_stat: Final = os.stat
 MEM_PROFILE: Final = False  # If True, dump memory profile
+RECURSION_LIMIT: Final = 2**14
 
 
 def stat_proxy(path: str) -> os.stat_result:
@@ -76,7 +77,7 @@ def main(
     util.check_python_version("mypy")
     t0 = time.time()
     # To log stat() calls: os.stat = stat_proxy
-    sys.setrecursionlimit(2**14)
+    sys.setrecursionlimit(RECURSION_LIMIT)
     if args is None:
         args = sys.argv[1:]
 
