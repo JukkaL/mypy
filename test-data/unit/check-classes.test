@@ -3631,7 +3631,8 @@ def process(cls: Type[Union[BasicUser, ProUser]]):
     obj = cls()
     cls.bar(obj)
     cls.mro()  # Defined in class type
-    cls.error  # E: Item "type" of "Union[Type[BasicUser], Type[ProUser]]" has no attribute "error"
+    cls.error  # E: Item "type" of "Union[Type[BasicUser], Type[ProUser]]" has no attribute "error" \
+               # N: You can use "if <variable_name> is not None" to protect against a None value
 [builtins fixtures/classmethod.pyi]
 [out]
 

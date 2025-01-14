@@ -2863,7 +2863,8 @@ class C:
     a = None  # E: Need type annotation for "a" (hint: "a: Optional[<type>] = ...")
 
     def f(self, x) -> None:
-        C.a.y  # E: Item "None" of "Optional[Any]" has no attribute "y"
+        C.a.y  # E: Item "None" of "Optional[Any]" has no attribute "y" \
+               # N: You can use "if <variable_name> is not None" to protect against a None value
 
 [case testLocalPartialTypesAccessPartialNoneAttribute2]
 # flags: --local-partial-types
@@ -2871,7 +2872,8 @@ class C:
     a = None  # E: Need type annotation for "a" (hint: "a: Optional[<type>] = ...")
 
     def f(self, x) -> None:
-        self.a.y  # E: Item "None" of "Optional[Any]" has no attribute "y"
+        self.a.y  # E: Item "None" of "Optional[Any]" has no attribute "y" \
+                  # N: You can use "if <variable_name> is not None" to protect against a None value
 
 -- Special case for assignment to '_'
 -- ----------------------------------

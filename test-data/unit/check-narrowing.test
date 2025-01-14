@@ -420,7 +420,8 @@ else:
     reveal_type(ok_mixture)             # N: Revealed type is "Tuple[Literal[__main__.Key.C], fallback=__main__.KeyedNamedTuple]"
 
 impossible_mixture: Union[KeyedObject, KeyedTypedDict]
-if impossible_mixture.key is Key.A:     # E: Item "KeyedTypedDict" of "Union[KeyedObject, KeyedTypedDict]" has no attribute "key"
+if impossible_mixture.key is Key.A:     # E: Item "KeyedTypedDict" of "Union[KeyedObject, KeyedTypedDict]" has no attribute "key" \
+                                        # N: You can use "if <variable_name> is not None" to protect against a None value
     reveal_type(impossible_mixture)     # N: Revealed type is "Union[__main__.KeyedObject, TypedDict('__main__.KeyedTypedDict', {'key': Literal[__main__.Key.B]})]"
 else:
     reveal_type(impossible_mixture)     # N: Revealed type is "Union[__main__.KeyedObject, TypedDict('__main__.KeyedTypedDict', {'key': Literal[__main__.Key.B]})]"

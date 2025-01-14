@@ -578,7 +578,8 @@ v = A() # type: Union[A, B, C]
 
 if isinstance(v, (B, C)):
     v.method2(123)
-    v.method3('xyz') # E: Item "B" of "Union[B, C]" has no attribute "method3"
+    v.method3('xyz') # E: Item "B" of "Union[B, C]" has no attribute "method3" \
+                     # N: You can use "if <variable_name> is not None" to protect against a None value
 [builtins fixtures/isinstance.pyi]
 
 [case testIsinstanceNeverWidens]
@@ -1007,7 +1008,8 @@ def bar() -> None:
           if isinstance(x, int):
              x + 1
           else:
-             x.a     # E: Item "str" of "Union[str, A]" has no attribute "a"
+             x.a     # E: Item "str" of "Union[str, A]" has no attribute "a" \
+                     # N: You can use "if <variable_name> is not None" to protect against a None value
           x = 'a'
 [builtins fixtures/isinstancelist.pyi]
 
@@ -2128,7 +2130,8 @@ reveal_type(x)  # N: Revealed type is "Any"
 from typing import Union
 from foo import A  # type: ignore
 def f(x: Union[A, str]) -> None:
-    x.method_only_in_a()  # E: Item "str" of "Union[Any, str]" has no attribute "method_only_in_a"
+    x.method_only_in_a()  # E: Item "str" of "Union[Any, str]" has no attribute "method_only_in_a" \
+                          # N: You can use "if <variable_name> is not None" to protect against a None value
     if isinstance(x, A):
         x.method_only_in_a()
 [builtins fixtures/isinstance.pyi]
