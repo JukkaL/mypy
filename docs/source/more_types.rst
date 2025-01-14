@@ -325,6 +325,27 @@ redundancy, it's possible to replace default values in overload definitions with
     def get_model(model_or_pk: int | M, flag: bool = True) -> M | None:
         ...
 
+The overload that applies is chosen depending on the type of the ``model_or_pk``
+argument. On the other hand, the return type in the following example depends on
+an argument with a default value. To ensure that the overloads do not overlap,
+a default value is specified for only one of them.
+
+.. code-block:: python
+
+    from typing import overload, Literal
+
+    # This overload variant applies only when the "rounded" argument was
+    # specified explicitly.
+    @overload
+    def pi(rounded: Literal[True]) -> int: ...
+
+    # This overload variant applies when "rounded" is omitted or set to False.
+    @overload
+    def pi(rounded: Literal[False] = ...) -> float: ...
+
+    def pi(rounded=False):
+        return 3 if rounded else 3.14159
+
 
 Runtime behavior
 ----------------
