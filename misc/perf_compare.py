@@ -171,13 +171,14 @@ def main() -> None:
     first = -1.0
     for commit in commits:
         tt = statistics.mean(results[commit])
+        s = statistics.stdev(results[commit])
         if first < 0:
             delta = "0.0%"
             first = tt
         else:
             d = (tt / first) - 1
             delta = f"{d:+.1%}"
-        print(f"{commit:<25} {tt:.3f}s ({delta})")
+        print(f"{commit:<25} {tt:.3f}s ({delta}) | stdev {s}")
 
     shutil.rmtree(self_check_dir)
     for target_dir in target_dirs:
