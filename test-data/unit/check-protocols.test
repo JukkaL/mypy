@@ -2863,7 +2863,7 @@ c1: SupportsClassGetItem = C()
 
 [case testNoneVsProtocol]
 # mypy: strict-optional
-from typing_extensions import Protocol
+from typing_extensions import Literal, Protocol
 
 class MyHashable(Protocol):
     def __hash__(self) -> int: ...
@@ -2895,6 +2895,22 @@ class SupportsStr(Protocol):
 
 def ss(s: SupportsStr) -> None: pass
 ss(None)
+
+class SupportsBool(Protocol):
+    def __bool__(self) -> bool: ...
+
+class SupportsBoolLiteralTrue(Protocol):
+    def __bool__(self) -> Literal[True]: ...
+
+class SupportsBoolLiteralFalse(Protocol):
+    def __bool__(self) -> Literal[False]: ...
+
+def sb(s: SupportsBool) -> None: pass
+sb(None)
+def sblt(s: SupportsBoolLiteralTrue) -> None: pass
+sblt(None)  # E: Argument 1 to "sblt" has incompatible type "None"; expected "SupportsBoolLiteralTrue"
+def sblf(s: SupportsBoolLiteralFalse) -> None: pass
+sblf(None)
 
 class HashableStr(Protocol):
     def __str__(self) -> str: ...

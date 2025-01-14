@@ -28,6 +28,7 @@ from mypy.nodes import (
     VARIANCE_NOT_READY,
     Decorator,
     FuncBase,
+    FuncDef,
     OverloadedFuncDef,
     TypeInfo,
     Var,
@@ -434,8 +435,25 @@ class SubtypeVisitor(TypeVisitor[bool]):
                 members = self.right.type.protocol_members
                 # None is compatible with Hashable (and other similar protocols). This is
                 # slightly sloppy since we don't check the signature of "__hash__".
-                # None is also compatible with `SupportsStr` protocol.
-                return not members or all(member in ("__hash__", "__str__") for member in members)
+                # None is also compatible with `SupportsStr` and `SupportsBool` protocols.
+                if self.right.type.defn.info and "__bool__" in self.right.type.defn.info.names:
+                    bool_method = self.right.type.defn.info.names["__bool__"]
+                    assert bool_method.node is not None
+                    assert isinstance(bool_method.node, FuncDef)
+                    assert isinstance(bool_method.node.type, CallableType)
+                    assert bool_method.node.type.items is not None
+                    bool_method_types_info = bool_method.node.type.items[0]
+                    # None should probably be incompatible with Literal[True]
+                    if (
+                        isinstance(
+                            get_proper_type(bool_method.node.type.items[0].ret_type), LiteralType
+                        )
+                        and bool_method_types_info.ret_type.can_be_true
+                    ):
+                        return False
+                return not members or all(
+                    member in ("__hash__", "__str__", "__bool__") for member in members
+                )
             return False
         else:
             return True
