@@ -232,6 +232,25 @@ to the type specified as the first type parameter (``list[str]``).
 
 .. note::
 
+   ``TypeGuard`` has been defined such that a custom type guard function is
+   allowed to return ``True`` for only a subset of the values that match the
+   specified type. For example, the following is a perfectly valid and correct
+   ``TypeGuard`` for ``int``:
+
+   .. code-block:: python
+
+     from typing import TypeGuard
+
+     def is_positive_int(val: Any) -> TypeGuard[int]:
+         return isinstance(val, int) and val > 0
+
+   A consequence of this is that mypy cannot narrow the type for the case where
+   a type guard function returns ``False``. This also means that user-defined
+   type guards cannot be used as fully equivalent replacements for the built-in
+   type narrowing logic that is done for ``isinstance`` and others.
+
+.. note::
+
   Narrowing is
   `not strict <https://www.python.org/dev/peps/pep-0647/#enforcing-strict-narrowing>`_.
   For example, you can narrow ``str`` to ``int``:
