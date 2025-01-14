@@ -181,6 +181,21 @@ def analyze_type_alias(
     analyzer.in_dynamic_func = in_dynamic_func
     analyzer.global_scope = global_scope
     res = analyzer.anal_type(type, nested=False)
+
+    # Handling TypeVar bound to a Union
+    proper_type = get_proper_type(res)
+    if isinstance(proper_type, TypeVarType):
+        upper_bound = get_proper_type(proper_type.upper_bound)  # Expand the upper bound
+        if isinstance(upper_bound, UnionType):
+            # Narrow to the specific member of the Union at runtime
+            narrowed_types = []
+            for item in upper_bound.items:
+                # Checking if the type matches a potential Self return context
+                if "Self" in str(item):
+                    narrowed_types.append(item)
+            if narrowed_types:
+                res = UnionType.make_union(narrowed_types)
+
     return res, analyzer.aliases_used
 
 

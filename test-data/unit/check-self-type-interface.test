@@ -1,0 +1,43 @@
+[case testTypeVariableSelfUnion]
+from typing import Self, TypeVar, Union, reveal_type
+
+class A:
+    def clone(self) -> Self:
+        return self
+
+class B:
+    def clone(self) -> Self:
+        return self
+
+class C(B):
+    pass
+
+AB = TypeVar("AB", bound=Union[A, B])
+
+def func2(x: AB) -> AB:
+    return x.clone()  # E: Incompatible return value type (got "Union[A, B]", expected "AB")
+
+reveal_type(func2(A()))  # N: Revealed type is "__main__.A"
+reveal_type(func2(B()))  # N: Revealed type is "__main__.B"
+reveal_type(func2(C()))  # N: Revealed type is "__main__.C"
+
+[case testTypeVarUnionWithSelf]
+from typing import Self, TypeVar, Union, reveal_type
+
+class Base:
+    def clone(self) -> Self:
+        return self
+
+class A(Base):
+    pass
+
+class B(Base):
+    pass
+
+T = TypeVar("T", bound=Union[A, B])
+
+def func_with_union(x: T) -> T:
+    return x.clone()  # E: Incompatible return value type (got "Union[A, B]", expected "T")
+
+reveal_type(func_with_union(A()))  # N: Revealed type is "__main__.A"
+reveal_type(func_with_union(B()))  # N: Revealed type is "__main__.B"
