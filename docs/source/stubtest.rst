@@ -116,6 +116,10 @@ The rest of this section documents the command line interface of stubtest.
 
     Ignore errors for whether an argument should or shouldn't be positional-only
 
+.. option:: --ignore-keyword-only
+
+    Ignore errors for whether an argument should or shouldn't be keyword-only
+
 .. option:: --allowlist FILE
 
     Use file as an allowlist. Can be passed multiple times to combine multiple
