@@ -257,7 +257,7 @@ def generator() -> Generator[int, None, Union[int, None]]:
         yield 2
         yield 3
     except Exception as e:
-        print_tb(wrapsys.exc_info()[2])
+        print_tb(wrapsys.exc_info()[2], file=wrapsys.stdout)
         s = str(e)
         if s:
             print('caught exception with value ' + s)
@@ -294,6 +294,7 @@ from typing import Any
 import sys
 def exc_info() -> Any:
     return sys.exc_info()  # type: ignore
+stdout: Any = sys.stdout  # type: ignore
 
 [file driver.py]
 import sys
@@ -348,24 +349,24 @@ with ctx_manager() as c:
 [out]
   File "native.py", line 10, in generator
     yield 3
+caught exception without value
   File "native.py", line 9, in generator
     yield 2
+caught exception with value some string
   File "native.py", line 8, in generator
     yield 1
   File "driver.py", line 31, in <module>
     raise Exception
+caught exception with value some other string
   File "native.py", line 10, in generator
     yield 3
   File "native.py", line 31, in wrapper
     return (yield from x)
+caught exception without value
   File "native.py", line 9, in generator
     yield 2
   File "native.py", line 31, in wrapper
     return (yield from x)
-caught exception without value
-caught exception with value some string
-caught exception with value some other string
-caught exception without value
 caught exception with value some string
 exception
 goodbye

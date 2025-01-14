@@ -323,7 +323,7 @@ def iterate_over_tuple(iterable: Tuple[int, int, int]) -> None:
 
 [file driver.py]
 from native import iterate_over_any, iterate_over_iterable, iterate_and_delete, sum_over_values, sum_over_even_values, sum_over_two_values, iterate_over_tuple
-import traceback
+import sys, traceback
 def broken_generator(n):
     num = 0
     while num < n:
@@ -339,24 +339,32 @@ print(sum_over_two_values(d))
 try:
     iterate_over_any(5)
 except TypeError:
-    traceback.print_exc()
+    traceback.print_exc(file=sys.stdout)
 try:
     iterate_over_iterable(broken_generator(5))
 except Exception:
-    traceback.print_exc()
+    traceback.print_exc(file=sys.stdout)
 try:
     iterate_and_delete(d)
 except RuntimeError:
-    traceback.print_exc()
+    traceback.print_exc(file=sys.stdout)
 
 iterate_over_tuple((1, 2, 3))
 [out]
+15
+6
+3
 Traceback (most recent call last):
   File "driver.py", line 16, in <module>
     iterate_over_any(5)
   File "native.py", line 6, in iterate_over_any
     for element in a:
 TypeError: 'int' object is not iterable
+0
+1
+2
+3
+4
 Traceback (most recent call last):
   File "driver.py", line 20, in <module>
     iterate_over_iterable(broken_generator(5))
@@ -371,49 +379,6 @@ Traceback (most recent call last):
   File "native.py", line 14, in iterate_and_delete
     for key in d:
 RuntimeError: dictionary changed size during iteration
-15
-6
-3
-0
-1
-2
-3
-4
-1
-2
-3
-[out version>=3.13]
-Traceback (most recent call last):
-  File "driver.py", line 16, in <module>
-    iterate_over_any(5)
-    ~~~~~~~~~~~~~~~~^^^
-  File "native.py", line 6, in iterate_over_any
-    for element in a:
-TypeError: 'int' object is not iterable
-Traceback (most recent call last):
-  File "driver.py", line 20, in <module>
-    iterate_over_iterable(broken_generator(5))
-    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
-  File "native.py", line 10, in iterate_over_iterable
-    for element in iterable:
-  File "driver.py", line 8, in broken_generator
-    raise Exception('Exception Manually Raised')
-Exception: Exception Manually Raised
-Traceback (most recent call last):
-  File "driver.py", line 24, in <module>
-    iterate_and_delete(d)
-    ~~~~~~~~~~~~~~~~~~^^^
-  File "native.py", line 14, in iterate_and_delete
-    for key in d:
-RuntimeError: dictionary changed size during iteration
-15
-6
-3
-0
-1
-2
-3
-4
 1
 2
 3
