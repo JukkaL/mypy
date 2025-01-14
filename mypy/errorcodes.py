@@ -159,6 +159,11 @@ AWAIT_NOT_ASYNC: Final = ErrorCode(
 NO_UNTYPED_DEF: Final[ErrorCode] = ErrorCode(
     "no-untyped-def", "Check that every function has an annotation", "General"
 )
+NO_UNTYPED_RET: Final[ErrorCode] = ErrorCode(
+    "no-untyped-ret",
+    "Check that every function with at least one typed argument has a typed return",
+    "General",
+)
 NO_UNTYPED_CALL: Final = ErrorCode(
     "no-untyped-call",
     "Disallow calling functions without type annotations from annotated functions",

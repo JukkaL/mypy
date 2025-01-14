@@ -1548,8 +1548,15 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             not is_unannotated_any(t) for t in fdef.type.arg_types + [fdef.type.ret_type]
         )
 
+        has_explicit_arg_annotation = isinstance(fdef.type, CallableType) and any(
+            not is_unannotated_any(t) for t in fdef.type.arg_types
+        )
+
         show_untyped = not self.is_typeshed_stub or self.options.warn_incomplete_stub
         check_incomplete_defs = self.options.disallow_incomplete_defs and has_explicit_annotation
+        check_incomplete_defs_arg = (
+            self.options.disallow_incomplete_defs and has_explicit_arg_annotation
+        )
         if show_untyped and (self.options.disallow_untyped_defs or check_incomplete_defs):
             if fdef.type is None and self.options.disallow_untyped_defs:
                 if not fdef.arguments or (
@@ -1567,7 +1574,9 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                     self.fail(message_registry.FUNCTION_TYPE_EXPECTED, fdef)
             elif isinstance(fdef.type, CallableType):
                 ret_type = get_proper_type(fdef.type.ret_type)
-                if is_unannotated_any(ret_type):
+                if check_incomplete_defs_arg and is_unannotated_any(ret_type):
+                    self.fail(message_registry.RETURN_TYPE_EXPECTED_TYPED_ARG, fdef)
+                elif is_unannotated_any(ret_type):
                     self.fail(message_registry.RETURN_TYPE_EXPECTED, fdef)
                 elif fdef.is_generator:
                     if is_unannotated_any(
