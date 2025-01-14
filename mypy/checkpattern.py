@@ -787,6 +787,45 @@ class PatternChecker(PatternVisitor[PatternType]):
 
     def early_non_match(self) -> PatternType:
         return PatternType(UninhabitedType(), self.type_context[-1], {})
+    def visit_match(self, o: MatchExpr, context: Context) -> Type:
+    match_type = self.accept(o.value, context)
+    match_type = get_proper_type(match_type)
+
+    for case in o.cases:
+        self.type_context.append(match_type)
+        self.in_match_guard.append(False)
+        pattern_type = self.accept(case.pattern, match_type)
+        self.in_match_guard.pop()
+        self.type_context.pop()
+
+        # Narrow down the match_type based on the pattern_type
+        # For example, when matching TypedDicts
+        if isinstance(match_type, UnionType) and isinstance(pattern_type, TypedDictType):
+            # Handle TypedDict narrowing
+            narrowed_types = []
+            for subtype in match_type.items:
+                if (
+                    isinstance(subtype, TypedDictType)
+                    and subtype.tag_literal is not None
+                    and subtype.tag_literal == pattern_type.tag_literal
+                ):
+                    narrowed_types.append(subtype)
+            match_type = make_simplified_union(narrowed_types)
+
+        if pattern_type and pattern_type.captures:
+            self.update_type_map(match_type.captures, pattern_type.captures)
+        if isinstance(pattern_type.type, UninhabitedType):
+            self.msg.fail(message_registry.UNREACHABLE_CODE, case)
+        else:
+            self.report_unnecessary_variable_check(case, context, pattern_type)
+            return_type = self.accept(case.block, context)
+        if not is_subtype(match_type, return_type):
+            # To make sure everything is cleaned up properly, we set the stack_depth at this point.
+            # This is a little hacky, but we don't know what is pushed and popped in this branch,
+            # so the stack_depth wouldn't be reliable.
+            self.stack_depth = o.orig_stack_depth
+            self.msg.fail(message_registry.INCOMPATIBLE_MATCH_RETURN, case)
+    return UninhabitedType()
 
 
 def get_match_arg_names(typ: TupleType) -> list[str | None]:
