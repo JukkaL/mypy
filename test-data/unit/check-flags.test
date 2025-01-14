@@ -1150,6 +1150,16 @@ def d(f) -> Callable[..., None]:
 def g(i: int, s: str) -> None: pass  # E: Type of decorated function contains type "Any" ("Callable[..., None]")
 
 [builtins fixtures/list.pyi]
+[case testDisallowAnyDecoratedWithStaticMethod]
+# flags: --disallow-any-decorated
+from typing import Any, Callable
+
+class C:
+    @staticmethod
+    def f() -> Any: pass
+
+[builtins fixtures/staticmethod.pyi]
+
 [case testDisallowAnyDecoratedNonexistentDecorator]
 # flags: --disallow-any-decorated --ignore-missing-imports
 from nonexistent import d

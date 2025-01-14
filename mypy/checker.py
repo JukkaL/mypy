@@ -5160,7 +5160,8 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             sig, t2 = self.expr_checker.check_call(
                 dec, [temp], [nodes.ARG_POS], e, callable_name=fullname, object_type=object_type
             )
-        self.check_untyped_after_decorator(sig, e.func)
+        if e.decorators:
+            self.check_untyped_after_decorator(sig, e.func)
         sig = set_callable_name(sig, e.func)
         e.var.type = sig
         e.var.is_ready = True
