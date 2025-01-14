@@ -858,6 +858,17 @@ class MessageBuilder:
                 self.report_protocol_problems(
                     original_caller_type, callee_type, context, code=code
                 )
+            if (
+                isinstance(callee_type, TypeType)
+                and isinstance(callee_type.item, Instance)
+                and isinstance(original_caller_type, CallableType)
+                and callee_type.item.type.is_protocol
+            ):
+                proper_ret_type = get_proper_type(original_caller_type.ret_type)
+                if isinstance(proper_ret_type, Instance):
+                    self.report_protocol_problems(
+                        proper_ret_type, callee_type.item, context, code=code
+                    )
             if isinstance(callee_type, UnionType):
                 for item in callee_type.items:
                     item = get_proper_type(item)
