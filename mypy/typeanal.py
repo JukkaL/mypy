@@ -357,7 +357,12 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
             fullname = node.fullname
             hook = self.plugin.get_type_analyze_hook(fullname)
             if hook is not None:
-                return hook(AnalyzeTypeContext(t, t, self))
+                hook_out = hook(AnalyzeTypeContext(t, t, self))
+                # Allow deferring to default
+
+                if hook_out is not NotImplemented:
+                    return hook_out
+
             if (
                 fullname in get_nongen_builtins(self.options.python_version)
                 and t.args

@@ -597,7 +597,8 @@ class Plugin(CommonPluginApi):
 
         this method will be called with 'lib.Special', and then with 'lib.Other'.
         The callback returned by plugin must return an analyzed type,
-        i.e. an instance of `mypy.types.Type`.
+        i.e. an instance of `mypy.types.Type`, or `NotImplemented` to continue
+        default analysis.
         """
         return None
 
