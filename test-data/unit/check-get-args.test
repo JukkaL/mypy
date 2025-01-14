@@ -1,0 +1,75 @@
+[case getArgsReturnTypes]
+from typing import Literal, Union, get_args
+literals: Literal["a", "bc"] = "a"
+unionliterals: Union[Literal["a"], Literal["bc"]] = "a"
+intandliterals: Union[Literal["a", "bc"], int] = "a"
+intandunionliterals: Union[Literal["a"], Literal["bc"], int] = "a"
+inttype: int = 1
+reveal_type(get_args(literals)) # N: Revealed type is "Tuple[Union[Literal['a'], Literal['bc']], Union[Literal['a'], Literal['bc']]]"
+reveal_type(get_args(unionliterals)) # N: Revealed type is "Tuple[Union[Literal['a'], Literal['bc']], Union[Literal['a'], Literal['bc']]]"
+reveal_type(get_args(intandliterals)) # N: Revealed type is "Union[Literal['a'], Literal['bc'], builtins.int]"
+reveal_type(get_args(intandunionliterals)) # N: Revealed type is "Union[Literal['a'], Literal['bc'], builtins.int]"
+reveal_type(get_args(inttype))  # N: Revealed type is "builtins.int"
+[builtins fixtures/primitives.pyi]
+[typing fixtures/typing-full.pyi]
+
+[case getArgsVarTypesWithNarrowing]
+from typing import Literal, get_args
+from typing_extensions import TypeAlias
+normalImplicit = Literal["a", "bc"]
+normalExplicit: TypeAlias = Literal["a", "bc"]
+reveal_type(get_args(normalImplicit)) # N: Revealed type is "Tuple[Union[Literal['a'], Literal['bc']], Union[Literal['a'], Literal['bc']]]"
+reveal_type(get_args(normalExplicit)) # N: Revealed type is "Tuple[Union[Literal['a'], Literal['bc']], Union[Literal['a'], Literal['bc']]]"
+reveal_type(get_args(Literal["a", "bc"]))  # N: Revealed type is "typing._SpecialForm"
+[builtins fixtures/primitives.pyi]
+[typing fixtures/typing-full.pyi]
+
+[case testNarrowingInType]
+from typing import Literal, get_args
+type_alpha = Literal["a", "b", "c"]
+strIn: str = "c"
+strOut: str = "d"
+if strIn in get_args(type_alpha):
+    reveal_type(strIn)  # N: Revealed type is "Union[Literal['a'], Literal['b'], Literal['c']]"
+else:
+    reveal_type(strIn)  # N: Revealed type is "builtins.str"
+if strOut in get_args(type_alpha):
+    reveal_type(strOut)  # N: Revealed type is "Union[Literal['a'], Literal['b'], Literal['c']]"
+else:
+    reveal_type(strOut)  # N: Revealed type is "builtins.str"
+[builtins fixtures/primitives.pyi]
+[typing fixtures/typing-full.pyi]
+
+[case testNarrowingNotInType]
+from typing import Literal, get_args
+type_alpha = Literal["a", "b", "c"]
+strIn: str = "c"
+strOut: str = "d"
+if strIn not in get_args(type_alpha):
+    reveal_type(strIn)  # N: Revealed type is "builtins.str"
+else:
+    reveal_type(strIn)  # N: Revealed type is "Union[Literal['a'], Literal['b'], Literal['c']]"
+if strOut not in get_args(type_alpha):
+    reveal_type(strOut)  # N: Revealed type is "builtins.str"
+else:
+    reveal_type(strOut)  # N: Revealed type is "Union[Literal['a'], Literal['b'], Literal['c']]"
+[builtins fixtures/primitives.pyi]
+[typing fixtures/typing-full.pyi]
+
+[case i15106]
+from typing import Literal, get_args, Optional
+from typing_extensions import TypeAlias
+ExpectedUserInput: TypeAlias = Literal[
+    "these", "strings", "are", "expected", "user", "input"
+]
+def external_function(input: str) -> Optional[str]:
+    if input not in get_args(ExpectedUserInput):
+        reveal_type(input) # N: Revealed type is "builtins.str"
+        return None
+    reveal_type(input) # N: Revealed type is "Union[Literal['these'], Literal['strings'], Literal['are'], Literal['expected'], Literal['user'], Literal['input']]"
+    return _internal_function(input)
+
+def _internal_function(input: ExpectedUserInput) -> str:
+    return "User input: {input}"
+[builtins fixtures/primitives.pyi]
+[typing fixtures/typing-full.pyi]
