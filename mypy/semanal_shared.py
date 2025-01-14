@@ -256,6 +256,10 @@ class SemanticAnalyzerInterface(SemanticAnalyzerCoreInterface):
     ) -> None:
         raise NotImplementedError
 
+    @abstractmethod
+    def analyze_class(self, defn: ClassDef) -> None:
+        raise NotImplementedError
+
 
 def set_callable_name(sig: Type, fdef: FuncDef) -> ProperType:
     sig = get_proper_type(sig)

@@ -170,6 +170,10 @@ class NamedTupleAnalyzer:
                 # And docstrings.
                 if isinstance(stmt, ExpressionStmt) and isinstance(stmt.expr, StrExpr):
                     continue
+                # Allow nested classes.
+                if isinstance(stmt, ClassDef):
+                    self.api.analyze_class(stmt)
+                    continue
                 statements.pop()
                 defn.removed_statements.append(stmt)
                 self.fail(NAMEDTUP_CLASS_ERROR, stmt)

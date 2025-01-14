@@ -683,3 +683,23 @@ reveal_type(y) # N: Revealed type is "builtins.int"
 point.y = 6 # E: Property "y" defined in "Point" is read-only
 
 [builtins fixtures/tuple.pyi]
+
+[case testNestedNamedTuple]
+from enum import Enum
+from typing import NamedTuple
+
+class T(NamedTuple):
+  class State(Enum):
+    A = 1
+  state: State
+
+class RaggedFeature(NamedTuple):
+  class RowSplits(NamedTuple):
+    x: int
+
+  splits: RowSplits
+
+reveal_type(T.State.A) # N: Revealed type is "Literal[__main__.State.A]?"
+reveal_type(RaggedFeature.RowSplits.x) # N: Revealed type is "builtins.int"
+
+[builtins fixtures/tuple.pyi]
