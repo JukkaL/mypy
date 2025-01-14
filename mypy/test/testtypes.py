@@ -448,6 +448,31 @@ class TypeOpsSuite(Suite):
         assert is_subtype(lit1, fx.anyt)
         assert is_subtype(fx.anyt, lit1)
 
+    def test_is_proper_subtype_literal_str_types(self) -> None:
+        fx = self.fx
+
+        lit_foo = LiteralType("foo", fx.str_type)
+        assert is_proper_subtype(lit_foo, lit_foo)
+
+        lit_also_foo = LiteralType("foo", fx.str_type)
+        assert is_proper_subtype(lit_foo, lit_also_foo)
+        assert is_proper_subtype(lit_also_foo, lit_foo)
+
+        lit_bar = LiteralType("bar", fx.str_type)
+        assert not is_proper_subtype(lit_foo, lit_bar)
+        assert not is_proper_subtype(lit_bar, lit_foo)
+
+        str_type = fx.str_type
+        assert is_proper_subtype(lit_foo, str_type)
+        assert not is_proper_subtype(str_type, lit_foo)
+
+        lit_foo_context_sensitive = Instance(fx.str_type_info, [], last_known_value=lit_foo)
+        assert is_proper_subtype(lit_foo_context_sensitive, str_type)
+        assert is_proper_subtype(str_type, lit_foo_context_sensitive)
+
+        assert not is_proper_subtype(lit_foo_context_sensitive, lit_bar)
+        assert is_proper_subtype(lit_bar, lit_foo_context_sensitive)
+
     def test_subtype_aliases(self) -> None:
         A1, _ = self.fx.def_alias_1(self.fx.a)
         AA1, _ = self.fx.def_alias_1(self.fx.a)
