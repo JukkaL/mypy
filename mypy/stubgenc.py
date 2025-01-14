@@ -255,10 +255,18 @@ class InspectionStubGenerator(BaseStubGenerator):
                         "List",
                         "Literal",
                         "NamedTuple",
+                        "Never",
+                        "NoReturn",
+                        "Set",
                         "Optional",
                         "Tuple",
+                        "Type",
+                        "TypeIs",
+                        "TypeGuard",
                         "Union",
-                    ]
+                    ],
+                    "os": ["PathLike"],
+                    "pathlib": ["Path"],
                 }
             )
 
