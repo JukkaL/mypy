@@ -66,7 +66,7 @@ def edit_python_file(fnam: str) -> None:
 
 
 def run_benchmark(
-    compiled_dir: str, check_dir: str, *, incremental: bool, code: str, foreign: bool | None
+    compiled_dir: str, check_dir: str, *, incremental: bool, code: str | None, foreign: bool | None
 ) -> float:
     cache_dir = os.path.join(compiled_dir, ".mypy_cache")
     if os.path.isdir(cache_dir) and not incremental:
@@ -213,11 +213,11 @@ def main() -> None:
             delta = f"{d:+.1%}"
         print(f"{commit:<25} {tt:.3f}s ({delta}) | stdev {s:.3f}s ")
 
-    t  = int( time.time() - whole_program_time_0 )
+    t = int( time.time() - whole_program_time_0 )
     total_time_taken_formatted = ", ".join(
         f"{v} {n if v==1 else n+'s'}" for v, n in ((t//3600, "hour"), (t//60%60, "minute"), (t%60, "second")) if v
     )
-    print(f"Total time taken by the whole benchmarking program (including any setup):", total_time_taken_formatted)
+    print("Total time taken by the whole benchmarking program (including any setup):", total_time_taken_formatted)
 
     shutil.rmtree(check_dir)
     for target_dir in target_dirs:
