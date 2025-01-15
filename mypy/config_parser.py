@@ -278,10 +278,10 @@ def parse_config_file(
     else:
         section = parser["mypy"]
 
-        if "files" in section:
-            raw_files = section["files"]
-            normalized_files = [file.strip() for file in raw_files.split(",") if file.strip()]
-            section["files"] = ",".join(normalized_files)
+        # if "files" in section:
+        #     raw_files = section["files"]
+        #     normalized_files = [file.strip() for file in raw_files.split(",") if file.strip()]
+        #     section["files"] = ",".join(normalized_files)
 
         prefix = f"{file_read}: [mypy]: "
         updates, report_dirs = parse_section(
