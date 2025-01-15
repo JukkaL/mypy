@@ -213,7 +213,11 @@ def main() -> None:
             delta = f"{d:+.1%}"
         print(f"{commit:<25} {tt:.3f}s ({delta}) | stdev {s:.3f}s ")
 
-    print(f"Total time taken by the benchmarking program (including any setup): {time.time() - whole_program_time_0:.2f}s")
+    t  = int( time.time() - whole_program_time_0 )
+    total_time_taken_formatted = ", ".join(
+        f"{v} {n if v==1 else n+'s'}" for v, n in ((t//3600, "hour"), (t//60%60, "minute"), (t%60, "second")) if v
+    )
+    print(f"Total time taken by the whole benchmarking program (including any setup):", total_time_taken_formatted)
 
     shutil.rmtree(check_dir)
     for target_dir in target_dirs:
