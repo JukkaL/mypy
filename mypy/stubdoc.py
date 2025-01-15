@@ -21,7 +21,7 @@ import mypy.util
 Sig: _TypeAlias = tuple[str, str]
 
 
-_TYPE_RE: Final = re.compile(r"^[a-zA-Z_][\w\[\], .\"\']*(\.[a-zA-Z_][\w\[\], ]*)*$")
+_TYPE_RE: Final = re.compile(r"^[a-zA-Z_][\w\[\], ().\"\']*(\.[a-zA-Z_][\w\[\], ]*)*$")
 _ARG_NAME_RE: Final = re.compile(r"\**[A-Za-z_][A-Za-z0-9_]*$")
 
 
