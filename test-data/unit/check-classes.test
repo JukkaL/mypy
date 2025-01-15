@@ -472,6 +472,27 @@ class B(A):
     def __new__(cls) -> B:
         pass
 
+[case testOverride__new__WithLiteralReturnPassing]
+from typing import Literal
+
+class Falsy:
+    def __bool__(self) -> Literal[False]: pass
+
+reveal_type(bool(Falsy()))  # N: Revealed type is "Literal[False]"
+reveal_type(int())  # N: Revealed type is "Literal[0]"
+
+[builtins fixtures/literal__new__.pyi]
+[typing fixtures/typing-medium.pyi]
+
+[case testOverride__new__WithLiteralReturnFailing]
+from typing import Literal
+
+class Foo:
+    def __new__(cls) -> Literal[1]: pass # E: Incompatible return type for "__new__" (returns "Literal[1]", but must return a subtype of "Foo")
+
+[builtins fixtures/__new__.pyi]
+[typing fixtures/typing-medium.pyi]
+
 [case testOverride__new__AndCallObject]
 from typing import TypeVar, Generic
 
