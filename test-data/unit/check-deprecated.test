@@ -506,8 +506,10 @@ C().g = "x"  # E: function __main__.C.g is deprecated: use g2 instead \
 [case testDeprecatedDescriptor]
 # flags: --enable-error-code=deprecated
 
-from typing import Any, Optional, Union
+from typing import Any, Generic, Optional, TypeVar, Union
 from typing_extensions import deprecated, overload
+
+T = TypeVar("T")
 
 @deprecated("use E1 instead")
 class D1:
@@ -536,10 +538,19 @@ class D3:
     def __set__(self, obj: C, value: str) -> None: ...
     def __set__(self, obj: C, value: Union[int, str]) -> None: ...
 
+class D4(Generic[T]):
+    @overload
+    def __get__(self, obj: None, objtype: Any) -> T: ...
+    @overload
+    @deprecated("deprecated instance access")
+    def __get__(self, obj: C, objtype: Any) -> T: ...
+    def __get__(self, obj: Optional[C], objtype: Any) -> T: ...
+
 class C:
     d1 = D1()  # E: class __main__.D1 is deprecated: use E1 instead
     d2 = D2()
     d3 = D3()
+    d4 = D4[int]()
 
 c: C
 C.d1
@@ -554,6 +565,9 @@ C.d3  # E: overload def (self: __main__.D3, obj: None, objtype: Any) -> __main__
 c.d3  # E: overload def (self: __main__.D3, obj: __main__.C, objtype: Any) -> builtins.int of function __main__.D3.__get__ is deprecated: use E3.__get__ instead
 c.d3 = 1
 c.d3 = "x"  # E: overload def (self: __main__.D3, obj: __main__.C, value: builtins.str) of function __main__.D3.__set__ is deprecated: use E3.__set__ instead
+
+C.d4
+c.d4  # E: overload def (self: __main__.D4[T`1], obj: __main__.C, objtype: Any) -> T`1 of function __main__.D4.__get__ is deprecated: deprecated instance access
 [builtins fixtures/property.pyi]
 
 
