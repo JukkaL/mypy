@@ -99,7 +99,9 @@ def run_benchmark(
 
 def main() -> None:
     whole_program_time_0 = time.time()
-    parser = argparse.ArgumentParser(epilog="Remember: you usually want the first argument to this command to be 'master'.")
+    parser = argparse.ArgumentParser(
+        epilog="Remember: you usually want the first argument to this command to be 'master'."
+    )
     parser.add_argument(
         "--incremental",
         default=False,
@@ -131,8 +133,8 @@ def main() -> None:
         metavar="FOREIGN_REPOSITORY",
         default=None,
         type=str,
-        help="measure time to type check the project at FOREIGN_REPOSITORY instead of mypy self-check; " +
-          "provided value must be the URL or path of a git repo",
+        help="measure time to type check the project at FOREIGN_REPOSITORY instead of mypy self-check; "
+        + "provided value must be the URL or path of a git repo",
     )
     parser.add_argument(
         "-c",
@@ -192,7 +194,13 @@ def main() -> None:
         items = list(enumerate(commits))
         random.shuffle(items)
         for i, commit in items:
-            tt = run_benchmark(target_dirs[i], check_dir, incremental=incremental, code=code, foreign=bool(foreign_repo))
+            tt = run_benchmark(
+                target_dirs[i],
+                check_dir,
+                incremental=incremental,
+                code=code,
+                foreign=bool(foreign_repo),
+            )
             # Don't record the first warm-up run
             if n > 0:
                 print(f"{commit}: t={tt:.3f}s")
@@ -203,7 +211,7 @@ def main() -> None:
     first = -1.0
     for commit in commits:
         tt = statistics.mean(results[commit])
-        #pstdev (instead of stdev) is used here primarily to accommodate the case where num_runs=1
+        # pstdev (instead of stdev) is used here primarily to accommodate the case where num_runs=1
         s = statistics.pstdev(results[commit]) if len(results[commit]) > 1 else 0
         if first < 0:
             delta = "0.0%"
@@ -213,11 +221,16 @@ def main() -> None:
             delta = f"{d:+.1%}"
         print(f"{commit:<25} {tt:.3f}s ({delta}) | stdev {s:.3f}s ")
 
-    t = int( time.time() - whole_program_time_0 )
+    t = int(time.time() - whole_program_time_0)
     total_time_taken_formatted = ", ".join(
-        f"{v} {n if v==1 else n+'s'}" for v, n in ((t//3600, "hour"), (t//60%60, "minute"), (t%60, "second")) if v
+        f"{v} {n if v==1 else n+'s'}"
+        for v, n in ((t // 3600, "hour"), (t // 60 % 60, "minute"), (t % 60, "second"))
+        if v
     )
-    print("Total time taken by the whole benchmarking program (including any setup):", total_time_taken_formatted)
+    print(
+        "Total time taken by the whole benchmarking program (including any setup):",
+        total_time_taken_formatted,
+    )
 
     shutil.rmtree(check_dir)
     for target_dir in target_dirs:
