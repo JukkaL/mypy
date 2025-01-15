@@ -274,7 +274,7 @@ libraries if types are generic only in stubs.
 Using types defined in stubs but not at runtime
 -----------------------------------------------
 
-Sometimes stubs that you're using may define types you wish to re-use that do
+Sometimes stubs that you're using may define types you wish to reuse that do
 not exist at runtime. Importing these types naively will cause your code to fail
 at runtime with ``ImportError`` or ``ModuleNotFoundError``. Similar to previous
 sections, these can be dealt with by using :ref:`typing.TYPE_CHECKING
