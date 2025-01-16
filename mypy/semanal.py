@@ -2031,7 +2031,7 @@ class SemanticAnalyzer(
                 defn, self.is_stub_file, self.is_func_scope()
             )
         if is_named_tuple:
-            if info is None:
+            if info is None or any(has_placeholder(tv) for tv in tvar_defs):
                 self.mark_incomplete(defn.name, defn)
             else:
                 self.prepare_class_def(defn, info, custom_names=True)
