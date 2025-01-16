@@ -12,9 +12,41 @@ PYTHON3_VERSION: Final = (3, 9)
 # mypy, at least version PYTHON3_VERSION is needed.
 PYTHON3_VERSION_MIN: Final = (3, 8)  # Keep in sync with typeshed's python support
 
+
+def find_pyproject() -> str:
+    """Search for file pyproject.toml in the parent directories recursively.
+
+    It resolves symlinks, so if there is any symlink up in the tree, it does not respect them
+
+    If the file is not found until the root of FS or repository, PYPROJECT_FILE is used
+    """
+
+    def is_root(current_dir: str) -> bool:
+        parent = os.path.join(current_dir, os.path.pardir)
+        return os.path.samefile(current_dir, parent) or any(
+            os.path.isdir(os.path.join(current_dir, cvs_root)) for cvs_root in (".git", ".hg")
+        )
+
+    # Preserve the original behavior, returning PYPROJECT_FILE if exists
+    if os.path.isfile(PYPROJECT_FILE) or is_root(os.path.curdir):
+        return PYPROJECT_FILE
+
+    # And iterate over the tree
+    current_dir = os.path.pardir
+    while not is_root(current_dir):
+        config_file = os.path.join(current_dir, PYPROJECT_FILE)
+        if os.path.isfile(config_file):
+            return config_file
+        parent = os.path.join(current_dir, os.path.pardir)
+        current_dir = parent
+
+    return PYPROJECT_FILE
+
+
 CACHE_DIR: Final = ".mypy_cache"
 CONFIG_FILE: Final = ["mypy.ini", ".mypy.ini"]
-PYPROJECT_CONFIG_FILES: Final = ["pyproject.toml"]
+PYPROJECT_FILE: Final = "pyproject.toml"
+PYPROJECT_CONFIG_FILES: Final = [find_pyproject()]
 SHARED_CONFIG_FILES: Final = ["setup.cfg"]
 USER_CONFIG_FILES: Final = ["~/.config/mypy/config", "~/.mypy.ini"]
 if os.environ.get("XDG_CONFIG_HOME"):

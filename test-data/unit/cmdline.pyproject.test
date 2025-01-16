@@ -133,3 +133,38 @@ Neither is this!
 description = "Factory ⸻ A code generator 🏭"
 \[tool.mypy]
 [file x.py]
+
+[case testSearchRecursively]
+# cmd: mypy x.py
+[file ../pyproject.toml]
+\[tool.mypy]
+\[tool.mypy.overrides]
+module = "x"
+disallow_untyped_defs = false
+[file x.py]
+pass
+[out]
+../pyproject.toml: tool.mypy.overrides sections must be an array. Please make sure you are using double brackets like so: [[tool.mypy.overrides]]
+== Return code: 0
+
+[case testSearchRecursivelyStopsGit]
+# cmd: mypy x.py
+[file .git/test]
+[file ../pyproject.toml]
+\[tool.mypy]
+\[tool.mypy.overrides]
+module = "x"
+disallow_untyped_defs = false
+[file x.py]
+i: int = 0
+
+[case testSearchRecursivelyStopsHg]
+# cmd: mypy x.py
+[file .hg/test]
+[file ../pyproject.toml]
+\[tool.mypy]
+\[tool.mypy.overrides]
+module = "x"
+disallow_untyped_defs = false
+[file x.py]
+i: int = 0
