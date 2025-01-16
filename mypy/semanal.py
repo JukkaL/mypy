@@ -3873,8 +3873,8 @@ class SemanticAnalyzer(
             new_tvar_defs.append(td)
 
         qualified_tvars = [node.fullname for _name, node in alias_type_vars]
-        empty_tuple_index = typ.empty_tuple_index if isinstance(typ, UnboundType) else False
-        return analyzed, new_tvar_defs, depends_on, qualified_tvars, empty_tuple_index
+        has_parameters = typ.has_parameters if isinstance(typ, UnboundType) else False
+        return analyzed, new_tvar_defs, depends_on, qualified_tvars, has_parameters
 
     def is_pep_613(self, s: AssignmentStmt) -> bool:
         if s.unanalyzed_type is not None and isinstance(s.unanalyzed_type, UnboundType):
@@ -3970,10 +3970,10 @@ class SemanticAnalyzer(
             alias_tvars: list[TypeVarLikeType] = []
             depends_on: set[str] = set()
             qualified_tvars: list[str] = []
-            empty_tuple_index = False
+            has_parameters = False
         else:
             tag = self.track_incomplete_refs()
-            res, alias_tvars, depends_on, qualified_tvars, empty_tuple_index = self.analyze_alias(
+            res, alias_tvars, depends_on, qualified_tvars, has_parameters = self.analyze_alias(
                 lvalue.name,
                 rvalue,
                 allow_placeholder=True,
@@ -4020,12 +4020,12 @@ class SemanticAnalyzer(
             isinstance(res, ProperType)
             and isinstance(res, Instance)
             and not res.args
-            and not empty_tuple_index
+            and not (has_parameters and res.type.type_vars)
             and not pep_695
             and not pep_613
         )
         if isinstance(res, ProperType) and isinstance(res, Instance):
-            if not validate_instance(res, self.fail, empty_tuple_index):
+            if not validate_instance(res, self.fail, has_parameters):
                 fix_instance(res, self.fail, self.note, disallow_any=False, options=self.options)
         # Aliases defined within functions can't be accessed outside
         # the function, since the symbol table will no longer
@@ -5490,7 +5490,7 @@ class SemanticAnalyzer(
                 return
 
             tag = self.track_incomplete_refs()
-            res, alias_tvars, depends_on, qualified_tvars, empty_tuple_index = self.analyze_alias(
+            res, alias_tvars, depends_on, qualified_tvars, has_parameters = self.analyze_alias(
                 s.name.name,
                 s.value.expr(),
                 allow_placeholder=True,

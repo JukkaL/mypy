@@ -498,7 +498,7 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
                     self.options,
                     unexpanded_type=t,
                     disallow_any=disallow_any,
-                    empty_tuple_index=t.empty_tuple_index,
+                    has_parameters=t.has_parameters,
                 )
                 # The only case where instantiate_type_alias() can return an incorrect instance is
                 # when it is top-level instance, so no need to recurse.
@@ -506,7 +506,7 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
                     isinstance(res, ProperType)
                     and isinstance(res, Instance)
                     and not (self.defining_alias and self.nesting_level == 0)
-                    and not validate_instance(res, self.fail, t.empty_tuple_index)
+                    and not validate_instance(res, self.fail, t.has_parameters)
                 ):
                     fix_instance(
                         res,
@@ -521,7 +521,7 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
                     res = get_proper_type(res)
                 return res
             elif isinstance(node, TypeInfo):
-                return self.analyze_type_with_type_info(node, t.args, t, t.empty_tuple_index)
+                return self.analyze_type_with_type_info(node, t.args, t, t.has_parameters)
             elif node.fullname in TYPE_ALIAS_NAMES:
                 return AnyType(TypeOfAny.special_form)
             # Concatenate is an operator, no need for a proper type
@@ -644,7 +644,7 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
                 else:
                     self.fail('Name "tuple" is not defined', t)
                 return AnyType(TypeOfAny.special_form)
-            if len(t.args) == 0 and not t.empty_tuple_index:
+            if len(t.args) == 0 and not t.has_parameters:
                 # Bare 'Tuple' is same as 'tuple'
                 any_type = self.get_omitted_any(t)
                 return self.named_type("builtins.tuple", [any_type], line=t.line, column=t.column)
@@ -830,7 +830,7 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
                 warn(deprecated, ctx, code=codes.DEPRECATED)
 
     def analyze_type_with_type_info(
-        self, info: TypeInfo, args: Sequence[Type], ctx: Context, empty_tuple_index: bool
+        self, info: TypeInfo, args: Sequence[Type], ctx: Context, has_parameters: bool
     ) -> Type:
         """Bind unbound type when were able to find target TypeInfo.
 
@@ -868,7 +868,7 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
         # Check type argument count.
         instance.args = tuple(flatten_nested_tuples(instance.args))
         if not (self.defining_alias and self.nesting_level == 0) and not validate_instance(
-            instance, self.fail, empty_tuple_index
+            instance, self.fail, has_parameters
         ):
             fix_instance(
                 instance,
@@ -2147,7 +2147,7 @@ def instantiate_type_alias(
     unexpanded_type: Type | None = None,
     disallow_any: bool = False,
     use_standard_error: bool = False,
-    empty_tuple_index: bool = False,
+    has_parameters: bool = False,
 ) -> Type:
     """Create an instance of a (generic) type alias from alias node and type arguments.
 
@@ -2175,7 +2175,7 @@ def instantiate_type_alias(
     if (
         max_tv_count > 0
         and act_len == 0
-        and not (empty_tuple_index and node.tvar_tuple_index is not None)
+        and not (has_parameters and node.tvar_tuple_index is not None)
     ):
         # Interpret bare Alias same as normal generic, i.e., Alias[Any, Any, ...]
         return set_any_tvars(
@@ -2492,7 +2492,7 @@ def make_optional_type(t: Type) -> Type:
         return UnionType([t, NoneType()], t.line, t.column)
 
 
-def validate_instance(t: Instance, fail: MsgCallback, empty_tuple_index: bool) -> bool:
+def validate_instance(t: Instance, fail: MsgCallback, has_parameters: bool) -> bool:
     """Check if this is a well-formed instance with respect to argument count/positions."""
     # TODO: combine logic with instantiate_type_alias().
     if any(unknown_unpack(a) for a in t.args):
@@ -2511,9 +2511,9 @@ def validate_instance(t: Instance, fail: MsgCallback, empty_tuple_index: bool) -
         ):
             correct = True
         if not t.args:
-            if not (empty_tuple_index and len(t.type.type_vars) == 1):
+            if not (has_parameters and len(t.type.type_vars) == 1):
                 # The Any arguments should be set by the caller.
-                if empty_tuple_index and min_tv_count:
+                if has_parameters and min_tv_count:
                     fail(
                         f"At least {min_tv_count} type argument(s) expected, none given",
                         t,

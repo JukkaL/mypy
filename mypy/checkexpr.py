@@ -4896,7 +4896,7 @@ class ExpressionChecker(ExpressionVisitor[Type]):
         # This code can be only called either from checking a type application, or from
         # checking a type alias (after the caller handles no_args aliases), so we know it
         # was initially an IndexExpr, and we allow empty tuple type arguments.
-        if not validate_instance(fake, self.chk.fail, empty_tuple_index=True):
+        if not validate_instance(fake, self.chk.fail, has_parameters=True):
             fix_instance(
                 fake, self.chk.fail, self.chk.note, disallow_any=False, options=self.chk.options
             )

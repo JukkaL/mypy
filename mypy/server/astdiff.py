@@ -363,7 +363,7 @@ class SnapshotTypeVisitor(TypeVisitor[SnapshotItem]):
             "UnboundType",
             typ.name,
             typ.optional,
-            typ.empty_tuple_index,
+            typ.has_parameters,
             snapshot_types(typ.args),
         )
 

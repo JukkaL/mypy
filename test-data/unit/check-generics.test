@@ -3548,3 +3548,36 @@ def foo(x: T):
     reveal_type(C)  # N: Revealed type is "Overload(def [T, S] (x: builtins.int, y: S`-1) -> __main__.C[__main__.Int[S`-1]], def [T, S] (x: builtins.str, y: S`-1) -> __main__.C[__main__.Str[S`-1]])"
     reveal_type(C(0, x))  # N: Revealed type is "__main__.C[__main__.Int[T`-1]]"
     reveal_type(C("yes", x))  # N: Revealed type is "__main__.C[__main__.Str[T`-1]]"
+
+[case testCanUnpackEmptyTuple]
+# flags: --disallow-any-generics
+from typing import Generic, Unpack, Tuple
+from typing_extensions import TypeVarTuple
+
+Ts = TypeVarTuple("Ts")
+class X(Generic[Unpack[Ts]]): ...
+
+def check(
+    x: X[()],  # works
+    y: X[Unpack[Tuple[()]]],  # works
+    z: X[Unpack[Tuple[Unpack[Tuple[()]]]]],  # works
+): ...
+[builtins fixtures/tuple.pyi]
+
+[case testNoGenericInAlias]
+# flags: --disallow-any-generics
+from typing import Generic, Unpack, Union
+from typing_extensions import TypeVarTuple, TypeAlias
+
+Ts = TypeVarTuple("Ts")
+class X(Generic[Unpack[Ts]]): ...
+
+Alias1 = X
+reveal_type(Alias1)  # N: Revealed type is "def [Ts] () -> __main__.X[Unpack[Ts`1]]"
+
+Alias2 = Union[X]  # E: Missing type parameters for generic type "X[()]"
+reveal_type(Alias2)  # N: Revealed type is "def () -> __main__.X[Unpack[builtins.tuple[Any, ...]]]"
+
+Alias3 = Union[X[()]]
+reveal_type(Alias3)  # N: Revealed type is "def () -> __main__.X[()]"
+[builtins fixtures/tuple.pyi]

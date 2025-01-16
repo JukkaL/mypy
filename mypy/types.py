@@ -916,7 +916,7 @@ class UnboundType(ProperType):
         "name",
         "args",
         "optional",
-        "empty_tuple_index",
+        "has_parameters",
         "original_str_expr",
         "original_str_fallback",
     )
@@ -928,7 +928,7 @@ class UnboundType(ProperType):
         line: int = -1,
         column: int = -1,
         optional: bool = False,
-        empty_tuple_index: bool = False,
+        has_parameters: bool = False,
         original_str_expr: str | None = None,
         original_str_fallback: str | None = None,
     ) -> None:
@@ -939,8 +939,8 @@ class UnboundType(ProperType):
         self.args = tuple(args)
         # Should this type be wrapped in an Optional?
         self.optional = optional
-        # Special case for X[()]
-        self.empty_tuple_index = empty_tuple_index
+        # Distinguish between X[()] and X
+        self.has_parameters = has_parameters
         # If this UnboundType was originally defined as a str or bytes, keep track of
         # the original contents of that string-like thing. This way, if this UnboundExpr
         # ever shows up inside of a LiteralType, we can determine whether that
@@ -966,7 +966,7 @@ class UnboundType(ProperType):
             line=self.line,
             column=self.column,
             optional=self.optional,
-            empty_tuple_index=self.empty_tuple_index,
+            has_parameters=self.has_parameters,
             original_str_expr=self.original_str_expr,
             original_str_fallback=self.original_str_fallback,
         )

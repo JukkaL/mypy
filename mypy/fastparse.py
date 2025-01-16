@@ -2042,22 +2042,15 @@ class TypeConverter:
 
     # Subscript(expr value, expr slice, expr_context ctx)  # Python 3.9 and later
     def visit_Subscript(self, n: ast3.Subscript) -> Type:
-        empty_tuple_index = False
         if isinstance(n.slice, ast3.Tuple):
             params = self.translate_expr_list(n.slice.elts)
-            if len(n.slice.elts) == 0:
-                empty_tuple_index = True
         else:
             params = [self.visit(n.slice)]
 
         value = self.visit(n.value)
         if isinstance(value, UnboundType) and not value.args:
             return UnboundType(
-                value.name,
-                params,
-                line=self.line,
-                column=value.column,
-                empty_tuple_index=empty_tuple_index,
+                value.name, params, line=self.line, column=value.column, has_parameters=True
             )
         else:
             return self.invalid_type(n)

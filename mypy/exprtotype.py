@@ -129,8 +129,7 @@ def expr_to_unanalyzed_type(
                 expr_to_unanalyzed_type(arg, options, allow_new_syntax, expr, allow_unpack=True)
                 for arg in args
             )
-            if not base.args:
-                base.empty_tuple_index = True
+            base.has_parameters = True
             return base
         else:
             raise TypeTranslationError()

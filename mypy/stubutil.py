@@ -288,7 +288,7 @@ class AnnotationPrinter(TypeStrVisitor):
             self.stubgen.import_tracker.require_name(s)
         if t.args:
             s += f"[{self.args_str(t.args)}]"
-        elif t.empty_tuple_index:
+        elif t.has_parameters:
             s += "[()]"
         return s
 
