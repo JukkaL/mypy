@@ -5,7 +5,7 @@ import unittest
 from mypy.test.helpers import assert_string_arrays_equal
 from mypyc.codegen.emit import Emitter, EmitterContext
 from mypyc.codegen.emitfunc import FunctionEmitterVisitor, generate_native_function
-from mypyc.common import PLATFORM_SIZE
+from mypyc.common import HAVE_IMMORTAL, PLATFORM_SIZE
 from mypyc.ir.class_ir import ClassIR
 from mypyc.ir.func_ir import FuncDecl, FuncIR, FuncSignature, RuntimeArg
 from mypyc.ir.ops import (
@@ -28,6 +28,7 @@ from mypyc.ir.ops import (
     Integer,
     IntOp,
     LoadAddress,
+    LoadLiteral,
     LoadMem,
     Op,
     Register,
@@ -53,6 +54,7 @@ from mypyc.ir.rtypes import (
     int64_rprimitive,
     int_rprimitive,
     list_rprimitive,
+    none_rprimitive,
     object_rprimitive,
     pointer_rprimitive,
     short_int_rprimitive,
@@ -114,6 +116,7 @@ class TestFunctionEmitterVisitor(unittest.TestCase):
         compute_vtable(ir)
         ir.mro = [ir]
         self.r = add_local("r", RInstance(ir))
+        self.none = add_local("none", none_rprimitive)
 
         self.context = EmitterContext(NameGenerator([["mod"]]))
 
@@ -805,9 +808,25 @@ else {
                 Extend(a, int_rprimitive, signed=False), """cpy_r_r0 = (uint32_t)cpy_r_a;"""
             )
 
+    def test_inc_ref_none(self) -> None:
+        b = Box(self.none)
+        self.assert_emit([b, IncRef(b)], "" if HAVE_IMMORTAL else "CPy_INCREF(cpy_r_r0);")
+
+    def test_inc_ref_bool(self) -> None:
+        b = Box(self.b)
+        self.assert_emit([b, IncRef(b)], "" if HAVE_IMMORTAL else "CPy_INCREF(cpy_r_r0);")
+
+    def test_inc_ref_int_literal(self) -> None:
+        for x in -5, 0, 1, 5, 255, 256:
+            b = LoadLiteral(x, object_rprimitive)
+            self.assert_emit([b, IncRef(b)], "" if HAVE_IMMORTAL else "CPy_INCREF(cpy_r_r0);")
+        for x in -1123355, -6, 257, 123235345:
+            b = LoadLiteral(x, object_rprimitive)
+            self.assert_emit([b, IncRef(b)], "CPy_INCREF(cpy_r_r0);")
+
     def assert_emit(
         self,
-        op: Op,
+        op: Op | list[Op],
         expected: str,
         next_block: BasicBlock | None = None,
         *,
@@ -816,7 +835,11 @@ else {
         skip_next: bool = False,
     ) -> None:
         block = BasicBlock(0)
-        block.ops.append(op)
+        if isinstance(op, Op):
+            block.ops.append(op)
+        else:
+            block.ops.extend(op)
+            op = op[-1]
         value_names = generate_names_for_ir(self.registers, [block])
         emitter = Emitter(self.context, value_names)
         declarations = Emitter(self.context, value_names)
