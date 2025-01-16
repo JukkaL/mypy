@@ -351,6 +351,7 @@ else:
 _F = TypeVar("_F", bound=Callable[..., Any])
 _P = _ParamSpec("_P")
 _T = TypeVar("_T")
+_FT = TypeVar("_FT", bound=Callable[..., Any] | type)
 
 _FT = TypeVar("_FT", bound=Callable[..., Any] | type)
 

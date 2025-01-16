@@ -335,7 +335,7 @@ class TypeOpsSuite(Suite):
                 arg_types=[self.fx.anyt, self.fx.anyt],
                 arg_kinds=[ARG_STAR, ARG_STAR2],
                 arg_names=[None, None],
-                ret_type=self.fx.anyt,
+                ret_type=self.fx.b,
                 fallback=self.fx.type_type,
             ),
         )

@@ -102,11 +102,13 @@ class EraseTypeVisitor(TypeVisitor[ProperType]):
     def visit_callable_type(self, t: CallableType) -> ProperType:
         # We must preserve the fallback type for overload resolution to work.
         any_type = AnyType(TypeOfAny.special_form)
+        # If we're a type object, make sure we continue to be a valid type object
+        ret_type = t.ret_type if t.is_type_obj() else any_type
         return CallableType(
             arg_types=[any_type, any_type],
             arg_kinds=[ARG_STAR, ARG_STAR2],
             arg_names=[None, None],
-            ret_type=any_type,
+            ret_type=ret_type,
             fallback=t.fallback,
             is_ellipsis_args=True,
             implicit=True,

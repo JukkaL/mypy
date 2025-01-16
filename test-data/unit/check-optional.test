@@ -1346,3 +1346,19 @@ def f(x: object) -> None:
         with C():
             pass
 [builtins fixtures/tuple.pyi]
+
+[case testRefineAwayNoneCallbackProtocol]
+# Regression test for issue encountered in https://github.com/python/mypy/pull/18347#issuecomment-2564062070
+from __future__ import annotations
+from typing import Protocol
+
+class CP(Protocol):
+    def __call__(self, parameters: str) -> str: ...
+
+class NotSet: ...
+
+class Task:
+    def with_opt(self, trn: CP | type[NotSet] | None):
+        if trn is not NotSet:
+            reveal_type(trn)  # N: Revealed type is "Union[__main__.CP, Type[__main__.NotSet], None]"
+[builtins fixtures/tuple.pyi]
