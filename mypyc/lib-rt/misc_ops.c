@@ -347,13 +347,15 @@ static int _CPy_UpdateObjFromDict(PyObject *obj, PyObject *dict)
  *   tp: The class we are making a dataclass
  *   dict: The dictionary containing values that dataclasses needs
  *   annotations: The type annotation dictionary
+ *   dataclass_type: A str object with the return value of util.py:dataclass_type()
  */
 int
 CPyDataclass_SleightOfHand(PyObject *dataclass_dec, PyObject *tp,
-                           PyObject *dict, PyObject *annotations) {
+                           PyObject *dict, PyObject *annotations,
+                           PyObject *dataclass_type) {
     PyTypeObject *ttp = (PyTypeObject *)tp;
     Py_ssize_t pos;
-    PyObject *res;
+    PyObject *res = NULL;
 
     /* Make a copy of the original class __dict__ */
     PyObject *orig_dict = PyDict_Copy(ttp->tp_dict);
@@ -381,17 +383,37 @@ CPyDataclass_SleightOfHand(PyObject *dataclass_dec, PyObject *tp,
     if (!res) {
         goto fail;
     }
-    Py_DECREF(res);
+    const char *dataclass_type_ptr = PyUnicode_AsUTF8(dataclass_type);
+    if (dataclass_type_ptr == NULL) {
+        goto fail;
+    }
+    if (strcmp(dataclass_type_ptr, "attr") == 0 ||
+        strcmp(dataclass_type_ptr, "attr-auto") == 0) {
+        // These attributes are added or modified by @attr.s(slots=True).
+        const char * const keys[] = {"__attrs_attrs__", "__attrs_own_setattr__", "__init__", ""};
+        for (const char * const *key_iter = keys; **key_iter != '\0'; key_iter++) {
+            PyObject *value = NULL;
+            int rv = PyObject_GetOptionalAttrString(res, *key_iter, &value);
+            if (rv == 1) {
+                PyObject_SetAttrString(tp, *key_iter, value);
+                Py_DECREF(value);
+            } else if (rv == -1) {
+              goto fail;
+            }
+        }
+    }
 
     /* Copy back the original contents of the dict */
     if (_CPy_UpdateObjFromDict(tp, orig_dict) != 0) {
         goto fail;
     }
 
+    Py_DECREF(res);
     Py_DECREF(orig_dict);
     return 1;
 
 fail:
+    Py_XDECREF(res);
     Py_XDECREF(orig_dict);
     return 0;
 }

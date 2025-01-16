@@ -2705,3 +2705,17 @@ print(native.ColorCode.OKGREEN.value)
 
 [out]
 okgreen
+
+[case testAttrWithSlots]
+import attr
+
+@attr.s(slots=True)
+class A:
+    ints: list[int] = attr.ib()
+
+[file driver.py]
+import native
+print(native.A(ints=[1, -17]).ints)
+
+[out]
+\[1, -17]

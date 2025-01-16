@@ -224,7 +224,13 @@ pytype_from_template_op = custom_op(
 # Create a dataclass from an extension class. See
 # CPyDataclass_SleightOfHand for more docs.
 dataclass_sleight_of_hand = custom_op(
-    arg_types=[object_rprimitive, object_rprimitive, dict_rprimitive, dict_rprimitive],
+    arg_types=[
+        object_rprimitive,
+        object_rprimitive,
+        dict_rprimitive,
+        dict_rprimitive,
+        str_rprimitive,
+    ],
     return_type=bit_rprimitive,
     c_function_name="CPyDataclass_SleightOfHand",
     error_kind=ERR_FALSE,

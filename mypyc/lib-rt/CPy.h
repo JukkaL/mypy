@@ -860,7 +860,8 @@ PyObject *CPyType_FromTemplateWrapper(PyObject *template_,
                                       PyObject *orig_bases,
                                       PyObject *modname);
 int CPyDataclass_SleightOfHand(PyObject *dataclass_dec, PyObject *tp,
-                               PyObject *dict, PyObject *annotations);
+                               PyObject *dict, PyObject *annotations,
+                               PyObject *dataclass_type);
 PyObject *CPyPickle_SetState(PyObject *obj, PyObject *state);
 PyObject *CPyPickle_GetState(PyObject *obj);
 CPyTagged CPyTagged_Id(PyObject *o);

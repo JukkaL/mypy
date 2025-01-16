@@ -73,6 +73,8 @@ def is_dataclass(cdef: ClassDef) -> bool:
     return any(is_dataclass_decorator(d) for d in cdef.decorators)
 
 
+# The string values returned by this function are inspected in
+# mypyc/lib-rt/misc_ops.c:CPyDataclass_SleightOfHand(...).
 def dataclass_type(cdef: ClassDef) -> str | None:
     for d in cdef.decorators:
         typ = dataclass_decorator_type(d)
