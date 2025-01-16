@@ -79,6 +79,8 @@ if TYPE_CHECKING:
 
 # The set of decorators that generate dataclasses.
 dataclass_makers: Final = {"dataclass", "dataclasses.dataclass"}
+# Default field specifiers for dataclasses
+DATACLASS_FIELD_SPECIFIERS: Final = ("dataclasses.Field", "dataclasses.field")
 
 
 SELF_TVAR_NAME: Final = "_DT"
@@ -87,7 +89,7 @@ _TRANSFORM_SPEC_FOR_DATACLASSES: Final = DataclassTransformSpec(
     order_default=False,
     kw_only_default=False,
     frozen_default=False,
-    field_specifiers=("dataclasses.Field", "dataclasses.field"),
+    field_specifiers=DATACLASS_FIELD_SPECIFIERS,
 )
 _INTERNAL_REPLACE_SYM_NAME: Final = "__mypy-replace"
 _INTERNAL_POST_INIT_SYM_NAME: Final = "__mypy-post_init"

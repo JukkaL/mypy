@@ -3101,15 +3101,14 @@ import attrs
 
 @attrs.define
 class C:
-    x = attrs.field()
+    x: int = attrs.field()
 
 [out]
 import attrs
 
 @attrs.define
 class C:
-    x = ...
-    def __init__(self, x) -> None: ...
+    x: int = attrs.field()
 
 [case testNamedTupleInClass]
 from collections import namedtuple
@@ -4050,8 +4049,9 @@ def i(x=..., y=..., z=...) -> None: ...
 [case testDataclass]
 import dataclasses
 import dataclasses as dcs
-from dataclasses import dataclass, InitVar, KW_ONLY
+from dataclasses import dataclass, field, Field, InitVar, KW_ONLY
 from dataclasses import dataclass as dc
+from datetime import datetime
 from typing import ClassVar
 
 @dataclasses.dataclass
@@ -4066,6 +4066,10 @@ class X:
     h: int = 1
     i: InitVar[str]
     j: InitVar = 100
+    # Lambda not supported yet -> marked as Incomplete instead
+    k: str = Field(
+        default_factory=lambda: datetime.utcnow().isoformat(" ", timespec="seconds")
+    )
     non_field = None
 
 @dcs.dataclass
@@ -4083,7 +4087,8 @@ class V: ...
 [out]
 import dataclasses
 import dataclasses as dcs
-from dataclasses import InitVar, KW_ONLY, dataclass, dataclass as dc
+from _typeshed import Incomplete
+from dataclasses import Field, InitVar, KW_ONLY, dataclass, dataclass as dc, field
 from typing import ClassVar
 
 @dataclasses.dataclass
@@ -4092,12 +4097,13 @@ class X:
     b: str = ...
     c: ClassVar
     d: ClassVar = ...
-    f: list[int] = ...
-    g: int = ...
+    f: list[int] = field(init=False, default_factory=list)
+    g: int = field(default=2, kw_only=True)
     _: KW_ONLY
     h: int = ...
     i: InitVar[str]
     j: InitVar = ...
+    k: str = Field(default_factory=Incomplete)
     non_field = ...
 
 @dcs.dataclass
@@ -4110,8 +4116,9 @@ class W: ...
 class V: ...
 
 [case testDataclass_semanal]
-from dataclasses import InitVar, dataclass, field
+from dataclasses import Field, InitVar, dataclass, field
 from typing import ClassVar
+from datetime import datetime
 
 @dataclass
 class X:
@@ -4125,13 +4132,18 @@ class X:
     h: int = 1
     i: InitVar = 100
     j: list[int] = field(default_factory=list)
+    # Lambda not supported yet -> marked as Incomplete instead
+    k: str = Field(
+        default_factory=lambda: datetime.utcnow().isoformat(" ", timespec="seconds")
+    )
     non_field = None
 
 @dataclass(init=False, repr=False, frozen=True)
 class Y: ...
 
 [out]
-from dataclasses import InitVar, dataclass
+from _typeshed import Incomplete
+from dataclasses import Field, InitVar, dataclass, field
 from typing import ClassVar
 
 @dataclass
@@ -4141,13 +4153,13 @@ class X:
     c: str = ...
     d: ClassVar
     e: ClassVar = ...
-    f: list[int] = ...
-    g: int = ...
+    f: list[int] = field(init=False, default_factory=list)
+    g: int = field(default=2, kw_only=True)
     h: int = ...
     i: InitVar = ...
-    j: list[int] = ...
+    j: list[int] = field(default_factory=list)
+    k: str = Field(default_factory=Incomplete)
     non_field = ...
-    def __init__(self, a, b, c=..., *, g=..., h=..., i=..., j=...) -> None: ...
 
 @dataclass(init=False, repr=False, frozen=True)
 class Y: ...
@@ -4175,7 +4187,7 @@ class X:
 class Y: ...
 
 [out]
-from dataclasses import InitVar, KW_ONLY, dataclass
+from dataclasses import InitVar, KW_ONLY, dataclass, field
 from typing import ClassVar
 
 @dataclass
@@ -4184,14 +4196,13 @@ class X:
     b: str = ...
     c: ClassVar
     d: ClassVar = ...
-    f: list[int] = ...
-    g: int = ...
+    f: list[int] = field(init=False, default_factory=list)
+    g: int = field(default=2, kw_only=True)
     _: KW_ONLY
     h: int = ...
     i: InitVar[str]
     j: InitVar = ...
     non_field = ...
-    def __init__(self, a, b=..., *, g=..., h=..., i, j=...) -> None: ...
 
 @dataclass(init=False, repr=False, frozen=True)
 class Y: ...
@@ -4236,7 +4247,6 @@ from dataclasses import dataclass
 @dataclass
 class X(missing.Base):
     a: int
-    def __init__(self, *generated_args, a, **generated_kwargs) -> None: ...
 
 @dataclass
 class Y(missing.Base):
@@ -4244,7 +4254,6 @@ class Y(missing.Base):
     generated_args_: str
     generated_kwargs: float
     generated_kwargs_: float
-    def __init__(self, *generated_args__, generated_args, generated_args_, generated_kwargs, generated_kwargs_, **generated_kwargs__) -> None: ...
 
 [case testDataclassTransform]
 # dataclass_transform detection only works with sementic analysis.
@@ -4298,6 +4307,7 @@ class Z(metaclass=DCMeta):
 
 [case testDataclassTransformDecorator_semanal]
 import typing_extensions
+from dataclasses import field
 
 @typing_extensions.dataclass_transform(kw_only_default=True)
 def create_model(cls):
@@ -4307,9 +4317,11 @@ def create_model(cls):
 class X:
     a: int
     b: str = "hello"
+    c: bool = field(default=True)
 
 [out]
 import typing_extensions
+from dataclasses import field
 
 @typing_extensions.dataclass_transform(kw_only_default=True)
 def create_model(cls): ...
@@ -4318,9 +4330,10 @@ def create_model(cls): ...
 class X:
     a: int
     b: str = ...
-    def __init__(self, *, a, b=...) -> None: ...
+    c: bool = field(default=True)
 
 [case testDataclassTransformClass_semanal]
+from dataclasses import field
 from typing_extensions import dataclass_transform
 
 @dataclass_transform(kw_only_default=True)
@@ -4329,8 +4342,10 @@ class ModelBase: ...
 class X(ModelBase):
     a: int
     b: str = "hello"
+    c: bool = field(default=True)
 
 [out]
+from dataclasses import field
 from typing_extensions import dataclass_transform
 
 @dataclass_transform(kw_only_default=True)
@@ -4339,28 +4354,42 @@ class ModelBase: ...
 class X(ModelBase):
     a: int
     b: str = ...
-    def __init__(self, *, a, b=...) -> None: ...
+    c: bool = field(default=True)
 
 [case testDataclassTransformMetaclass_semanal]
+from dataclasses import field
+from typing import Any
 from typing_extensions import dataclass_transform
 
-@dataclass_transform(kw_only_default=True)
+def custom_field(*, default: bool, kw_only: bool) -> Any: ...
+
+@dataclass_transform(kw_only_default=True, field_specifiers=(custom_field,))
 class DCMeta(type): ...
 
 class X(metaclass=DCMeta):
     a: int
     b: str = "hello"
+    c: bool = field(default=True)  # should be ignored, not field_specifier here
+
+class Y(X):
+    d: str = custom_field(default="Hello")
 
 [out]
+from typing import Any
 from typing_extensions import dataclass_transform
 
-@dataclass_transform(kw_only_default=True)
+def custom_field(*, default: bool, kw_only: bool) -> Any: ...
+
+@dataclass_transform(kw_only_default=True, field_specifiers=(custom_field,))
 class DCMeta(type): ...
 
 class X(metaclass=DCMeta):
     a: int
     b: str = ...
-    def __init__(self, *, a, b=...) -> None: ...
+    c: bool = ...
+
+class Y(X):
+    d: str = custom_field(default='Hello')
 
 [case testAlwaysUsePEP604Union]
 import typing
@@ -4662,4 +4691,3 @@ class DCMeta(type): ...
 
 class DC(metaclass=DCMeta):
     x: str
-    def __init__(self, x) -> None: ...
