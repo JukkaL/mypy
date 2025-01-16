@@ -2168,7 +2168,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                     and original_node
                     and codes.MUTABLE_OVERRIDE in self.options.enabled_error_codes
                     and self.is_writable_attribute(original_node)
-                    and not is_subtype(original_type, typ, ignore_pos_arg_names=True)
+                    and not is_subtype(original_type, typ)
                 ):
                     base_str, override_str = format_type_distinctly(
                         original_type, typ, options=self.options
@@ -2179,8 +2179,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                     )
                     self.fail(msg, context)
             elif isinstance(original_type, UnionType) and any(
-                is_subtype(typ, orig_typ, ignore_pos_arg_names=True)
-                for orig_typ in original_type.items
+                is_subtype(typ, orig_typ) for orig_typ in original_type.items
             ):
                 # This method is a subtype of at least one union variant.
                 if (
@@ -2306,7 +2305,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         # Use boolean variable to clarify code.
         fail = False
         op_method_wider_note = False
-        if not is_subtype(override, original, ignore_pos_arg_names=True):
+        if not is_subtype(override, original):
             fail = True
         elif isinstance(override, Overloaded) and self.is_forward_op_method(name):
             # Operator method overrides cannot extend the domain, as
