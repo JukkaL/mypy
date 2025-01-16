@@ -801,6 +801,57 @@ def error_in_variadic(exc: Tuple[int, ...]) -> None:
 
 [builtins fixtures/tuple.pyi]
 
+[case testExceptWithMultipleTypes5]
+from typing import Tuple, Type, Union
+
+class E1(BaseException): pass
+class E2(BaseException): pass
+class E3(BaseException): pass
+
+def union_in_variadic(exc: Tuple[Union[Type[E1], Type[E2]], ...]) -> None:
+    try:
+        pass
+    except exc as e:
+        reveal_type(e)  # N: Revealed type is "Union[__main__.E1, __main__.E2]"
+
+def nested_union_in_variadic(exc: Tuple[Union[Type[E1], Union[Type[E2], Type[E3]]], ...]) -> None:
+    try:
+        pass
+    except exc as e:
+        reveal_type(e)  # N: Revealed type is "Union[__main__.E1, __main__.E2, __main__.E3]"
+
+def union_in_tuple(exc: Tuple[Union[Type[E1], Type[E2]], Type[E3]]) -> None:
+    try:
+        pass
+    except exc as e:
+        reveal_type(e)  # N: Revealed type is "Union[__main__.E1, __main__.E2, __main__.E3]"
+
+def error_in_variadic_union(exc: Tuple[Union[Type[E1], int], ...]) -> None:
+    try:
+        pass
+    except exc as e:  # E: Exception type must be derived from BaseException (or be a tuple of exception classes)
+        pass
+
+def error_in_variadic_nested_union(exc: Tuple[Union[Type[E1], Union[Type[E2], int]], ...]) -> None:
+    try:
+        pass
+    except exc as e:  # E: Exception type must be derived from BaseException (or be a tuple of exception classes)
+        pass
+
+def error_in_tuple_inside_variadic_nested_union(exc: Tuple[Union[Type[E1], Union[Type[E2], Tuple[Type[E3]]]], ...]) -> None:
+    try:
+        pass
+    except exc as e:  # E: Exception type must be derived from BaseException (or be a tuple of exception classes)
+        pass
+
+def error_in_tuple_union(exc: Tuple[Union[Type[E1], Type[E2]], Union[Type[E3], int]]) -> None:
+    try:
+        pass
+    except exc as e:  # E: Exception type must be derived from BaseException (or be a tuple of exception classes)
+        pass
+
+[builtins fixtures/tuple.pyi]
+
 [case testExceptWithAnyTypes]
 from typing import Any
 
