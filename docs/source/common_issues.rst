@@ -846,3 +846,49 @@ or of potential subclasses.
     # In the context of the subclass Bar, the Self return type promises
     # that the return value will be Bar
     reveal_type(Bar.constructor())  # note: Revealed type is "Bar"
+
+Missing ``yield`` statement in generator functions
+--------------------------------------------------
+
+Python uses the ``yield`` statement to determine whether a function is a
+generator function (https://peps.python.org/pep-0255/#specification-yield).
+
+.. code-block:: python
+
+    from collections.abc import Generator, AsyncGenerator
+
+    async def async_gen() -> AsyncGenerator[int]:
+        yield 1
+
+    def gen() -> Generator[int]:
+        yield 1
+
+    async def async_func() -> int:
+        return 1
+
+    def func() -> int:
+        return 1
+
+    reveal_type(async_gen())  # AsyncGenerator[int, None]
+    reveal_type(gen())        # Generator[int, None, None]
+    reveal_type(async_func()) # Coroutine[Any, Any, int]
+    reveal_type(func())       # int
+
+Functions containing ``yield`` statements will be regarded as Generator functions
+by Python, and their return types are different from other functions.
+Therefore, when using ``mypy`` to check types, we need to declare the return types
+of such functions as Generator (or AsyncGenerator when the function is async).
+
+A common mistake is that we declared the return type of a function as
+Generator (AsyncGenerator) but did not use the ``yield`` statement in the function.
+``mypy`` will consider that the return type (no return, or normal types) of this function
+does not meet the expectation (generator type).
+
+.. code-block:: python
+
+    from collections.abc import Generator
+
+    def gen() -> Generator[int]:
+        ... # error: Missing return statement
+
+This kind of mistake is common in unfinished functions (the function body is ``...``).
