@@ -77,6 +77,8 @@ def pluck(name: str, chunks: Iterable[JsonDict]) -> Iterable[JsonDict]:
 
 
 def report_counter(counter: Counter[str], amount: int | None = None) -> None:
+    if amount is None:
+        amount = len(counter)  # default to the length of the counter if `amount` is None
     for name, count in counter.most_common(amount):
         print(f"    {count: <8} {name}")
     print()

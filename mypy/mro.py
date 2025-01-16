@@ -32,8 +32,7 @@ def linearize_hierarchy(
         return info.mro
     bases = info.direct_base_classes()
     if not bases and info.fullname != "builtins.object" and obj_type is not None:
-        # Probably an error, add a dummy `object` base class,
-        # otherwise MRO calculation may spuriously fail.
+        # If no base classes are found, and obj_type is provided, we use obj_type to provide a base.
         bases = [obj_type().type]
     lin_bases = []
     for base in bases:
