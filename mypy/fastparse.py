@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import io
 import re
 import sys
+import tokenize
 import warnings
 from collections.abc import Sequence
 from typing import Any, Callable, Final, Literal, Optional, TypeVar, Union, cast, overload
@@ -137,13 +139,57 @@ from ast import AST, Attribute, Call, FunctionType, Index, Name, Starred, UAdd, 
 def ast3_parse(
     source: str | bytes, filename: str, mode: str, feature_version: int = PY_MINOR_VERSION
 ) -> AST:
-    return ast3.parse(
-        source,
-        filename,
-        mode,
-        type_comments=True,  # This works the magic
-        feature_version=feature_version,
+    """This function is just a convenience wrapper around ast.parse, with default flags useful to Mypy.
+    It also handles `# mypy: ignore` comments, by turning them into `# type: ignore` comments.
+    """
+    # Hack to support "mypy: ignore" comments until the builtin compile function changes to allow us to detect it otherwise:
+    # (Note: completely distinct from https://mypy.readthedocs.io/en/stable/inline_config.html ; see also, util.get_mypy_comments in this codebase.)
+
+    # We make the substitution in comments, and to find those comments we use Python's `tokenize`.
+    # https://docs.python.org/3/library/tokenize.html has a big red **Warning:**
+    #     Note that the functions in this module are only designed to parse syntactically valid Python
+    #     code (code that does not raise when parsed using ast.parse()). The behavior of the functions
+    #     in this module is **undefined** when providing invalid Python code and it can change at any point.
+    # So, we cannot rely on roundtrip behavior in tokenize iff ast.parse would throw when given `source`.
+    # The simplest way to deal with that is just to call ast.parse twice, once before and once after!
+    def p() -> AST:
+        return ast3.parse(
+            source, filename, mode, type_comments=True, feature_version=feature_version
+        )
+
+    p()  # Call to assure syntactic validity (will throw an exception otherwise, exiting this function).
+    if isinstance(source, str):
+        tokens = tokenize.generate_tokens(io.StringIO(source).readline)
+    else:
+        tokens = tokenize.tokenize(io.BytesIO(source).readline)
+    # We do a workaround for a roundtripping error (https://github.com/python/cpython/issues/125008)
+    # that was introduced in 3.12.3 (https://github.com/python/cpython/blob/v3.12.3/Lib/tokenize.py#L205)
+    # and fixed in 3.12.8 (https://github.com/python/cpython/blob/v3.12.8/Lib/tokenize.py#L205).
+    # Luckily, it was caught before the first official (non-rc) release of python 3.13.
+    is_defective_version = (3, 12, 3) <= sys.version_info[:3] <= (3, 12, 7)
+    # This is a gnarly list comprehension, but that's basically just how untokenize is supposed to work.
+    source = tokenize.untokenize(
+        (
+            t,
+            (
+                re.sub(r"#\s*mypy:\s*ignore(?![-_])", "# type: ignore", s)
+                if t == tokenize.COMMENT
+                else (
+                    s[:-1]
+                    if is_defective_version
+                    # Technically redundant hasattr check as all the defective versions are versions that have this attribute, but we'd like to appease the typechecker here:
+                    and hasattr(tokenize, "FSTRING_MIDDLE")
+                    and t == tokenize.FSTRING_MIDDLE
+                    and s.startswith("\\")
+                    and s.endswith("{")
+                    else s
+                )
+            ),
+            *_,  # Including this bit improves whitespace roundtripping (possibly always making it perfect).
+        )
+        for t, s, *_ in tokens
     )
+    return p()  # `source` has changed, so this result is different than the first call.
 
 
 NamedExpr = ast3.NamedExpr

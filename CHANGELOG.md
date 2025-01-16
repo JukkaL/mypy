@@ -56,6 +56,14 @@ may necessitate changing the location of a `# type: ignore` comment.
 Contributed by Shantanu Jain (PR [18392](https://github.com/python/mypy/pull/18392),
 PR [18397](https://github.com/python/mypy/pull/18397)).
 
+### `mypy: ignore`
+
+`mypy: ignore` comments are now honored by mypy exactly as though they said `type: ignore`.
+This allows one to suppress type errors from mypy in particular, without suppressing other type checkers,
+which can be desirable if mypy has a bug and other type checkers one runs on the same code do not.
+
+Contributed by Wyatt S Carpenter (PR [17875](https://github.com/python/mypy/pull/17875)).
+
 ## Mypy 1.14
 
 We’ve just uploaded mypy 1.14 to the Python Package Index ([PyPI](https://pypi.org/project/mypy/)).
