@@ -8,7 +8,7 @@ from typing import overload
 import mypy.typeops
 from mypy.expandtype import expand_type
 from mypy.maptype import map_instance_to_supertype
-from mypy.nodes import CONTRAVARIANT, COVARIANT, INVARIANT, VARIANCE_NOT_READY
+from mypy.nodes import CONTRAVARIANT, COVARIANT, INVARIANT, VARIANCE_NOT_READY, TypeInfo
 from mypy.state import state
 from mypy.subtypes import (
     SubtypeContext,
@@ -168,9 +168,19 @@ class InstanceJoiner:
         # Compute the "best" supertype of t when joined with s.
         # The definition of "best" may evolve; for now it is the one with
         # the longest MRO.  Ties are broken by using the earlier base.
-        best: ProperType | None = None
+
+        # Go over both sets of bases in case there's an explicit Protocol base. This is important
+        # to ensure commutativity of join (although in cases where both classes have relevant
+        # Protocol bases this maybe might still not be commutative)
+        base_types: dict[TypeInfo, None] = {}
         for base in t.type.bases:
-            mapped = map_instance_to_supertype(t, base.type)
+            base_types[base.type] = None
+        for base in s.type.bases:
+            base_types[base.type] = None
+
+        best: ProperType | None = None
+        for base_type in base_types:
+            mapped = map_instance_to_supertype(t, base_type)
             res = self.join_instances(mapped, s)
             if best is None or is_better(res, best):
                 best = res
