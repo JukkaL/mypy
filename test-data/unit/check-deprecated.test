@@ -377,6 +377,45 @@ for i in a:  # E: function __main__.A.__iter__ is deprecated: no iteration
 [builtins fixtures/tuple.pyi]
 
 
+[case testDeprecatedOverloadedMethods]
+# flags: --enable-error-code=deprecated
+
+from typing import Iterator, Union
+from typing_extensions import deprecated, overload
+
+class A:
+    @overload
+    @deprecated("pass `str` instead")
+    def f(self, v: int) -> None: ...
+    @overload
+    def f(self, v: str) -> None: ...
+    def f(self, v: Union[int, str]) -> None: ...
+
+    @overload
+    def g(self, v: int) -> None: ...
+    @overload
+    @deprecated("pass `int` instead")
+    def g(self, v: str) -> None: ...
+    def g(self, v: Union[int, str]) -> None: ...
+
+    @overload
+    def h(self, v: int) -> A: ...
+    @overload
+    def h(self, v: str) -> A: ...
+    @deprecated("use `h2`  instead")
+    def h(self, v: Union[int, str]) -> A: ...
+
+a = A()
+a.f(1)  # E: overload def (self: __main__.A, v: builtins.int) of function __main__.A.f is deprecated: pass `str` instead
+a.f("x")
+a.g(1)
+a.g("x")  # E: overload def (self: __main__.A, v: builtins.str) of function __main__.A.g is deprecated: pass `int` instead
+a.h(1)  # E: function __main__.A.h is deprecated: use `h2`  instead
+a.h("x")  # E: function __main__.A.h is deprecated: use `h2`  instead
+
+[builtins fixtures/tuple.pyi]
+
+
 [case testDeprecatedOverloadedSpecialMethods]
 # flags: --enable-error-code=deprecated
 
