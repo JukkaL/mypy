@@ -1,0 +1,98 @@
+-- Test cases for type[SomeTypeVar] treatment
+
+
+[case testTypeOfTypeVarInstantiation]
+from typing import TypeVar, Type
+T = TypeVar('T')
+def f(x: Type[T]) -> T:
+    return x()
+
+[case testTypeOfTypeVarBoundInstantiationInitParams]
+from typing import TypeVar, Type
+class A:
+    def __init__(self, x: str) -> None: pass
+T = TypeVar('T', bound=A)
+def f(x: Type[T]) -> T:
+    return x('a')
+def f2(x: Type[T]) -> T:
+    return x(1)  # E: Argument 1 to "A" has incompatible type "int"; expected "str"
+
+[case testTypeOfTypeVarBoundInstantiationGeneric]
+from typing import Generic, TypeVar, Type
+class A:
+    def __init__(self, x: str) -> None: pass
+
+T = TypeVar('T', bound=object)
+V = TypeVar('V', bound=A)
+
+class Test(Generic[T, V]):
+    X: Type[T]
+    Y: Type[V]
+    def f1(self) -> T:
+        return self.X()
+    def f2(self) -> V:
+        return self.Y()  # E: Missing positional argument "x" in call to "A"
+    def f3(self) -> V:
+        return self.Y(1)  # E: Argument 1 to "A" has incompatible type "int"; expected "str"
+    def f4(self) -> V:
+        return self.Y('foo')
+
+[case testTypeOfTypeVarInstantiationInitParamsUnionBound]
+from typing import TypeVar, Type, Union
+class A:
+    def __init__(self, x: str) -> None: pass
+class B:
+    def __init__(self, x: int) -> None: pass
+class C:
+    def __init__(self, x: int) -> None: pass
+
+T = TypeVar('T', bound=Union[A, B])
+def f(x: Type[T]) -> T:
+    return x(1)  # E: Argument 1 to "A" has incompatible type "int"; expected "str"
+
+T2 = TypeVar('T2', bound=Union[B, C])
+def f2(x: Type[T2]) -> T2:
+    return x(1)
+
+[case testTypeOfTypeVarInstantiationVariants]
+from typing import TypeVar, Type
+class A:
+    def __init__(self, x: str) -> None: pass
+class B:
+    def __init__(self, x: int) -> None: pass
+class C:
+    def __init__(self, x: int) -> None: pass
+
+T = TypeVar('T', A, B)
+def f(x: Type[T]) -> T:
+    return x(1)  # E: Argument 1 to "A" has incompatible type "int"; expected "str"
+
+T2 = TypeVar('T2', B, C)
+def f2(x: Type[T2]) -> T2:
+    return x(1)
+
+def return_indirect(x: Type[T2]) -> T2:
+    ret = x(1)
+    return ret
+
+def return_indirect_condition(x: Type[T2], flag: bool) -> T2:
+    if flag:
+        ret = x(1)
+    else:
+        ret = x(2)
+    return ret
+
+def return_indirect_condition_invalid(x: Type[T2], flag: bool) -> T2:
+    if flag:
+        ret = x(1)
+    else:
+        ret = x('foo')  # E: Argument 1 to "B" has incompatible type "str"; expected "int" \
+                        # E: Argument 1 to "C" has incompatible type "str"; expected "int"
+    return ret
+
+def return_indirect_condition_invalid_different(x: Type[T], flag: bool) -> T:
+    if flag:
+        ret = x(1)  # E: Argument 1 to "A" has incompatible type "int"; expected "str"
+    else:
+        ret = x('foo')  # E: Argument 1 to "B" has incompatible type "str"; expected "int"
+    return ret
