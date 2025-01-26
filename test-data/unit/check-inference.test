@@ -693,8 +693,8 @@ class A(Generic[T]): pass
 class B: pass
 
 
-f(ao, ab) # E: Cannot infer type argument 1 of "f"
-f(ab, ao) # E: Cannot infer type argument 1 of "f"
+f(ao, ab)  # E: Argument 2 to "f" has incompatible type "A[B]"; expected "A[object]"
+f(ab, ao)  # E: Argument 1 to "f" has incompatible type "A[B]"; expected "A[object]"
 f(ao, ao)
 f(ab, ab)
 
@@ -3773,8 +3773,8 @@ reveal_type(f(x, []))  # N: Revealed type is "builtins.str"
 reveal_type(f(["yes"], []))  # N: Revealed type is "builtins.str"
 
 empty: List[NoReturn]
-f(x, empty)  # E: Cannot infer type argument 1 of "f"
-f(["no"], empty)  # E: Cannot infer type argument 1 of "f"
+f(x, empty)  # E: Argument 2 to "f" has incompatible type "List[Never]"; expected "List[str]"
+f(["no"], empty)  # E: Argument 2 to "f" has incompatible type "List[Never]"; expected "List[str]"
 [builtins fixtures/list.pyi]
 
 [case testInferenceWorksWithEmptyCollectionsUnion]

@@ -585,7 +585,7 @@ def func2(x: SameNode[T]) -> SameNode[T]:
     return x
 reveal_type(func2) # N: Revealed type is "def [T] (x: __main__.Node[T`-1, T`-1]) -> __main__.Node[T`-1, T`-1]"
 
-func2(Node(1, 'x')) # E: Cannot infer type argument 1 of "func2"
+reveal_type(func2(Node(1, 'x')))  # N: Revealed type is "__main__.Node[builtins.object, builtins.object]"
 y = func2(Node('x', 'x'))
 reveal_type(y) # N: Revealed type is "__main__.Node[builtins.str, builtins.str]"
 
@@ -889,7 +889,7 @@ def fun2(v: Vec[T], scale: T) -> Vec[T]:
 
 reveal_type(fun1([(1, 1)])) # N: Revealed type is "builtins.int"
 fun1(1) # E: Argument 1 to "fun1" has incompatible type "int"; expected "List[Tuple[bool, bool]]"
-fun1([(1, 'x')]) # E: Cannot infer type argument 1 of "fun1"
+fun1([(1, 'x')]) # E: Value of type variable "T" of "fun1" cannot be "object"
 
 reveal_type(fun2([(1, 1)], 1)) # N: Revealed type is "builtins.list[Tuple[builtins.int, builtins.int]]"
 fun2([('x', 'x')], 'x') # E: Value of type variable "T" of "fun2" cannot be "str"
@@ -910,7 +910,7 @@ def f(x: Node[T, T]) -> TupledNode[T]:
     return Node(x.x, (x.x, x.x))
 
 f(1) # E: Argument 1 to "f" has incompatible type "int"; expected "Node[Never, Never]"
-f(Node(1, 'x')) # E: Cannot infer type argument 1 of "f"
+reveal_type(f(Node(1, 'x')))  # N: Revealed type is "a.Node[builtins.object, Tuple[builtins.object, builtins.object]]"
 reveal_type(Node('x', 'x')) # N: Revealed type is "a.Node[builtins.str, builtins.str]"
 
 [file a.py]

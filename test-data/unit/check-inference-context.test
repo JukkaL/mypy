@@ -1009,7 +1009,12 @@ class D(C): ...
 
 def f(x: List[T], y: List[T]) -> List[T]: ...
 
-f([C()], [D()]) # E: Cannot infer type argument 1 of "f"
+reveal_type(f([C()], [D()]))  # N: Revealed type is "builtins.list[__main__.C]"
+lc: List[C]
+ld: List[D]
+f(lc, ld)  # E: Argument 2 to "f" has incompatible type "List[D]"; expected "List[C]" \
+           # N: "List" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance \
+           # N: Consider using "Sequence" instead, which is covariant
 [builtins fixtures/list.pyi]
 
 [case testInferTypeVariableFromTwoGenericTypes3]

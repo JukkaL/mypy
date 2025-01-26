@@ -470,9 +470,8 @@ reveal_type(a)  # N: Revealed type is "__main__.A[builtins.int]"
 reveal_type(a.x)  # N: Revealed type is "builtins.list[builtins.int]"
 reveal_type(a.y)  # N: Revealed type is "builtins.int"
 
-A(['str'], 7)  # E: Cannot infer type argument 1 of "A"
-A([1], '2')  # E: Cannot infer type argument 1 of "A"
-
+reveal_type(A(['str'], 7))  # N: Revealed type is "__main__.A[builtins.object]"
+reveal_type(A([1], '2'))  # N: Revealed type is "__main__.A[builtins.object]"
 [builtins fixtures/list.pyi]
 
 [case testAttrsGenericWithConverter]

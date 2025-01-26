@@ -703,7 +703,7 @@ class A(Generic[T]):
     return self.z  # E: Incompatible return value type (got "List[T]", expected "T")
 
 reveal_type(A)  # N: Revealed type is "def [T] (x: T`1, y: T`1, z: builtins.list[T`1]) -> __main__.A[T`1]"
-A(1, 2, ["a", "b"])  # E: Cannot infer type argument 1 of "A"
+reveal_type(A(1, 2, ["a", "b"]))  # N: Revealed type is "__main__.A[builtins.object]"
 a = A(1, 2, [1, 2])
 reveal_type(a)  # N: Revealed type is "__main__.A[builtins.int]"
 reveal_type(a.x)  # N: Revealed type is "builtins.int"
