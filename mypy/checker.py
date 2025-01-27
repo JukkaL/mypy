@@ -56,6 +56,7 @@ from mypy.nodes import (
     LITERAL_TYPE,
     MDEF,
     NOT_ABSTRACT,
+    SYMBOL_FUNCBASE_TYPES,
     AssertStmt,
     AssignmentExpr,
     AssignmentStmt,
@@ -2842,7 +2843,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
     def determine_type_of_member(self, sym: SymbolTableNode) -> Type | None:
         if sym.type is not None:
             return sym.type
-        if isinstance(sym.node, FuncBase):
+        if isinstance(sym.node, SYMBOL_FUNCBASE_TYPES):
             return self.function_type(sym.node)
         if isinstance(sym.node, TypeInfo):
             if sym.node.typeddict_type:
@@ -4437,7 +4438,9 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         if isinstance(rvalue, (IntExpr, StrExpr, BytesExpr, FloatExpr, RefExpr)):
             return True
         if isinstance(rvalue, CallExpr):
-            if isinstance(rvalue.callee, RefExpr) and isinstance(rvalue.callee.node, FuncBase):
+            if isinstance(rvalue.callee, RefExpr) and isinstance(
+                rvalue.callee.node, SYMBOL_FUNCBASE_TYPES
+            ):
                 typ = rvalue.callee.node.type
                 if isinstance(typ, CallableType):
                     return not typ.variables

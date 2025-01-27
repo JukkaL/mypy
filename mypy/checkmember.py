@@ -1123,10 +1123,10 @@ def analyze_class_attribute_access(
             t = erase_typevars(expand_type_by_instance(t, isuper), {tv.id for tv in def_vars})
 
         is_classmethod = (is_decorated and cast(Decorator, node.node).func.is_class) or (
-            isinstance(node.node, FuncBase) and node.node.is_class
+            isinstance(node.node, SYMBOL_FUNCBASE_TYPES) and node.node.is_class
         )
         is_staticmethod = (is_decorated and cast(Decorator, node.node).func.is_static) or (
-            isinstance(node.node, FuncBase) and node.node.is_static
+            isinstance(node.node, SYMBOL_FUNCBASE_TYPES) and node.node.is_static
         )
         t = get_proper_type(t)
         if isinstance(t, FunctionLike) and is_classmethod:
@@ -1168,7 +1168,7 @@ def analyze_class_attribute_access(
             mx.not_ready_callback(name, mx.context)
             return AnyType(TypeOfAny.from_error)
     else:
-        assert isinstance(node.node, FuncBase)
+        assert isinstance(node.node, SYMBOL_FUNCBASE_TYPES)
         typ = function_type(node.node, mx.named_type("builtins.function"))
         # Note: if we are accessing class method on class object, the cls argument is bound.
         # Annotated and/or explicit class methods go through other code paths above, for
@@ -1427,7 +1427,7 @@ def is_valid_constructor(n: SymbolNode | None) -> bool:
     This includes normal functions, overloaded functions, and decorators
     that return a callable type.
     """
-    if isinstance(n, FuncBase):
+    if isinstance(n, SYMBOL_FUNCBASE_TYPES):
         return True
     if isinstance(n, Decorator):
         return isinstance(get_proper_type(n.type), FunctionLike)

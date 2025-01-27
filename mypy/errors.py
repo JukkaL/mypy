@@ -11,7 +11,6 @@ from typing_extensions import Literal, TypeAlias as _TypeAlias
 from mypy import errorcodes as codes
 from mypy.error_formatter import ErrorFormatter
 from mypy.errorcodes import IMPORT, IMPORT_NOT_FOUND, IMPORT_UNTYPED, ErrorCode, mypy_error_codes
-from mypy.message_registry import ErrorMessage
 from mypy.options import Options
 from mypy.scope import Scope
 from mypy.util import DEFAULT_SOURCE_OFFSET, is_typeshed_file
@@ -1069,34 +1068,19 @@ class Errors:
                         (file, -1, -1, -1, -1, "note", f'In class "{e.type}":', e.allow_dups, None)
                     )
 
-            if isinstance(e.message, ErrorMessage):
-                result.append(
-                    (
-                        file,
-                        e.line,
-                        e.column,
-                        e.end_line,
-                        e.end_column,
-                        e.severity,
-                        e.message.value,
-                        e.allow_dups,
-                        e.code,
-                    )
+            result.append(
+                (
+                    file,
+                    e.line,
+                    e.column,
+                    e.end_line,
+                    e.end_column,
+                    e.severity,
+                    e.message,
+                    e.allow_dups,
+                    e.code,
                 )
-            else:
-                result.append(
-                    (
-                        file,
-                        e.line,
-                        e.column,
-                        e.end_line,
-                        e.end_column,
-                        e.severity,
-                        e.message,
-                        e.allow_dups,
-                        e.code,
-                    )
-                )
+            )
 
             prev_import_context = e.import_ctx
             prev_function_or_member = e.function_or_member

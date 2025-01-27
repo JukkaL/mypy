@@ -127,12 +127,12 @@ def infer_constraints_for_callable(
     param_spec_arg_kinds = []
 
     incomplete_star_mapping = False
-    for i, actuals in enumerate(formal_to_actual):
+    for i, actuals in enumerate(formal_to_actual):  # TODO: isn't this `enumerate(arg_types)`?
         for actual in actuals:
-            if actual is None and callee.arg_kinds[i] in (ARG_STAR, ARG_STAR2):
+            if actual is None and callee.arg_kinds[i] in (ARG_STAR, ARG_STAR2):  # type: ignore[unreachable]
                 # We can't use arguments to infer ParamSpec constraint, if only some
                 # are present in the current inference pass.
-                incomplete_star_mapping = True
+                incomplete_star_mapping = True  # type: ignore[unreachable]
                 break
 
     for i, actuals in enumerate(formal_to_actual):
@@ -545,11 +545,7 @@ def any_constraints(options: list[list[Constraint] | None], eager: bool) -> list
             for option in valid_options:
                 if option in trivial_options:
                     continue
-                if option is not None:
-                    merged_option: list[Constraint] | None = [merge_with_any(c) for c in option]
-                else:
-                    merged_option = None
-                merged_options.append(merged_option)
+                merged_options.append([merge_with_any(c) for c in option])
             return any_constraints(list(merged_options), eager)
 
     # If normal logic didn't work, try excluding trivially unsatisfiable constraint (due to

@@ -1069,7 +1069,7 @@ def read_plugins_snapshot(manager: BuildManager) -> dict[str, str] | None:
     if snapshot is None:
         return None
     if not isinstance(snapshot, dict):
-        manager.log(f"Could not load plugins snapshot: cache is not a dict: {type(snapshot)}")
+        manager.log(f"Could not load plugins snapshot: cache is not a dict: {type(snapshot)}")  # type: ignore[unreachable]
         return None
     return snapshot
 
@@ -1285,7 +1285,7 @@ def find_cache_meta(id: str, path: str, manager: BuildManager) -> CacheMeta | No
     if meta is None:
         return None
     if not isinstance(meta, dict):
-        manager.log(f"Could not load cache for {id}: meta cache is not a dict: {repr(meta)}")
+        manager.log(f"Could not load cache for {id}: meta cache is not a dict: {repr(meta)}")  # type: ignore[unreachable]
         return None
     m = cache_meta_from_dict(meta, data_json)
     t2 = time.time()

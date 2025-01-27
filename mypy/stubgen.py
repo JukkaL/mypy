@@ -1510,9 +1510,7 @@ def is_blacklisted_path(path: str) -> bool:
 
 
 def normalize_path_separators(path: str) -> str:
-    if sys.platform == "win32":
-        return path.replace("\\", "/")
-    return path
+    return path.replace("\\", "/") if sys.platform == "win32" else path
 
 
 def collect_build_targets(

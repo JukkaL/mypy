@@ -2581,8 +2581,6 @@ class ExpressionChecker(ExpressionVisitor[Type]):
             for actual, actual_type, actual_kind, callee_arg_type, callee_arg_kind in zip(
                 actuals, actual_types, actual_kinds, callee_arg_types, callee_arg_kinds
             ):
-                if actual_type is None:
-                    continue  # Some kind of error was already reported.
                 # Check that a *arg is valid as varargs.
                 expanded_actual = mapper.expand_actual_type(
                     actual_type,

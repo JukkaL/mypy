@@ -58,9 +58,9 @@ from typing_extensions import TypeAlias as _TypeAlias
 
 from mypy.expandtype import expand_type
 from mypy.nodes import (
+    SYMBOL_FUNCBASE_TYPES,
     UNBOUND_IMPORTED,
     Decorator,
-    FuncBase,
     FuncDef,
     FuncItem,
     MypyFile,
@@ -234,16 +234,16 @@ def snapshot_definition(node: SymbolNode | None, common: SymbolSnapshot) -> Symb
     The representation is nested tuples and dicts. Only externally
     visible attributes are included.
     """
-    if isinstance(node, FuncBase):
+    if isinstance(node, SYMBOL_FUNCBASE_TYPES):
         # TODO: info
         if node.type:
-            signature = snapshot_type(node.type)
+            signature: tuple[object, ...] = snapshot_type(node.type)
         else:
             signature = snapshot_untyped_signature(node)
         impl: FuncDef | None = None
         if isinstance(node, FuncDef):
             impl = node
-        elif isinstance(node, OverloadedFuncDef) and node.impl:
+        elif node.impl:
             impl = node.impl.func if isinstance(node.impl, Decorator) else node.impl
         setter_type = None
         if isinstance(node, OverloadedFuncDef) and node.items:

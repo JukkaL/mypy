@@ -8,7 +8,16 @@ import mypy.checker
 import mypy.plugin
 import mypy.semanal
 from mypy.argmap import map_actuals_to_formals
-from mypy.nodes import ARG_POS, ARG_STAR2, ArgKind, Argument, CallExpr, FuncItem, NameExpr, Var
+from mypy.nodes import (
+    ARG_POS,
+    ARG_STAR2,
+    SYMBOL_FUNCBASE_TYPES,
+    ArgKind,
+    Argument,
+    CallExpr,
+    NameExpr,
+    Var,
+)
 from mypy.plugins.common import add_method_to_class
 from mypy.typeops import get_all_type_vars
 from mypy.types import (
@@ -108,7 +117,7 @@ def _analyze_class(ctx: mypy.plugin.ClassDefContext) -> dict[str, _MethodInfo | 
         for name in _ORDERING_METHODS:
             if name in cls.names and name not in comparison_methods:
                 node = cls.names[name].node
-                if isinstance(node, FuncItem) and isinstance(node.type, CallableType):
+                if isinstance(node, SYMBOL_FUNCBASE_TYPES) and isinstance(node.type, CallableType):
                     comparison_methods[name] = _MethodInfo(node.is_static, node.type)
                     continue
 

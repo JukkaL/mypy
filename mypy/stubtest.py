@@ -338,7 +338,8 @@ def verify_mypyfile(
         yield Error(object_path, "is not present at runtime", stub, runtime)
         return
     if not isinstance(runtime, types.ModuleType):
-        yield Error(object_path, "is not a module", stub, runtime)
+        # Can possibly happen:
+        yield Error(object_path, "is not a module", stub, runtime)  # type: ignore[unreachable]
         return
 
     runtime_all_as_set: set[str] | None
@@ -524,7 +525,8 @@ def verify_typeinfo(
         yield Error(object_path, "is not present at runtime", stub, runtime, stub_desc=repr(stub))
         return
     if not isinstance(runtime, type):
-        yield Error(object_path, "is not a type", stub, runtime, stub_desc=repr(stub))
+        # Yes, some runtime objects can be not types, no way to tell mypy about that.
+        yield Error(object_path, "is not a type", stub, runtime, stub_desc=repr(stub))  # type: ignore[unreachable]
         return
 
     yield from _verify_final(stub, runtime, object_path)

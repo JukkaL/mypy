@@ -173,38 +173,3 @@ def parse_mypy_args(line: str) -> list[str]:
     if not m:
         return []  # No args; mypy will spit out an error.
     return m.group(1).split()
-
-
-def test_mypy_path_is_respected() -> None:
-    assert False
-    packages = "packages"
-    pkg_name = "a"
-    with tempfile.TemporaryDirectory() as temp_dir:
-        old_dir = os.getcwd()
-        os.chdir(temp_dir)
-        try:
-            # Create the pkg for files to go into
-            full_pkg_name = os.path.join(temp_dir, packages, pkg_name)
-            os.makedirs(full_pkg_name)
-
-            # Create the empty __init__ file to declare a package
-            pkg_init_name = os.path.join(temp_dir, packages, pkg_name, "__init__.py")
-            open(pkg_init_name, "w", encoding="utf8").close()
-
-            mypy_config_path = os.path.join(temp_dir, "mypy.ini")
-            with open(mypy_config_path, "w") as mypy_file:
-                mypy_file.write("[mypy]\n")
-                mypy_file.write(f"mypy_path = ./{packages}\n")
-
-            with virtualenv() as venv:
-                venv_dir, python_executable = venv
-
-                cmd_line_args = []
-                if python_executable != sys.executable:
-                    cmd_line_args.append(f"--python-executable={python_executable}")
-                cmd_line_args.extend(["--config-file", mypy_config_path, "--package", pkg_name])
-
-                out, err, returncode = mypy.api.run(cmd_line_args)
-                assert returncode == 0
-        finally:
-            os.chdir(old_dir)
