@@ -1,4 +1,4 @@
-"""Mypy type checker command line tool."""
+"""Mypy type checker."""
 
 from __future__ import annotations
 
