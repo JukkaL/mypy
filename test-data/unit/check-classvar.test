@@ -282,17 +282,28 @@ main:2: note: Revealed type is "builtins.int"
 main:3: error: Cannot assign to class variable "x" via instance
 
 [case testClassVarWithGeneric]
-from typing import ClassVar, Generic, TypeVar
+import types
+from typing import ClassVar, Generic, TypeVar, Type
 T = TypeVar('T')
 class A(Generic[T]):
     x: ClassVar[T]  # E: ClassVar cannot contain type variables
     @classmethod
     def foo(cls) -> T:
-        return cls.x  # OK
+        return cls.x  # E: Access to generic class variables is ambiguous
 
-A.x  # E: Access to generic class variables is ambiguous
-A.x = 1  # E: Access to generic class variables is ambiguous
-A[int].x  # E: Access to generic class variables is ambiguous
+def main(A_T: Type[A]):
+    A.x  # E: Access to generic class variables is ambiguous
+    A.x = 1  # E: Access to generic class variables is ambiguous
+    A[int].x  # E: Access to generic class variables is ambiguous
+
+    A_T.x  # E: Access to generic class variables is ambiguous
+    A_T.x = 1  # E: Access to generic class variables is ambiguous
+    A_T[int].x  # E: Value of type "Type[A[Any]]" is not indexable
+
+    a = A
+    a.x  # E: Access to generic class variables is ambiguous
+    a.x = 1  # E: Access to generic class variables is ambiguous
+    a[int].x  # E: The type "Type[A[Any]]" is not generic and not indexable
 
 class Bad(A[int]):
     pass
@@ -311,7 +322,7 @@ class A(Generic[T, U]):
     x: ClassVar[Union[T, Tuple[U, Type[U]]]]  # E: ClassVar cannot contain type variables
     @classmethod
     def foo(cls) -> Union[T, Tuple[U, Type[U]]]:
-        return cls.x  # OK
+        return cls.x  # E: Access to generic class variables is ambiguous
 
 A.x  # E: Access to generic class variables is ambiguous
 A.x = 1  # E: Access to generic class variables is ambiguous

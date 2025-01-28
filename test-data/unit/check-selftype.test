@@ -1485,7 +1485,7 @@ class C:
 class D(C): ...
 
 reveal_type(C.meth)  # N: Revealed type is "def [Self <: __main__.C] (self: Self`1) -> builtins.list[Self`1]"
-C.attr  # E: Access to generic instance variables via class is ambiguous
+C.attr
 reveal_type(D().meth())  # N: Revealed type is "builtins.list[__main__.D]"
 reveal_type(D().attr)  # N: Revealed type is "builtins.list[__main__.D]"
 
@@ -2120,7 +2120,7 @@ c: C
 reveal_type(c.x)  # N: Revealed type is "Tuple[builtins.int, builtins.str, fallback=__main__.C]"
 reveal_type(c.y)  # N: Revealed type is "Tuple[builtins.int, builtins.str, fallback=__main__.C]"
 reveal_type(C.y)  # N: Revealed type is "Tuple[builtins.int, builtins.str, fallback=__main__.C]"
-C.x  # E: Access to generic instance variables via class is ambiguous
+C.x
 [builtins fixtures/classmethod.pyi]
 
 [case testAccessingTypingSelfUnion]
