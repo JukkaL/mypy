@@ -1,4 +1,5 @@
 sphinx>=8.1.0
 furo>=2022.3.4
 myst-parser>=4.0.0
-sphinx_inline_tabs>=2023.04.21
+# sphinx_inline_tabs>=2023.04.21
+git+https://github.com/cdce8p/sphinx-inline-tabs@2024.12.07.b1

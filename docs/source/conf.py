@@ -244,6 +244,15 @@ man_pages = [("index", "mypy", "Mypy Documentation", ["Jukka Lehtosalo"], 1)]
 # man_show_urls = False
 
 
+# -- sphinx_inline_tabs ---------------------------------------------------
+
+# Disable sync globally
+# tabs_default_sync_behavior = "none"
+
+# Disable sync globally for specific labels
+tabs_no_sync_labels = {"Python 3.12+", "Legacy"}
+
+
 # -- Options for Texinfo output -------------------------------------------
 
 # Grouping the document tree into Texinfo files. List of tuples

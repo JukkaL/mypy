@@ -95,31 +95,39 @@ Using ``Stack`` is similar to built-in container types:
    stack2: Stack[str] = Stack()
    stack2.append('x')
 
-Construction of instances of generic types is type checked (Python 3.12 syntax):
+Construction of instances of generic types is type checked:
 
-.. code-block:: python
+.. tab:: Python 3.12+
 
-   class Box[T]:
-       def __init__(self, content: T) -> None:
-           self.content = content
+   .. code-block:: python
 
-   Box(1)       # OK, inferred type is Box[int]
-   Box[int](1)  # Also OK
+      class Box[T]:
+          def __init__(self, content: T) -> None:
+              self.content = content
 
-   # error: Argument 1 to "Box" has incompatible type "str"; expected "int"
-   Box[int]('some string')
+      Box(1)       # OK, inferred type is Box[int]
+      Box[int](1)  # Also OK
 
-Here is the definition of ``Box`` using the legacy syntax (Python 3.11 and earlier):
+      # error: Argument 1 to "Box" has incompatible type "str"; expected "int"
+      Box[int]('some string')
 
-.. code-block:: python
+.. tab:: Legacy
 
-   from typing import TypeVar, Generic
+   .. code-block:: python
 
-   T = TypeVar('T')
+      from typing import TypeVar, Generic
 
-   class Box(Generic[T]):
-       def __init__(self, content: T) -> None:
-           self.content = content
+      T = TypeVar('T')
+
+      class Box(Generic[T]):
+          def __init__(self, content: T) -> None:
+              self.content = content
+
+      Box(1)       # OK, inferred type is Box[int]
+      Box[int](1)  # Also OK
+
+      # error: Argument 1 to "Box" has incompatible type "str"; expected "int"
+      Box[int]('some string')
 
 .. note::
 
@@ -139,66 +147,68 @@ Defining subclasses of generic classes
 
 User-defined generic classes and generic classes defined in :py:mod:`typing`
 can be used as a base class for another class (generic or non-generic). For
-example (Python 3.12 syntax):
+example:
 
-.. code-block:: python
+.. tab:: Python 3.12+
 
-   from typing import Mapping, Iterator
+   .. code-block:: python
 
-   # This is a generic subclass of Mapping
-   class MyMap[KT, VT](Mapping[KT, VT]):
-       def __getitem__(self, k: KT) -> VT: ...
-       def __iter__(self) -> Iterator[KT]: ...
-       def __len__(self) -> int: ...
+      from typing import Mapping, Iterator
 
-   items: MyMap[str, int]  # OK
+      # This is a generic subclass of Mapping
+      class MyMap[KT, VT](Mapping[KT, VT]):
+          def __getitem__(self, k: KT) -> VT: ...
+          def __iter__(self) -> Iterator[KT]: ...
+          def __len__(self) -> int: ...
 
-   # This is a non-generic subclass of dict
-   class StrDict(dict[str, str]):
-       def __str__(self) -> str:
-           return f'StrDict({super().__str__()})'
+      items: MyMap[str, int]  # OK
 
-   data: StrDict[int, int]  # Error! StrDict is not generic
-   data2: StrDict  # OK
+      # This is a non-generic subclass of dict
+      class StrDict(dict[str, str]):
+          def __str__(self) -> str:
+              return f'StrDict({super().__str__()})'
 
-   # This is a user-defined generic class
-   class Receiver[T]:
-       def accept(self, value: T) -> None: ...
+      data: StrDict[int, int]  # Error! StrDict is not generic
+      data2: StrDict  # OK
 
-   # This is a generic subclass of Receiver
-   class AdvancedReceiver[T](Receiver[T]): ...
+      # This is a user-defined generic class
+      class Receiver[T]:
+          def accept(self, value: T) -> None: ...
 
-Here is the above example using the legacy syntax (Python 3.11 and earlier):
+      # This is a generic subclass of Receiver
+      class AdvancedReceiver[T](Receiver[T]): ...
 
-.. code-block:: python
+.. tab:: Legacy
 
-   from typing import Generic, TypeVar, Mapping, Iterator
+   .. code-block:: python
 
-   KT = TypeVar('KT')
-   VT = TypeVar('VT')
+      from typing import Generic, TypeVar, Mapping, Iterator
 
-   # This is a generic subclass of Mapping
-   class MyMap(Mapping[KT, VT]):
-       def __getitem__(self, k: KT) -> VT: ...
-       def __iter__(self) -> Iterator[KT]: ...
-       def __len__(self) -> int: ...
+      KT = TypeVar('KT')
+      VT = TypeVar('VT')
 
-   items: MyMap[str, int]  # OK
+      # This is a generic subclass of Mapping
+      class MyMap(Mapping[KT, VT]):
+          def __getitem__(self, k: KT) -> VT: ...
+          def __iter__(self) -> Iterator[KT]: ...
+          def __len__(self) -> int: ...
 
-   # This is a non-generic subclass of dict
-   class StrDict(dict[str, str]):
-       def __str__(self) -> str:
-           return f'StrDict({super().__str__()})'
+      items: MyMap[str, int]  # OK
 
-   data: StrDict[int, int]  # Error! StrDict is not generic
-   data2: StrDict  # OK
+      # This is a non-generic subclass of dict
+      class StrDict(dict[str, str]):
+          def __str__(self) -> str:
+              return f'StrDict({super().__str__()})'
 
-   # This is a user-defined generic class
-   class Receiver(Generic[T]):
-       def accept(self, value: T) -> None: ...
+      data: StrDict[int, int]  # Error! StrDict is not generic
+      data2: StrDict  # OK
 
-   # This is a generic subclass of Receiver
-   class AdvancedReceiver(Receiver[T]): ...
+      # This is a user-defined generic class
+      class Receiver(Generic[T]):
+          def accept(self, value: T) -> None: ...
+
+      # This is a generic subclass of Receiver
+      class AdvancedReceiver(Receiver[T]): ...
 
 .. note::
 
