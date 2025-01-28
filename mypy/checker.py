@@ -5908,7 +5908,22 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             )
         )
 
-    def check_for_truthy_type(self, t: Type, expr: Expression) -> None:
+    def _format_expr_type(self, t: Type, expr: Expression) -> str:
+        typ = format_type(t, self.options)
+        if isinstance(expr, MemberExpr):
+            return f'Member "{expr.name}" has type {typ}'
+        elif isinstance(expr, RefExpr) and expr.fullname:
+            return f'"{expr.fullname}" has type {typ}'
+        elif isinstance(expr, CallExpr):
+            if isinstance(expr.callee, MemberExpr):
+                return f'"{expr.callee.name}" returns {typ}'
+            elif isinstance(expr.callee, RefExpr) and expr.callee.fullname:
+                return f'"{expr.callee.fullname}" returns {typ}'
+            return f"Call returns {typ}"
+        else:
+            return f"Expression has type {typ}"
+
+    def _check_for_truthy_type(self, t: Type, expr: Expression) -> None:
         """
         Check if a type can have a truthy value.
 
@@ -5926,19 +5941,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             return
 
         def format_expr_type() -> str:
-            typ = format_type(t, self.options)
-            if isinstance(expr, MemberExpr):
-                return f'Member "{expr.name}" has type {typ}'
-            elif isinstance(expr, RefExpr) and expr.fullname:
-                return f'"{expr.fullname}" has type {typ}'
-            elif isinstance(expr, CallExpr):
-                if isinstance(expr.callee, MemberExpr):
-                    return f'"{expr.callee.name}" returns {typ}'
-                elif isinstance(expr.callee, RefExpr) and expr.callee.fullname:
-                    return f'"{expr.callee.fullname}" returns {typ}'
-                return f"Call returns {typ}"
-            else:
-                return f"Expression has type {typ}"
+            return self._format_expr_type(t, expr)
 
         def get_expr_name() -> str:
             if isinstance(expr, (NameExpr, MemberExpr)):
@@ -5961,6 +5964,56 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             )
         else:
             self.fail(message_registry.TYPE_ALWAYS_TRUE.format(format_expr_type()), expr)
+
+    def _check_for_optional_non_truthy_type(self, t: Type, expr: Expression) -> None:
+        """Check if a type involves both None and types that aren't always true, catching
+        suspicious cases of falsy values being lumped together with None.
+
+        Used in checks like::
+
+            if x: # <---
+
+            not x  # <---
+
+        """
+        t = get_proper_type(t)
+        if not isinstance(t, UnionType):
+            return  # not a Optional or Union at all
+
+        item_types = get_proper_types(t.items)
+        without_nones = [t for t in item_types if not isinstance(t, NoneType)]
+        any_none = len(without_nones) < len(item_types)
+        if not any_none:
+            return  # no None in it
+
+        non_truthy = [t for t in without_nones if not self._is_truthy_type(t)]
+        if not non_truthy:
+            return  # all the other types are just 'normal' types, not collections or ints, etc.
+
+        non_truthy_formatted = ", ".join(format_type(t, self.options) for t in non_truthy)
+        self.fail(
+            message_registry.OPTIONAL_WITH_NON_TRUTHY.format(
+                self._format_expr_type(t, expr),
+                "type" if len(non_truthy) == 1 else "types",
+                non_truthy_formatted,
+            ),
+            expr,
+        )
+
+    def check_for_appropriate_truthiness_in_boolean_context(
+        self, t: Type, expr: Expression
+    ) -> None:
+        """Check if a type is truthy or potentially-falsy when it shouldn't be.
+
+        Used in checks like::
+
+            if x: # <---
+
+            not x  # <---
+
+        """
+        self._check_for_truthy_type(t, expr)
+        self._check_for_optional_non_truthy_type(t, expr)
 
     def find_type_equals_check(
         self, node: ComparisonExpr, expr_indices: list[int]
@@ -6257,7 +6310,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         if in_boolean_context:
             # We don't check `:=` values in expressions like `(a := A())`,
             # because they produce two error messages.
-            self.check_for_truthy_type(original_vartype, node)
+            self.check_for_appropriate_truthiness_in_boolean_context(original_vartype, node)
         vartype = try_expanding_sum_type_to_union(original_vartype, "builtins.bool")
 
         if_type = true_only(vartype)

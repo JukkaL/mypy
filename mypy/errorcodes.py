@@ -214,6 +214,12 @@ TRUTHY_ITERABLE: Final[ErrorCode] = ErrorCode(
     "General",
     default_enabled=False,
 )
+OPTIONAL_NON_TRUTHY: Final[ErrorCode] = ErrorCode(
+    "optional-non-truthy",
+    "Warn about expressions involving both None and other values that can be false in boolean contexts",
+    "General",
+    default_enabled=False,
+)
 NAME_MATCH: Final = ErrorCode(
     "name-match", "Check that type definition has consistent naming", "General"
 )

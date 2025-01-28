@@ -945,6 +945,84 @@ def func(var: Iterable[str]) -> None:
 
     not var  # E: "var" has type "Iterable[str]" which can always be true in boolean context. Consider using "Collection[str]" instead.  [truthy-iterable]
 
+[case testOptionalNonTruthy]
+# flags: --enable-error-code optional-non-truthy
+from __future__ import annotations
+
+from typing import TypeVar
+
+class Truthy: pass
+class Truthy2: pass
+
+class NonTruthy:
+    def __bool__(self) -> bool: return False
+
+def no_error_direct(var: None | Truthy) -> None:
+    if var:
+        ...
+
+    not var
+
+OnlyTruthy = TypeVar("OnlyTruthy", Truthy, Truthy2)
+
+def no_error_typevar(var: None | OnlyTruthy) -> None:
+    if var:
+        ...
+
+    not var
+
+def error_int(var: None | int) -> None:
+    if var:  # E: "var" has type "Optional[int]" where both None and some other values (of type: "int") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+        ...
+
+    not var  # E: "var" has type "Optional[int]" where both None and some other values (of type: "int") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+
+def error_bool(var: None | bool) -> None:
+    if var:  # E: "var" has type "Optional[bool]" where both None and some other values (of type: "bool") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+        ...
+
+    not var  # E: "var" has type "Optional[bool]" where both None and some other values (of type: "bool") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+
+def error_list(var: None | list[Truthy]) -> None:
+    if var:  # E: "var" has type "Optional[List[Truthy]]" where both None and some other values (of type: "List[Truthy]") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+        ...
+
+    not var  # E: "var" has type "Optional[List[Truthy]]" where both None and some other values (of type: "List[Truthy]") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+
+def error_user_defined(var: None | NonTruthy) -> None:
+    if var:  # E: "var" has type "Optional[NonTruthy]" where both None and some other values (of type: "NonTruthy") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+        ...
+
+    not var  # E: "var" has type "Optional[NonTruthy]" where both None and some other values (of type: "NonTruthy") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+
+def error_union(var: None | int | Truthy | NonTruthy) -> None:
+    if var:  # E: "var" has type "Union[int, Truthy, NonTruthy, None]" where both None and some other values (of types: "int", "NonTruthy") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+        ...
+
+    not var  # E: "var" has type "Union[int, Truthy, NonTruthy, None]" where both None and some other values (of types: "int", "NonTruthy") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+
+Unconstrained = TypeVar("Unconstrained")
+
+def error_unconstrained_var(var: None | Unconstrained) -> None:
+    if var:  # E: "var" has type "Optional[Unconstrained]" where both None and some other values (of type: "Unconstrained") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+        ...
+
+    not var  # E: "var" has type "Optional[Unconstrained]" where both None and some other values (of type: "Unconstrained") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+
+Constrained = TypeVar("Constrained", str, int, Truthy, NonTruthy)
+
+def error_constrained_var(var: None | Constrained) -> None:
+    if var:  # E: "var" has type "Optional[str]" where both None and some other values (of type: "str") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy] \
+             # E: "var" has type "Optional[int]" where both None and some other values (of type: "int") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy] \
+             # E: "var" has type "Optional[NonTruthy]" where both None and some other values (of type: "NonTruthy") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+        ...
+
+    not var  # E: "var" has type "Optional[str]" where both None and some other values (of type: "str") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy] \
+             # E: "var" has type "Optional[int]" where both None and some other values (of type: "int") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy] \
+             # E: "var" has type "Optional[NonTruthy]" where both None and some other values (of type: "NonTruthy") may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.  [optional-non-truthy]
+
+[builtins fixtures/list.pyi]
+
 [case testNoOverloadImplementation]
 from typing import overload
 

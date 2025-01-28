@@ -167,6 +167,10 @@ ITERABLE_ALWAYS_TRUE: Final = ErrorMessage(
     "{} which can always be true in boolean context. Consider using {} instead.",
     code=codes.TRUTHY_ITERABLE,
 )
+OPTIONAL_WITH_NON_TRUTHY: Final = ErrorMessage(
+    "{} where both None and some other values (of {}: {}) may behave as false in boolean contexts. Consider being explicit about the behaviour for None vs other falsy values.",
+    code=codes.OPTIONAL_NON_TRUTHY,
+)
 NOT_CALLABLE: Final = "{} not callable"
 TYPE_MUST_BE_USED: Final = "Value of type {} must be used"
 
