@@ -134,6 +134,17 @@ def main(a: object) -> None:
         reveal_type(a)  # N: Revealed type is "Union[builtins.int, builtins.str]"
 [builtins fixtures/tuple.pyi]
 
+[case testTypeIsUnionWithTypeParams]
+from typing_extensions import TypeIs
+from typing import Iterable, List, Union
+def is_iterable_int(val: object) -> TypeIs[Iterable[int]]: pass
+def main(a: Union[List[int], List[str]]) -> None:
+    if is_iterable_int(a):
+        reveal_type(a)  # N: Revealed type is "builtins.list[builtins.int]"
+    else:
+        reveal_type(a)  # N: Revealed type is "builtins.list[builtins.str]"
+[builtins fixtures/tuple.pyi]
+
 [case testTypeIsNonzeroFloat]
 from typing_extensions import TypeIs
 def is_nonzero(a: object) -> TypeIs[float]: pass
@@ -162,6 +173,30 @@ class C:
             reveal_type(self)  # N: Revealed type is "__main__.C"
             reveal_type(a)  # N: Revealed type is "builtins.float"
     def is_float(self, a: object) -> TypeIs[float]: pass
+[builtins fixtures/tuple.pyi]
+
+[case testTypeIsTypeAny]
+from typing_extensions import TypeIs
+from typing import Any, Type, Union
+class A: ...
+def is_class(x: object) -> TypeIs[Type[Any]]: ...
+def main(a: Union[A, Type[A]]) -> None:
+    if is_class(a):
+        reveal_type(a)  # N: Revealed type is "Type[Any]"
+    else:
+        reveal_type(a)  # N: Revealed type is "__main__.A"
+[builtins fixtures/tuple.pyi]
+
+[case testTypeIsAwaitableAny]
+from typing_extensions import TypeIs
+from typing import Any, Awaitable, TypeVar, Union
+T = TypeVar('T')
+def is_awaitable(val: object) -> TypeIs[Awaitable[Any]]: pass
+def main(a: Union[Awaitable[T], T]) -> None:
+    if is_awaitable(a):
+        reveal_type(a)  # N: Revealed type is "Union[typing.Awaitable[T`-1], typing.Awaitable[Any]]"
+    else:
+        reveal_type(a)  # N: Revealed type is "T`-1"
 [builtins fixtures/tuple.pyi]
 
 [case testTypeIsCrossModule]

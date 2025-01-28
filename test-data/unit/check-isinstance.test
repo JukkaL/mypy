@@ -2160,6 +2160,23 @@ else:
     reveal_type(z)  # N: Revealed type is "Any"
 [builtins fixtures/isinstance.pyi]
 
+[case testIsinstanceSubclassAny]
+from typing import Any, Union
+X: Any
+class BadParent(X): pass
+class GoodParent(object): pass
+a: Union[GoodParent, BadParent]
+if isinstance(a, BadParent):
+    reveal_type(a)  # N: Revealed type is "__main__.BadParent"
+else:
+    reveal_type(a)  # N: Revealed type is "Union[__main__.GoodParent, __main__.BadParent]"
+b: Union[int, BadParent]
+if isinstance(b, (X, GoodParent)):
+    reveal_type(b)  # N: Revealed type is "Union[Any, __main__.BadParent]"
+else:
+    reveal_type(b)  # N: Revealed type is "Union[builtins.int, __main__.BadParent]"
+[builtins fixtures/isinstance.pyi]
+
 [case testIsInstanceInitialNoneCheckSkipsImpossibleCasesNoStrictOptional]
 from typing import Optional, Union
 
