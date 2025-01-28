@@ -1023,7 +1023,7 @@ T = TypeVar('T', bound=HasX)
 class Meta(type):
     def do_x(cls: Type[T]) -> T:
         cls.x
-        return cls()
+        return cls()  # E: Cannot instantiate protocol class "HasX"
 
 class Good(metaclass=Meta):
     x: int

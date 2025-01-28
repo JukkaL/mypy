@@ -1603,7 +1603,7 @@ class C:
         pass
 
 def f(cls: Type[P]) -> P:
-    return cls()  # OK
+    return cls()  # E: Cannot instantiate protocol class "P"
 def g() -> P:
     return P()  # E: Cannot instantiate protocol class "P"
 
@@ -1625,7 +1625,7 @@ class C:
         pass
 
 def f(cls: Type[P]) -> P:
-    return cls()  # OK
+    return cls()  # E: Cannot instantiate protocol class "P"
 
 Alias = P
 GoodAlias = C
@@ -1646,14 +1646,14 @@ class C:
         pass
 
 var: Type[P]
-var()
+var()  # E: Cannot instantiate protocol class "P"
 if int():
     var = P # E: Can only assign concrete classes to a variable of type "Type[P]"
     var = B # OK
     var = C # OK
 
 var_old = None # type: Type[P] # Old syntax for variable annotations
-var_old()
+var_old()  # E: Cannot instantiate protocol class "P"
 if int():
     var_old = P # E: Can only assign concrete classes to a variable of type "Type[P]"
     var_old = B # OK
@@ -1669,7 +1669,7 @@ class Logger:
 class C(Protocol):
     @classmethod
     def action(cls) -> None:
-        cls() #OK for classmethods
+        cls() # E: Cannot instantiate protocol class "C"
         Logger.log(cls)  #OK for classmethods
 [builtins fixtures/classmethod.pyi]
 

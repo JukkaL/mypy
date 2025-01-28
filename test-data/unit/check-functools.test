@@ -589,9 +589,9 @@ class A(ABC):
     def method(self) -> None: ...
 
 def f1(cls: type[A]) -> None:
-    cls()
-    partial_cls = partial(cls)
-    partial_cls()
+    cls()  # E: Cannot instantiate abstract class "A" with abstract attribute "method"
+    partial_cls = partial(cls)  # E: Cannot instantiate abstract class "A" with abstract attribute "method"
+    partial_cls()  # E: Cannot instantiate abstract class "A" with abstract attribute "method"
 
 def f2() -> None:
     A()  # E: Cannot instantiate abstract class "A" with abstract attribute "method"

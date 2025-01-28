@@ -1540,7 +1540,8 @@ import typing
 class C:
   @classmethod
   def foo(cls) -> None:
-      cls().bar()
+      c = cls()  # E: Cannot instantiate abstract class "C" with abstract attribute "bar"
+      c.bar()
   @abstractmethod
   def bar(self) -> None:
       pass

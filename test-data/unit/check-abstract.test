@@ -187,7 +187,7 @@ class C(B):
         pass
 
 def f(cls: Type[A]) -> A:
-    return cls()  # OK
+    return cls()  # E: Cannot instantiate abstract class "A" with abstract attribute "m"
 def g() -> A:
     return A()  # E: Cannot instantiate abstract class "A" with abstract attribute "m"
 
@@ -196,7 +196,6 @@ f(B)  # E: Only concrete class can be given where "Type[A]" is expected
 f(C)  # OK
 x: Type[B]
 f(x)  # OK
-[out]
 
 [case testAbstractTypeInADict]
 from typing import Dict, Type
@@ -229,7 +228,7 @@ class C(B):
         pass
 
 def f(cls: Type[A]) -> A:
-    return cls()  # OK
+    return cls()  # E: Cannot instantiate abstract class "A" with abstract attribute "m"
 
 Alias = A
 GoodAlias = C
@@ -237,7 +236,6 @@ Alias()  # E: Cannot instantiate abstract class "A" with abstract attribute "m"
 GoodAlias()
 f(Alias)  # E: Only concrete class can be given where "Type[A]" is expected
 f(GoodAlias)
-[out]
 
 [case testInstantiationAbstractsInTypeForVariables]
 # flags: --no-strict-optional
@@ -253,7 +251,7 @@ class C(B):
         pass
 
 var: Type[A]
-var()
+var()  # E: Cannot instantiate abstract class "A" with abstract attribute "m"
 if int():
     var = A # E: Can only assign concrete classes to a variable of type "Type[A]"
 if int():
@@ -262,7 +260,7 @@ if int():
     var = C # OK
 
 var_old = None # type: Type[A] # Old syntax for variable annotations
-var_old()
+var_old()  # E: Cannot instantiate abstract class "A" with abstract attribute "m"
 if int():
     var_old = A # E: Can only assign concrete classes to a variable of type "Type[A]"
 if int():
@@ -278,7 +276,7 @@ class D(A):
     def __new__(cls, a=None) -> "D": ...
 if int():
     var = D # E: Can only assign concrete classes to a variable of type "Type[A]"
-[out]
+
 
 [case testInstantiationAbstractsInTypeForClassMethods]
 from typing import Type
@@ -291,13 +289,12 @@ class Logger:
 class C:
     @classmethod
     def action(cls) -> None:
-        cls() #OK for classmethods
+        cls() # E: Cannot instantiate abstract class "C" with abstract attribute "m"
         Logger.log(cls)  #OK for classmethods
     @abstractmethod
     def m(self) -> None:
         pass
 [builtins fixtures/classmethod.pyi]
-[out]
 
 [case testInstantiatingClassWithInheritedAbstractMethodAndSuppression]
 from abc import abstractmethod, ABCMeta
@@ -324,7 +321,6 @@ class A(metaclass=ABCMeta):
     @abstractmethod
     def j(self): pass
 a = A() # E: Cannot instantiate abstract class "A" with abstract attributes "a", "b", ... and "j" (7 methods suppressed)
-[out]
 
 
 -- Implementing abstract methods
@@ -1085,9 +1081,9 @@ my_abstract_types = {
 reveal_type(my_concrete_types)  # N: Revealed type is "builtins.dict[builtins.str, def () -> __main__.MyAbstractType]"
 reveal_type(my_abstract_types)  # N: Revealed type is "builtins.dict[builtins.str, def () -> __main__.MyAbstractType]"
 
-a = my_concrete_types['A']()
+a = my_concrete_types['A']()  # E: Cannot instantiate abstract class "MyAbstractType" with abstract attribute "do"
 a.do()
-b = my_concrete_types['B']()
+b = my_concrete_types['B']()  # E: Cannot instantiate abstract class "MyAbstractType" with abstract attribute "do"
 b.do()
 
 c = my_abstract_types['A']()  # E: Cannot instantiate abstract class "MyAbstractType" with abstract attribute "do"
