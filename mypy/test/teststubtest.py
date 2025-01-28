@@ -2423,6 +2423,31 @@ assert annotations
             error="func2",
         )
 
+    @collect_cases
+    def test_type_default_protocol(self) -> Iterator[Case]:
+        yield Case(
+            stub="""
+            from typing import Protocol
+
+            class _FormatterClass(Protocol):
+                def __call__(self, *, prog: str) -> HelpFormatter: ...
+
+            class ArgumentParser:
+                def __init__(self, formatter_class: _FormatterClass = ...) -> None: ...
+
+            class HelpFormatter:
+                def __init__(self, prog: str, indent_increment: int = 2) -> None: ...
+            """,
+            runtime="""
+            class HelpFormatter:
+                def __init__(self, prog, indent_increment=2) -> None: ...
+
+            class ArgumentParser:
+                def __init__(self, formatter_class=HelpFormatter): ...
+            """,
+            error=None,
+        )
+
 
 def remove_color_code(s: str) -> str:
     return re.sub("\\x1b.*?m", "", s)  # this works!
