@@ -540,6 +540,12 @@ class MessageBuilder:
                     context,
                     code=codes.UNION_ATTR,
                 )
+                if typ_format == '"None"':
+                    self.note(
+                        'You can use "if <variable_name> is not None" check to guard against a None value',
+                        context,
+                        code=codes.UNION_ATTR,
+                    )
                 return codes.UNION_ATTR
             elif isinstance(original_type, TypeVarType):
                 bound = get_proper_type(original_type.upper_bound)
