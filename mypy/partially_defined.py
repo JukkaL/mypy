@@ -396,10 +396,10 @@ class PossiblyUndefinedVariableVisitor(ExtendedTraverserVisitor):
             b.accept(self)
             self.tracker.next_branch()
         if o.else_body:
-            if not o.else_body.is_unreachable:
-                o.else_body.accept(self)
-            else:
+            if o.else_body.is_unreachable:
                 self.tracker.skip_branch()
+            else:
+                o.else_body.accept(self)
         self.tracker.end_branch_statement()
 
     def visit_match_stmt(self, o: MatchStmt) -> None:
@@ -457,25 +457,27 @@ class PossiblyUndefinedVariableVisitor(ExtendedTraverserVisitor):
 
     def visit_for_stmt(self, o: ForStmt) -> None:
         o.expr.accept(self)
+        self.tracker.start_branch_statement()
         self.process_lvalue(o.index)
         o.index.accept(self)
-        self.tracker.start_branch_statement()
         loop = Loop()
         self.loops.append(loop)
         o.body.accept(self)
         self.tracker.next_branch()
-        self.tracker.end_branch_statement()
-        if o.else_body is not None:
-            # If the loop has a `break` inside, `else` is executed conditionally.
-            # If the loop doesn't have a `break` either the function will return or
-            # execute the `else`.
-            has_break = loop.has_break
-            if has_break:
-                self.tracker.start_branch_statement()
-                self.tracker.next_branch()
+        if o.else_body is None:
+            self.tracker.end_branch_statement()
+        elif loop.has_break:
+            # `else` is executed conditionally:
+            # - if iterable was empty
+            # - if iterable was non-empty and `break` was not executed
             o.else_body.accept(self)
-            if has_break:
-                self.tracker.end_branch_statement()
+            self.tracker.end_branch_statement()
+        else:
+            # `else` is always executed:
+            # - if iterable was empty
+            # - if iterable was non-empty (there is no `break`)
+            self.tracker.end_branch_statement()
+            o.else_body.accept(self)
         self.loops.pop()
 
     def visit_return_stmt(self, o: ReturnStmt) -> None:
@@ -582,28 +584,34 @@ class PossiblyUndefinedVariableVisitor(ExtendedTraverserVisitor):
 
     def visit_while_stmt(self, o: WhileStmt) -> None:
         o.expr.accept(self)
-        self.tracker.start_branch_statement()
         loop = Loop()
         self.loops.append(loop)
-        o.body.accept(self)
-        has_break = loop.has_break
-        if not checker.is_true_literal(o.expr):
-            # If this is a loop like `while True`, we can consider the body to be
-            # a single branch statement (we're guaranteed that the body is executed at least once).
-            # If not, call next_branch() to make all variables defined there conditional.
+
+        if checker.is_true_literal(o.expr):
+            # `while True` loop:
+            # - body is always executed
+            # - `else` is never executed
+            o.body.accept(self)
+        else:
+            # body is executed conditionally: if expression was True on first evaluation
+            self.tracker.start_branch_statement()
+            o.body.accept(self)
             self.tracker.next_branch()
-        self.tracker.end_branch_statement()
-        if o.else_body is not None:
-            # If the loop has a `break` inside, `else` is executed conditionally.
-            # If the loop doesn't have a `break` either the function will return or
-            # execute the `else`.
-            if has_break:
-                self.tracker.start_branch_statement()
-                self.tracker.next_branch()
-            if o.else_body:
-                o.else_body.accept(self)
-            if has_break:
+
+            if o.else_body is None:
                 self.tracker.end_branch_statement()
+            elif loop.has_break:
+                # `else` is executed conditionally:
+                # - if expression was False on first evaluation
+                # - if expression was True on first evaluation and `break` was not executed
+                o.else_body.accept(self)
+                self.tracker.end_branch_statement()
+            else:
+                # `else` is always executed:
+                # - if expression was False on first evaluation
+                # - if expression was True on first evaluation (there is no `break`)
+                self.tracker.end_branch_statement()
+                o.else_body.accept(self)
         self.loops.pop()
 
     def visit_as_pattern(self, o: AsPattern) -> None:

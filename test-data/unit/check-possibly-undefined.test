@@ -343,7 +343,12 @@ for x in [1, 2, 3]:
 else:
     z = 2
 
-a = z + y  # E: Name "y" may be undefined
+# mypy doesn't know if `[1, 2, 3]` is non-empty, so the body may not be executed
+x  # E: Name "x" may be undefined
+y  # E: Name "y" may be undefined
+
+# there is no `break`, so the `else` is always executed
+z
 
 [case testReturn]
 # flags: --enable-error-code possibly-undefined
@@ -1043,3 +1048,116 @@ def foo(x: Union[int, str]) -> None:
         assert_never(x)
     f  # OK
 [builtins fixtures/tuple.pyi]
+
+[case testForLoopIndexMayBeUndefined]
+# flags: --enable-error-code possibly-undefined
+class Iterable:
+    def __iter__(self): ...
+
+for i in Iterable():
+    pass
+
+i  # E: Name "i" may be undefined  # if iterable was empty
+
+[case testForLoopBodyMayNotBeExecuted]
+# flags: --enable-error-code possibly-undefined
+# Regression test for https://github.com/python/mypy/issues/14209
+class Iterable:
+    def __iter__(self): ...
+
+for _ in Iterable():
+    a = 1
+
+a  # E: Name "a" may be undefined  # if iterable was empty
+
+[case testWhileLoopBodyMayNotBeExecuted]
+# flags: --enable-error-code possibly-undefined
+# Regression test for https://github.com/python/mypy/issues/14209
+def condition() -> bool: ...
+
+while condition():
+    a = 1
+
+a  # E: Name "a" may be undefined  # if `condition()` was `False` on first call
+
+[case testForLoopBodyOrElseIsExecuted]
+# flags: --enable-error-code possibly-undefined
+# Regression test for https://github.com/python/mypy/issues/14209
+class Iterable:
+    def __iter__(self): ...
+
+for _ in Iterable():
+    a = 1
+else:
+    a = 1  # if iterable is empty
+
+a  # OK
+
+[case testWhileLoopBodyOrElseIsExecuted]
+# flags: --enable-error-code possibly-undefined
+# Regression test for https://github.com/python/mypy/issues/14209
+def condition() -> bool: ...
+
+while condition():
+    a = 1
+else:
+    a = 1  # if `condition()` was `False` on first call
+
+a  # OK
+
+[case testForLoopBreakAsLastStatement]
+# flags: --enable-error-code possibly-undefined
+# Regression test for https://github.com/python/mypy/issues/14209
+class Iterable:
+    def __iter__(self): ...
+
+for i in Iterable():
+    a = 1
+    break
+else:
+    a = 1  # if iterable is empty
+
+a  # OK
+
+[case testForLoopBreakAsOnlyStatementOfCondition]
+# flags: --enable-error-code possibly-undefined
+# Regression test for https://github.com/python/mypy/issues/14209
+def condition() -> bool: ...
+class Iterable:
+    def __iter__(self): ...
+
+for i in Iterable():
+    a = 1
+    if condition():
+        break
+else:
+    a = 1  # if iterable is empty
+
+a  # OK
+
+[case testWhileLoopBreakAsLastStatement]
+# flags: --enable-error-code possibly-undefined
+# Regression test for https://github.com/python/mypy/issues/14209
+def condition() -> bool: ...
+
+while condition():
+    a = 1
+    break
+else:
+    a = 1  # if `condition()` was `False` on first call
+
+a  # OK
+
+[case testWhileLoopBreakAsOnlyStatementOfCondition]
+# flags: --enable-error-code possibly-undefined
+# Regression test for https://github.com/python/mypy/issues/14209
+def condition() -> bool: ...
+
+while condition():
+    a = 1
+    if condition():
+        break
+else:
+    a = 1  # if `condition()` was `False` on first call
+
+a  # OK
