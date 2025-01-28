@@ -79,6 +79,16 @@ if int():
 
 [builtins fixtures/isinstance.pyi]
 
+[case testUnionAttributeAccessWithNoneItem]
+from typing import Union
+
+class A:
+    def foo(self) -> int: pass
+
+def f(x: Union[A, None]) -> int:
+    return x.foo()  # E: Item "None" of "Optional[A]" has no attribute "foo" \
+                              # N: You can use "if x is not None" to guard against a None value
+
 [case testUnionMethodCalls]
 from typing import Union
 
@@ -935,7 +945,8 @@ a: Any
 d: Dict[str, Tuple[List[Tuple[str, str]], str]]
 x, _ = d.get(a, (None, None))
 
-for y in x: pass # E: Item "None" of "Optional[List[Tuple[str, str]]]" has no attribute "__iter__" (not iterable)
+for y in x: pass  # E: Item "None" of "Optional[List[Tuple[str, str]]]" has no attribute "__iter__" (not iterable) \
+                  # N: You can use "if x is not None" to guard against a None value
 if x:
     for s, t in x:
         reveal_type(s) # N: Revealed type is "builtins.str"
@@ -950,7 +961,8 @@ x = None
 d: Dict[str, Tuple[List[Tuple[str, str]], str]]
 x, _ = d.get(a, (None, None))
 
-for y in x: pass # E: Item "None" of "Optional[List[Tuple[str, str]]]" has no attribute "__iter__" (not iterable)
+for y in x: pass  # E: Item "None" of "Optional[List[Tuple[str, str]]]" has no attribute "__iter__" (not iterable) \
+                  # N: You can use "if x is not None" to guard against a None value
 if x:
     for s, t in x:
         reveal_type(s) # N: Revealed type is "builtins.str"
