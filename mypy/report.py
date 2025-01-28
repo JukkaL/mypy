@@ -22,7 +22,7 @@ from mypy.defaults import REPORTER_NAMES
 from mypy.nodes import Expression, FuncDef, MypyFile
 from mypy.options import Options
 from mypy.traverser import TraverserVisitor
-from mypy.types import Type, TypeOfAny
+from mypy.types import AnyType, CallableType, ProperType, Type, TypeOfAny, get_proper_type
 from mypy.version import __version__
 
 try:
@@ -155,7 +155,25 @@ class FuncCounterVisitor(TraverserVisitor):
         self.counts = [0, 0]
 
     def visit_func_def(self, defn: FuncDef) -> None:
-        self.counts[defn.type is not None] += 1
+        def is_unannotated_any(t: Type) -> bool:
+            if not isinstance(t, ProperType):
+                return False
+            return isinstance(t, AnyType) and t.type_of_any == TypeOfAny.unannotated
+
+        if defn.type is None:
+            self.counts[0] += 1
+            return
+        elif isinstance(defn.type, CallableType):
+            ret_type = get_proper_type(defn.type.ret_type)
+            if is_unannotated_any(ret_type):
+                self.counts[0] += 1
+                return
+            # TODO: Add check to handle generators and co-routines
+            if any(is_unannotated_any(t) for t in defn.type.arg_types):
+                self.counts[0] += 1
+                return
+
+        self.counts[1] += 1
 
 
 class LineCountReporter(AbstractReporter):
