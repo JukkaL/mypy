@@ -347,11 +347,11 @@ class Server:
                 )
                 if current_plugins_snapshot != start_plugins_snapshot:
                     return {"restart": "plugins changed"}
+            return self.check(sources, export_types, is_tty, terminal_width)
         except InvalidSourceList as err:
             return {"out": "", "err": str(err), "status": 2}
         except SystemExit as e:
             return {"out": stdout.getvalue(), "err": stderr.getvalue(), "status": e.code}
-        return self.check(sources, export_types, is_tty, terminal_width)
 
     def cmd_check(
         self, files: Sequence[str], export_types: bool, is_tty: bool, terminal_width: int
@@ -857,6 +857,13 @@ class Server:
 
     def update_sources(self, sources: list[BuildSource]) -> None:
         paths = [source.path for source in sources if source.path is not None]
+        for path in paths:
+            if not self.fscache.exists(path):
+                raise InvalidSourceList(
+                    "mypy: can't read file '{}': No such file or directory\n".format(
+                        path.replace(os.getcwd() + os.sep, "")
+                    )
+                )
         if self.following_imports():
             # Filter out directories (used for namespace packages).
             paths = [path for path in paths if self.fscache.isfile(path)]
