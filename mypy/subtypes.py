@@ -1565,6 +1565,11 @@ def is_callable_compatible(
     if right.is_type_obj() and not left.is_type_obj() and not allow_partial_overlap:
         return False
 
+    if left.is_type_obj():
+        left_type_obj = left.type_object()
+        if (left_type_obj.is_protocol or left_type_obj.is_abstract) and not right.is_type_obj():
+            return False
+
     # A callable L is a subtype of a generic callable R if L is a
     # subtype of every type obtained from R by substituting types for
     # the variables of R. We can check this by simply leaving the

@@ -1687,3 +1687,24 @@ from typing import TYPE_CHECKING
 class C:
     if TYPE_CHECKING:
         def dynamic(self) -> int: ...  # OK
+
+[case testAbstractCallableSubtyping]
+import abc
+from typing import Callable, Protocol
+
+class Proto(Protocol):
+    def meth(self): ...
+
+def foo(t: Callable[..., Proto]):
+    t()
+
+foo(Proto)  # E: Argument 1 to "foo" has incompatible type "Type[Proto]"; expected "Callable[..., Proto]"
+
+class Abstract(abc.ABC):
+    @abc.abstractmethod
+    def meth(self): ...
+
+def bar(t: Callable[..., Abstract]):
+    t()
+
+bar(Abstract)  # E: Argument 1 to "bar" has incompatible type "Type[Abstract]"; expected "Callable[..., Abstract]"
