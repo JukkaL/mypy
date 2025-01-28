@@ -4138,6 +4138,44 @@ class P(Protocol):
 class C(P): ...
 C(0)  # OK
 
+[case testCallbackProtocolMethod]
+from typing import Callable, Protocol
+
+class CallbackProtocol(Protocol):
+    def __call__(self, __x: int) -> int: ...
+
+class CallableObject:
+    attribute: str
+    def __call__(self, __x: int) -> int:
+        return 3
+
+def make_method_protocol() -> CallbackProtocol: ...
+def make_method_callable() -> Callable[[int], int]: ...
+def make_method_object() -> CallableObject: ...
+
+class ClsProto:
+    meth = make_method_protocol()
+
+class ClsCall:
+    meth = make_method_callable()
+
+class ClsObject:
+    meth = make_method_object()
+
+reveal_type(ClsProto.meth)  # N: Revealed type is "__main__.CallbackProtocol"
+reveal_type(ClsCall.meth)  # N: Revealed type is "def (builtins.int) -> builtins.int"
+reveal_type(ClsObject.meth)  # N: Revealed type is "__main__.CallableObject"
+
+def takes(p: ClsProto, c: ClsCall, o: ClsObject) -> None:
+    reveal_type(p.meth(0))  # E: Invalid self argument "ClsProto" to attribute function "meth" with type "Callable[[int], int]" \
+                            # E: Too many arguments for "__call__" of "CallbackProtocol" \
+                            # N: Revealed type is "builtins.int"
+    reveal_type(c.meth(0))  # E: Invalid self argument "ClsCall" to attribute function "meth" with type "Callable[[int], int]" \
+                            # E: Too many arguments \
+                            # N: Revealed type is "builtins.int"
+    reveal_type(o.meth(0))  # N: Revealed type is "builtins.int"
+    reveal_type(o.meth.attribute)  # N: Revealed type is "builtins.str"
+
 [case testTypeVarValueConstraintAgainstGenericProtocol]
 from typing import TypeVar, Generic, Protocol, overload
 
