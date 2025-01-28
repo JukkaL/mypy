@@ -75,6 +75,32 @@ def f(a: int): pass
 def g(): f(0, a=1)
 [out]
 
+[case testIncompatibleKeywordArgumentsClass]
+from typing import Dict
+
+class A:
+    def __init__(self, a: str, b: str, c: str, d: int = 2) -> None:
+        self.a: str = a
+        self.b: str = b
+        self.c: str = c
+        self.d: int = d
+
+argument_a: str = "argument_a"
+arguments_b_c: Dict[str, str] = {"b": "argument_b", "c": "argument_c"}
+object_a: A = A(a=argument_a, **arguments_b_c) # E: Argument 2 to "A" has incompatible type "**Dict[str, str]"; expected "int" \
+                                               # N: Consider using a TypedDict type or "Dict[str, any]" for the ** argument
+[builtins fixtures/dict.pyi]
+
+[case testIncompatibleKeywordArgumentsJSON]
+import json
+json_kwargs = dict(indent=2)
+json.dumps({}, **json_kwargs) # E: Argument 2 to "dumps" has incompatible type "**Dict[str, int]"; expected "bool" \
+                              # N: Consider using a TypedDict type or "Dict[str, any]" for the ** argument \
+                              # E: Argument 2 to "dumps" has incompatible type "**Dict[str, int]"; expected "Optional[Type[JSONEncoder]]" \
+                              # E: Argument 2 to "dumps" has incompatible type "**Dict[str, int]"; expected "Optional[Tuple[str, str]]" \
+                              # E: Argument 2 to "dumps" has incompatible type "**Dict[str, int]"; expected "Optional[Callable[[Any], Any]]"
+[builtins fixtures/dict.pyi]
+
 [case testInvalidKeywordArgument]
 import typing
 def f(a: 'A') -> None: pass # N: "f" defined here
@@ -301,9 +327,12 @@ d: Dict[str, A]
 f(**d)
 f(x=A(), **d)
 d2: Dict[str, B]
-f(**d2)         # E: Argument 1 to "f" has incompatible type "**Dict[str, B]"; expected "A"
-f(x=A(), **d2)  # E: Argument 2 to "f" has incompatible type "**Dict[str, B]"; expected "A"
-f(**{'x': B()}) # E: Argument 1 to "f" has incompatible type "**Dict[str, B]"; expected "A"
+f(**d2)         # E: Argument 1 to "f" has incompatible type "**Dict[str, B]"; expected "A" \
+                # N: Consider using a TypedDict type or "Dict[str, any]" for the ** argument
+f(x=A(), **d2)  # E: Argument 2 to "f" has incompatible type "**Dict[str, B]"; expected "A" \
+                # N: Consider using a TypedDict type or "Dict[str, any]" for the ** argument
+f(**{'x': B()}) # E: Argument 1 to "f" has incompatible type "**Dict[str, B]"; expected "A" \
+                # N: Consider using a TypedDict type or "Dict[str, any]" for the ** argument
 [builtins fixtures/dict.pyi]
 
 [case testKwargsAllowedInDunderCall]
@@ -369,7 +398,8 @@ def f(a: 'A', b: 'B') -> None: pass
 d: Dict[str, Any]
 f(**d)
 d2: Dict[str, A]
-f(**d2) # E: Argument 1 to "f" has incompatible type "**Dict[str, A]"; expected "B"
+f(**d2) # E: Argument 1 to "f" has incompatible type "**Dict[str, A]"; expected "B" \
+        # N: Consider using a TypedDict type or "Dict[str, any]" for the ** argument
 class A: pass
 class B: pass
 [builtins fixtures/dict.pyi]
@@ -446,7 +476,8 @@ f(**a) # okay
 
 b = {'': ''}
 f(b) # E: Argument 1 to "f" has incompatible type "Dict[str, str]"; expected "int"
-f(**b) # E: Argument 1 to "f" has incompatible type "**Dict[str, str]"; expected "int"
+f(**b) # E: Argument 1 to "f" has incompatible type "**Dict[str, str]"; expected "int" \
+       # N: Consider using a TypedDict type or "Dict[str, any]" for the ** argument
 
 c = {0: 0}
 f(**c) # E: Keywords must be strings
@@ -491,7 +522,8 @@ def g(arg: int = 0, **kwargs: object) -> None:
 
 d = {} # type: Dict[str, object]
 f(**d)
-g(**d)  # E: Argument 1 to "g" has incompatible type "**Dict[str, object]"; expected "int"
+g(**d)  # E: Argument 1 to "g" has incompatible type "**Dict[str, object]"; expected "int" \
+        # N: Consider using a TypedDict type or "Dict[str, any]" for the ** argument
 
 m = {} # type: Mapping[str, object]
 f(**m)
@@ -566,4 +598,5 @@ main:37: error: Argument 1 to "foo" has incompatible type "**B[str, str]"; expec
 main:38: error: Argument after ** must be a mapping, not "C[str, float]"
 main:39: error: Argument after ** must be a mapping, not "D"
 main:41: error: Argument 1 to "foo" has incompatible type "**Dict[str, str]"; expected "float"
+main:41: note: Consider using a TypedDict type or "Dict[str, any]" for the ** argument
 [builtins fixtures/dict.pyi]

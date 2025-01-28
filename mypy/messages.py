@@ -827,6 +827,8 @@ class MessageBuilder:
                         quote_type_string(arg_type_str),
                         quote_type_string(expected_type_str),
                     )
+                    if isinstance(arg_type, Instance):
+                        notes = append_kwargs_notes(notes, arg_type, arg_kind)
                 expected_type = get_proper_type(expected_type)
                 if isinstance(expected_type, UnionType):
                     expected_types = list(expected_type.items)
@@ -3257,6 +3259,13 @@ def pretty_seq(args: Sequence[str], conjunction: str) -> str:
         return f"{quoted[0]} {conjunction} {quoted[1]}"
     last_sep = ", " + conjunction + " "
     return ", ".join(quoted[:-1]) + last_sep + quoted[-1]
+
+
+def append_kwargs_notes(notes: list[str], arg_type: Instance, arg_kind: ArgKind) -> list[str]:
+    """Explain that annotating keyword arguments may resolve incompatible type issues."""
+    if arg_kind == ARG_STAR2 and arg_type.type.fullname == "builtins.dict":
+        notes.append('Consider using a TypedDict type or "Dict[str, any]" for the ** argument')
+    return notes
 
 
 def append_invariance_notes(

@@ -806,7 +806,8 @@ Weird = TypedDict("Weird", {"@": int})
 def foo(**kwargs: Unpack[Weird]) -> None:
     reveal_type(kwargs["@"])  # N: Revealed type is "builtins.int"
 foo(**{"@": 42})
-foo(**{"no": "way"})  # E: Argument 1 to "foo" has incompatible type "**Dict[str, str]"; expected "int"
+foo(**{"no": "way"})  # E: Argument 1 to "foo" has incompatible type "**Dict[str, str]"; expected "int" \
+                      # N: Consider using a TypedDict type or "Dict[str, any]" for the ** argument
 [builtins fixtures/dict.pyi]
 
 [case testUnpackKwargsEmpty]

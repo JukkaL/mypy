@@ -1276,7 +1276,8 @@ def c3(f: Callable[P, int], *args, **kwargs) -> int: ...
 def c4(f: Callable[P, int], *args: int, **kwargs: str) -> int:
     # but not ok to call:
     f(*args, **kwargs)  # E: Argument 1 has incompatible type "*Tuple[int, ...]"; expected "P.args" \
-                        # E: Argument 2 has incompatible type "**Dict[str, str]"; expected "P.kwargs"
+                        # E: Argument 2 has incompatible type "**Dict[str, str]"; expected "P.kwargs" \
+                        # N: Consider using a TypedDict type or "Dict[str, any]" for the ** argument
     return 1
 
 def f1(f: Callable[P, int], *args, **kwargs: P.kwargs) -> int: ...  # E: ParamSpec must have "*args" typed as "P.args" and "**kwargs" typed as "P.kwargs"
@@ -1306,7 +1307,8 @@ def c3(f: Callable[Concatenate[int, P], int], *args, **kwargs) -> int: ...
 def c4(f: Callable[Concatenate[int, P], int], *args: int, **kwargs: str) -> int:
     # but not ok to call:
     f(1, *args, **kwargs)  # E: Argument 2 has incompatible type "*Tuple[int, ...]"; expected "P.args" \
-                           # E: Argument 3 has incompatible type "**Dict[str, str]"; expected "P.kwargs"
+                           # E: Argument 3 has incompatible type "**Dict[str, str]"; expected "P.kwargs" \
+                           # N: Consider using a TypedDict type or "Dict[str, any]" for the ** argument
     return 1
 
 def f1(f: Callable[Concatenate[int, P], int], *args, **kwargs: P.kwargs) -> int: ...  # E: ParamSpec must have "*args" typed as "P.args" and "**kwargs" typed as "P.kwargs"
