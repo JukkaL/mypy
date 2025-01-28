@@ -572,9 +572,23 @@ def verify_typeinfo(
 
         # If it came from the metaclass, consider the runtime_attr to be MISSING
         # for a more accurate message
-        if runtime_attr is not MISSING and type(runtime) is not runtime:
-            if getattr(runtime_attr, "__objclass__", None) is type(runtime):
-                runtime_attr = MISSING
+        if (
+            runtime_attr is not MISSING
+            and type(runtime) is not runtime
+            and getattr(runtime_attr, "__objclass__", None) is type(runtime)
+        ):
+            runtime_attr = MISSING
+
+        # __setattr__ and __delattr__ on object are a special case,
+        # so if we only have these methods inherited from there, pretend that
+        # we don't have them. See python/typeshed#7385.
+        if (
+            entry in ("__setattr__", "__delattr__")
+            and runtime_attr is not MISSING
+            and runtime is not object
+            and getattr(runtime_attr, "__objclass__", None) is object
+        ):
+            runtime_attr = MISSING
 
         # Do not error for an object missing from the stub
         # If the runtime object is a types.WrapperDescriptorType object
@@ -1090,9 +1104,11 @@ def verify_funcitem(
 
 
 @verify.register(Missing)
-def verify_none(
+def verify_missing(
     stub: Missing, runtime: MaybeMissing[Any], object_path: list[str]
 ) -> Iterator[Error]:
+    if runtime is MISSING:
+        return
     yield Error(object_path, "is not present in stub", stub, runtime)
 
 

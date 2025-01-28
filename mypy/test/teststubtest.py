@@ -1483,6 +1483,24 @@ class StubtestUnit(unittest.TestCase):
             runtime="class ClassWithMetaclassOverride: ...",
             error="ClassWithMetaclassOverride.__call__",
         )
+        # Test that we ignore object.__setattr__ and object.__delattr__ inheritance
+        yield Case(
+            stub="""
+            from typing import Any
+            class FakeSetattrClass:
+                def __setattr__(self, name: str, value: Any, /) -> None: ...
+            """,
+            runtime="class FakeSetattrClass: ...",
+            error="FakeSetattrClass.__setattr__",
+        )
+        yield Case(
+            stub="""
+            class FakeDelattrClass:
+                def __delattr__(self, name: str, /) -> None: ...
+            """,
+            runtime="class FakeDelattrClass: ...",
+            error="FakeDelattrClass.__delattr__",
+        )
 
     @collect_cases
     def test_missing_no_runtime_all(self) -> Iterator[Case]:
