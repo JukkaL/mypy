@@ -2990,3 +2990,75 @@ x: Type[Literal[1]]  # E: Type[...] can't contain "Literal[...]"
 y: Type[Union[Literal[1], Literal[2]]]  # E: Type[...] can't contain "Union[Literal[...], Literal[...]]"
 z: Type[Literal[1, 2]]  # E: Type[...] can't contain "Union[Literal[...], Literal[...]]"
 [builtins fixtures/tuple.pyi]
+
+-- This is constructed so that when mypy performs first pass
+-- type analysis on _LiteralInteger, builtins.int is still a
+-- placeholder, and the analysis must defer to avoid an error.
+[case testDeferIntLiteral]
+[file typing.py]
+import abc
+
+[file abc.py]
+import collections.abc
+
+[file collections/__init__.py]
+
+[file collections/abc.py]
+from _collections_abc import *
+
+[file _collections_abc.py]
+
+[file typing_extensions.py]
+Literal: object
+
+[file numbers.py]
+class Number: ...
+
+[file builtins.py]
+import numbers
+import typing
+from typing_extensions import Literal
+
+_LiteralInteger: Literal[0]
+
+class int(numbers.Number): ...
+class str: ...
+class list: ...
+class dict: ...
+class ellipsis: ...
+
+
+-- In this version, looking up the node for builtins.int
+-- during type analysis of _LiteralInteger returns None
+[case testDeferIntLiteral2]
+[file _collections_abc.pyi]
+[file abc.pyi]
+[file collections/__init__.pyi]
+[file collections/abc.pyi]
+[file types.pyi]
+class UnionType: ...
+
+[file typing_extensions.pyi]
+from typing import Any
+TypeAlias: Any
+
+[file typing.pyi]
+Any = object()
+Literal: Any
+
+[file builtins.pyi]
+import _collections_abc
+import abc
+import collections.abc
+import types
+from typing import Literal
+from typing_extensions import TypeAlias
+
+_PositiveInteger: TypeAlias = Literal[1]
+_LiteralInteger = _PositiveInteger | Literal[0]
+
+class int: ...
+class ellipsis: ...
+class str: ...
+class list: ...
+class dict: ...

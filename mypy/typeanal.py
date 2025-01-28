@@ -1772,6 +1772,12 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
                 # helpful, but it generally won't make sense in the context of a Literal[...].
                 return None
 
+            # Make sure the literal's class is ready
+            sym = self.api.lookup_fully_qualified_or_none(arg.base_type_name)
+            if sym is None or isinstance(sym.node, PlaceholderNode):
+                self.api.record_incomplete_ref()
+                return [AnyType(TypeOfAny.special_form)]
+
             # Remap bytes and unicode into the appropriate type for the correct Python version
             fallback = self.named_type(arg.base_type_name)
             assert isinstance(fallback, Instance)

@@ -3158,7 +3158,11 @@ class SemanticAnalyzer(
         else:
             s.rvalue.accept(self)
 
-        if self.found_incomplete_ref(tag) or self.should_wait_rhs(s.rvalue):
+        if (
+            self.found_incomplete_ref(tag)
+            or self.should_wait_rhs(s.rvalue)
+            or self.should_wait_lhs(s)
+        ):
             # Initializer couldn't be fully analyzed. Defer the current node and give up.
             # Make sure that if we skip the definition of some local names, they can't be
             # added later in this scope, since an earlier definition should take precedence.
@@ -3256,6 +3260,23 @@ class SemanticAnalyzer(
                     node.kind = GDEF
                     node.fullname = sym.node.fullname
             return True
+
+    def should_wait_lhs(self, s: AssignmentStmt) -> bool:
+        """Is the l.h.s of an assignment ready?
+
+        If the eventual l.h.s. type turns out to be a special form, we need to know that before
+        we can process the r.h.s. properly.
+        """
+        if self.final_iteration:
+            # No chance, nothing has changed.
+            return False
+        if isinstance(s.type, UnboundType):
+            lookup = self.lookup_qualified(s.type.name, s, suppress_errors=True)
+            if lookup and isinstance(lookup.node, PlaceholderNode):
+                if isinstance(lookup.node.node, ImportFrom):
+                    if lookup.node.node.id in ("typing", "typing_extensions"):
+                        return True
+        return False
 
     def should_wait_rhs(self, rv: Expression) -> bool:
         """Can we already classify this r.h.s. of an assignment or should we wait?
