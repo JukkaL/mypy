@@ -3265,12 +3265,18 @@ class TypeInfo(SymbolNode):
         for cls in self.mro:
             if name in cls.names:
                 node = cls.names[name].node
-                if isinstance(node, FuncBase):
-                    return node
-                elif isinstance(node, Decorator):  # Two `if`s make `mypyc` happy
-                    return node
-                else:
-                    return None
+            elif possible_redefinitions := sorted(
+                [n for n in cls.names.keys() if n.startswith(f"{name}-redefinition")]
+            ):
+                node = cls.names[possible_redefinitions[-1]].node
+            else:
+                continue
+            if isinstance(node, FuncBase):
+                return node
+            elif isinstance(node, Decorator):  # Two `if`s make `mypyc` happy
+                return node
+            else:
+                return None
         return None
 
     def calculate_metaclass_type(self) -> mypy.types.Instance | None:

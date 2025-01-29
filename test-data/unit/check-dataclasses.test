@@ -2476,6 +2476,61 @@ class Child(Base):
     y: int
 [builtins fixtures/dataclasses.pyi]
 
+[case testDataclassesInitVarsWithProperty]
+from dataclasses import InitVar, dataclass, field
+
+@dataclass
+class Test:
+    foo: InitVar[str]
+    _foo: str = field(init=False)
+
+    def __post_init__(self, foo: str) -> None:
+        self._foo = foo
+
+    @property
+    def foo(self) -> str:
+        return self._foo
+
+    @foo.setter
+    def foo(self, value: str) -> None:
+        self._foo = value
+
+reveal_type(Test)  # N: Revealed type is "def (foo: builtins.str) -> __main__.Test"
+test = Test(42)  # E: Argument 1 to "Test" has incompatible type "int"; expected "str"
+test = Test("foo")
+test.foo
+[builtins fixtures/dataclasses.pyi]
+
+[case testDataclassesDefaultValueInitVarWithProperty]
+from dataclasses import InitVar, dataclass, field
+
+@dataclass
+class Test:
+    foo: InitVar[str] = "foo"
+    _foo: str = field(init=False)
+
+    def __post_init__(self, foo: str) -> None:
+        self._foo = foo
+
+    @property  # E: InitVar with default value cannot be redefined
+    def foo(self) -> str:
+        return self._foo
+
+[builtins fixtures/dataclasses.pyi]
+
+[case testDataclassesWithProperty]
+from dataclasses import dataclass
+
+@dataclass
+class Test:
+    @property
+    def foo(self) -> str:
+        return "a"
+
+    @foo.setter
+    def foo(self, value: str) -> None:
+        pass
+[builtins fixtures/dataclasses.pyi]
 
 [case testDataclassInheritanceWorksWithExplicitOverridesAndOrdering]
 # flags: --enable-error-code explicit-override
