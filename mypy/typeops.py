@@ -195,8 +195,6 @@ def class_callable(
     variables.extend(info.defn.type_vars)
     variables.extend(init_type.variables)
 
-    from mypy.subtypes import is_subtype
-
     init_ret_type = get_proper_type(init_type.ret_type)
     orig_self_type = get_proper_type(orig_self_type)
     default_ret_type = fill_typevars(info)
@@ -207,9 +205,6 @@ def class_callable(
         # by accident. Like `Hashable` is a subtype of `object`. See #11799
         and isinstance(default_ret_type, Instance)
         and not default_ret_type.type.is_protocol
-        # Only use the declared return type from __new__ or declared self in __init__
-        # if it is actually returning a subtype of what we would return otherwise.
-        and is_subtype(explicit_type, default_ret_type, ignore_type_params=True)
     ):
         ret_type: Type = explicit_type
     else:
