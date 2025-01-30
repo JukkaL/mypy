@@ -134,6 +134,43 @@ def main(a: object) -> None:
         reveal_type(a)  # N: Revealed type is "Union[builtins.int, builtins.str]"
 [builtins fixtures/tuple.pyi]
 
+[case testTypeIsUnionWithGeneric]
+from typing import Any, List, Sequence, Union
+from typing_extensions import TypeIs
+
+def is_int_list(a: object) -> TypeIs[List[int]]: pass
+def is_int_seq(a: object) -> TypeIs[Sequence[int]]: pass
+def is_seq(a: object) -> TypeIs[Sequence[Any]]: pass
+
+def f1(a: Union[List[int], List[str]]) -> None:
+    if is_int_list(a):
+        reveal_type(a)  # N: Revealed type is "builtins.list[builtins.int]"
+    else:
+        reveal_type(a)  # N: Revealed type is "builtins.list[builtins.str]"
+    reveal_type(a)  # N: Revealed type is "Union[builtins.list[builtins.int], builtins.list[builtins.str]]"
+
+def f2(a: Union[List[int], int]) -> None:
+    if is_int_list(a):
+        reveal_type(a)  # N: Revealed type is "builtins.list[builtins.int]"
+    else:
+        reveal_type(a)  # N: Revealed type is "builtins.int"
+    reveal_type(a)  # N: Revealed type is "Union[builtins.list[builtins.int], builtins.int]"
+
+def f3(a: Union[List[bool], List[str]]) -> None:
+    if is_int_seq(a):
+        reveal_type(a)  # N: Revealed type is "builtins.list[builtins.bool]"
+    else:
+        reveal_type(a)  # N: Revealed type is "builtins.list[builtins.str]"
+    reveal_type(a)  # N: Revealed type is "Union[builtins.list[builtins.bool], builtins.list[builtins.str]]"
+
+def f4(a: Union[List[int], int]) -> None:
+    if is_seq(a):
+        reveal_type(a)  # N: Revealed type is "builtins.list[builtins.int]"
+    else:
+        reveal_type(a)  # N: Revealed type is "builtins.int"
+    reveal_type(a)  # N: Revealed type is "Union[builtins.list[builtins.int], builtins.int]"
+[builtins fixtures/tuple.pyi]
+
 [case testTypeIsNonzeroFloat]
 from typing_extensions import TypeIs
 def is_nonzero(a: object) -> TypeIs[float]: pass

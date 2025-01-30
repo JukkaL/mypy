@@ -1959,7 +1959,7 @@ def try_restrict_literal_union(t: UnionType, s: Type) -> list[Type] | None:
     return new_items
 
 
-def restrict_subtype_away(t: Type, s: Type) -> Type:
+def restrict_subtype_away(t: Type, s: Type, *, consider_runtime_isinstance: bool = True) -> Type:
     """Return t minus s for runtime type assertions.
 
     If we can't determine a precise result, return a supertype of the
@@ -1973,14 +1973,21 @@ def restrict_subtype_away(t: Type, s: Type) -> Type:
         new_items = try_restrict_literal_union(p_t, s)
         if new_items is None:
             new_items = [
-                restrict_subtype_away(item, s)
+                restrict_subtype_away(
+                    item, s, consider_runtime_isinstance=consider_runtime_isinstance
+                )
                 for item in p_t.relevant_items()
-                if (isinstance(get_proper_type(item), AnyType) or not covers_at_runtime(item, s))
             ]
-        return UnionType.make_union(new_items)
+        return UnionType.make_union(
+            [item for item in new_items if not isinstance(get_proper_type(item), UninhabitedType)]
+        )
     elif isinstance(p_t, TypeVarType):
         return p_t.copy_modified(upper_bound=restrict_subtype_away(p_t.upper_bound, s))
-    elif covers_at_runtime(t, s):
+    elif consider_runtime_isinstance and covers_at_runtime(t, s):
+        return UninhabitedType()
+    elif is_proper_subtype(t, s, ignore_promotions=True):
+        return UninhabitedType()
+    elif is_proper_subtype(t, s, ignore_promotions=True, erase_instances=True):
         return UninhabitedType()
     else:
         return t
