@@ -1,0 +1,19 @@
+[case testDictGetEmpty]
+def testDictGetEmpty() -> None:
+    x = {}.get("x")
+    reveal_type(x)  # N: Revealed type is "None"
+
+[case testDictGetWithDefault]
+def testDictGetWithDefault() -> None:
+    x = {}.get("x", 42)
+    reveal_type(x)  # N: Revealed type is "int"
+
+[case testDictGetExistingKey]
+def testDictGetExistingKey() -> None:
+    x = {"a": 1}.get("a")
+    reveal_type(x)  # N: Revealed type is "int"
+
+[case testDictGetMissingKey]
+def testDictGetMissingKey() -> None:
+    x = {"a": 1}.get("b")
+    reveal_type(x)  # N: Revealed type is "None"
