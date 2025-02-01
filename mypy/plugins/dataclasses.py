@@ -740,7 +740,9 @@ class DataclassTransformer:
                     "Attributes without a default cannot follow attributes with one", context
                 )
 
-            found_default = found_default or (attr.has_default and attr.is_in_init)
+            found_default = found_default or (
+                attr.has_default and attr.is_in_init and not attr.kw_only
+            )
             if found_kw_sentinel and self._is_kw_only_type(attr.type):
                 context = cls
                 if attr.name in current_attr_names:

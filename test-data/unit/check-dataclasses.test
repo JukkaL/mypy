@@ -460,7 +460,7 @@ from dataclasses import dataclass, field, KW_ONLY
 class Application:
     _: KW_ONLY
     name: str = 'Unnamed'
-    rating: int = field(kw_only=False)  # E: Attributes without a default cannot follow attributes with one
+    rating: int = field(kw_only=False)
 
 Application(name='name', rating=5)
 Application()  # E: Missing positional argument "name" in call to "Application"
