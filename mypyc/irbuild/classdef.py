@@ -172,6 +172,8 @@ def transform_class_def(builder: IRBuilder, cdef: ClassDef) -> None:
         elif isinstance(stmt, ExpressionStmt) and isinstance(stmt.expr, StrExpr):
             # Docstring. Ignore
             pass
+        elif isinstance(stmt, ClassDef):
+            builder.error("Nested classes are not supported", stmt.line)
         else:
             builder.error("Unsupported statement in class body", stmt.line)
 

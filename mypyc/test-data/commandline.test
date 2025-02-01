@@ -191,6 +191,18 @@ class NonExt2:
     def test(self, x: int) -> None:
         pass
 
+if True:
+    class ConditionalClass:  # E: Conditional class definitions are not supported
+        pass
+
+class Outer:
+    class Inner:  # E: Nested classes are not supported
+        pass
+
+def make_class() -> None:
+    class LocalClass:  # E: Class definitions within a function are not supported
+        pass
+
 iterator_warning = (i+1 for i in range(10))  # W: Treating generator comprehension as list
 
 # But we don't want warnings for these cases:

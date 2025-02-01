@@ -5,6 +5,7 @@ mypyc.irbuild.builder and mypyc.irbuild.main are closely related.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from typing import NoReturn
 
 from mypy.nodes import (
@@ -161,11 +162,15 @@ class IRBuilderVisitor(IRVisitor):
     # state and many helpers. The attribute is initialized outside
     # this class since this class and IRBuilder form a reference loop.
     builder: IRBuilder
+    # If set, raise an error when a class definition is visited.
+    _error_message_on_class_def: str = ""
 
     def visit_mypy_file(self, mypyfile: MypyFile) -> None:
         assert False, "use transform_mypy_file instead"
 
     def visit_class_def(self, cdef: ClassDef) -> None:
+        if self._error_message_on_class_def:
+            self.bail(self._error_message_on_class_def, cdef.line)
         transform_class_def(self.builder, cdef)
 
     def visit_import(self, node: Import) -> None:
@@ -178,7 +183,8 @@ class IRBuilderVisitor(IRVisitor):
         transform_import_all(self.builder, node)
 
     def visit_func_def(self, fdef: FuncDef) -> None:
-        transform_func_def(self.builder, fdef)
+        with self.error_on_class_def("Class definitions within a function are not supported"):
+            transform_func_def(self.builder, fdef)
 
     def visit_overloaded_func_def(self, o: OverloadedFuncDef) -> None:
         transform_overloaded_func_def(self.builder, o)
@@ -205,7 +211,8 @@ class IRBuilderVisitor(IRVisitor):
         transform_operator_assignment_stmt(self.builder, stmt)
 
     def visit_if_stmt(self, stmt: IfStmt) -> None:
-        transform_if_stmt(self.builder, stmt)
+        with self.error_on_class_def("Conditional class definitions are not supported"):
+            transform_if_stmt(self.builder, stmt)
 
     def visit_while_stmt(self, stmt: WhileStmt) -> None:
         transform_while_stmt(self.builder, stmt)
@@ -404,3 +411,11 @@ class IRBuilderVisitor(IRVisitor):
         """
         self.builder.error(msg, line)
         raise UnsupportedException()
+
+    @contextmanager
+    def error_on_class_def(self, error: str) -> NoReturn:
+        self._error_message_on_class_def = error
+        try:
+            yield
+        finally:
+            self._error_message_on_class_def = ""
