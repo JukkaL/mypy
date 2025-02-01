@@ -1105,6 +1105,37 @@ class ConstraintBuilderVisitor(TypeVisitor[list[Constraint]]):
                     # but not vice versa.
                     # TODO: infer more from prefixes when possible.
                     if unpack_present is not None and not cactual.param_spec():
+                        # if there's anything that would get ignored later, handle them now.
+                        # (assumes that if there's a kwarg on template, it should get matched.
+                        #  ... which isn't always a right assumption)
+                        for arg in template.formal_arguments():
+                            if arg.pos:
+                                continue
+
+                            # this arg will get dropped in `repack_callable_args` later;
+                            # handle it instead! ... this isn't very thorough though
+                            other = cactual.argument_by_name(arg.name)
+                            if not other:
+                                continue
+
+                            # for now, simplify the problem: if `other` isn't at the end,
+                            # or kw-only, give up
+                            if (
+                                other.pos is not None
+                                and other.pos + 1 != cactual.max_possible_positional_args()
+                            ):
+                                continue
+
+                            cactual = cactual.copy_modified(
+                                cactual.arg_types,
+                                [
+                                    k if i != other.pos else ArgKind.ARG_NAMED
+                                    for (i, k) in enumerate(cactual.arg_kinds)
+                                ],
+                                cactual.arg_names,
+                            )
+                            res.extend(infer_constraints(arg.typ, other.typ, self.direction))
+
                         # We need to re-normalize args to the form they appear in tuples,
                         # for callables we always pack the suffix inside another tuple.
                         unpack = template.arg_types[unpack_present]
@@ -1455,7 +1486,9 @@ def repack_callable_args(callable: CallableType, tuple_type: TypeInfo) -> list[T
     in e.g. a TupleType).
     """
     if ARG_STAR not in callable.arg_kinds:
-        return callable.arg_types
+        return [
+            t for (t, k) in zip(callable.arg_types, callable.arg_kinds) if k != ArgKind.ARG_NAMED
+        ]
     star_index = callable.arg_kinds.index(ARG_STAR)
     arg_types = callable.arg_types[:star_index]
     star_type = callable.arg_types[star_index]
