@@ -23,9 +23,15 @@ Within GitHub, navigate to <https://github.com/python/mypy> and fork the reposit
 #### (2) Clone the mypy repository and enter into it
 
 ```bash
-git clone git@github.com:<your_username>/mypy.git
+git clone https://github.com/<your_username>/mypy.git
 cd mypy
 ```
+
+If you use the following command to clone instead:
+```bash
+git clone git@github.com:<your_username>/mypy.git
+```
+then make sure to connect to GitHub first: [Connecting to github with ssh](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
 
 #### (3) Create then activate a virtual environment
 
