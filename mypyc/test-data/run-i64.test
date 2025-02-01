@@ -1513,7 +1513,7 @@ def test_dunder_arg_check() -> None:
     o: Any = DunderErr()
     with assertRaises(TypeError):
         'x' in o
-    with assertRaises(TypeError):
+    with assertRaises(OverflowError):
         2**63 in o
     with assertRaises(IndexError):
         1 in o

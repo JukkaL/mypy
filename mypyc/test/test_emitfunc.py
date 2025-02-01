@@ -50,6 +50,7 @@ from mypyc.ir.rtypes import (
     bool_rprimitive,
     c_int_rprimitive,
     dict_rprimitive,
+    float_rprimitive,
     int32_rprimitive,
     int64_rprimitive,
     int_rprimitive,
@@ -88,6 +89,7 @@ class TestFunctionEmitterVisitor(unittest.TestCase):
         self.n = add_local("n", int_rprimitive)
         self.m = add_local("m", int_rprimitive)
         self.k = add_local("k", int_rprimitive)
+        self.f = add_local("f", float_rprimitive)
         self.l = add_local("l", list_rprimitive)
         self.ll = add_local("ll", list_rprimitive)
         self.o = add_local("o", object_rprimitive)
@@ -351,6 +353,18 @@ class TestFunctionEmitterVisitor(unittest.TestCase):
     def test_unbox_i64(self) -> None:
         self.assert_emit(
             Unbox(self.o, int64_rprimitive, 55), """cpy_r_r0 = CPyLong_AsInt64(cpy_r_o);"""
+        )
+
+    def test_box_float(self) -> None:
+        self.assert_emit(Box(self.f), """cpy_r_r0 = PyFloat_FromDouble(cpy_r_f);""")
+
+    def test_unbox_float(self) -> None:
+        self.assert_emit(
+            Unbox(self.o, float_rprimitive, 55),
+            """cpy_r_r0 = PyFloat_AsDouble(cpy_r_o);
+               if (cpy_r_r0 == -1.0 && PyErr_Occurred()) {
+                   cpy_r_r0 = -113.0;
+               }""",
         )
 
     def test_list_append(self) -> None:

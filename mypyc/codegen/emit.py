@@ -734,7 +734,7 @@ class Emitter:
                 )
                 self.emit_line("goto %s;" % error.label)
                 return
-            self.emit_line(f'CPy_TypeError("{self.pretty_name(typ)}", {src}); ')
+            self.emit_line(f'CPy_TypeError("{self.pretty_name(typ)}", {src});')
         if isinstance(error, AssignHandler):
             self.emit_line("%s = NULL;" % dest)
         elif isinstance(error, GotoHandler):
@@ -875,12 +875,16 @@ class Emitter:
         else:
             assert isinstance(error, ReturnHandler)
             failure = "return %s;" % error.value
-        if raise_exception:
+        # Fixed-width integers and native floats set an exception on unbox
+        # failure internally, don't override it with a generic exception.
+        raise_exc = ""
+        if raise_exception and not (is_fixed_width_rtype(typ) or is_float_rprimitive(typ)):
             raise_exc = f'CPy_TypeError("{self.pretty_name(typ)}", {src}); '
             failure = raise_exc + failure
+
+        if declare_dest:
+            self.emit_line(f"{self.ctype_spaced(typ)}{dest};")
         if is_int_rprimitive(typ) or is_short_int_rprimitive(typ):
-            if declare_dest:
-                self.emit_line(f"CPyTagged {dest};")
             self.emit_arg_check(src, dest, typ, f"(likely(PyLong_Check({src})))", optional)
             if borrow:
                 self.emit_line(f"    {dest} = CPyTagged_BorrowFromObject({src});")
@@ -891,8 +895,6 @@ class Emitter:
             self.emit_line("}")
         elif is_bool_rprimitive(typ) or is_bit_rprimitive(typ):
             # Whether we are borrowing or not makes no difference.
-            if declare_dest:
-                self.emit_line(f"char {dest};")
             self.emit_arg_check(src, dest, typ, f"(unlikely(!PyBool_Check({src}))) {{", optional)
             self.emit_line(failure)
             self.emit_line("} else")
@@ -900,100 +902,84 @@ class Emitter:
             self.emit_line(f"    {dest} = {conversion};")
         elif is_none_rprimitive(typ):
             # Whether we are borrowing or not makes no difference.
-            if declare_dest:
-                self.emit_line(f"char {dest};")
             self.emit_arg_check(src, dest, typ, f"(unlikely({src} != Py_None)) {{", optional)
             self.emit_line(failure)
             self.emit_line("} else")
             self.emit_line(f"    {dest} = 1;")
-        elif is_int64_rprimitive(typ):
+        elif (
+            is_int64_rprimitive(typ)
+            or is_int32_rprimitive(typ)
+            or is_int16_rprimitive(typ)
+            or is_uint8_rprimitive(typ)
+        ):
             # Whether we are borrowing or not makes no difference.
             assert not optional  # Not supported for overlapping error values
-            if declare_dest:
-                self.emit_line(f"int64_t {dest};")
-            self.emit_line(f"{dest} = CPyLong_AsInt64({src});")
+            if is_int64_rprimitive(typ):
+                suffix = "Int64"
+            elif is_int32_rprimitive(typ):
+                suffix = "Int32"
+            elif is_int16_rprimitive(typ):
+                suffix = "Int16"
+            elif is_uint8_rprimitive(typ):
+                suffix = "UInt8"
+            self.emit_line(f"{dest} = CPyLong_As{suffix}({src});")
             if not isinstance(error, AssignHandler):
-                self.emit_unbox_failure_with_overlapping_error_value(dest, typ, failure)
-        elif is_int32_rprimitive(typ):
-            # Whether we are borrowing or not makes no difference.
-            assert not optional  # Not supported for overlapping error values
-            if declare_dest:
-                self.emit_line(f"int32_t {dest};")
-            self.emit_line(f"{dest} = CPyLong_AsInt32({src});")
-            if not isinstance(error, AssignHandler):
-                self.emit_unbox_failure_with_overlapping_error_value(dest, typ, failure)
-        elif is_int16_rprimitive(typ):
-            # Whether we are borrowing or not makes no difference.
-            assert not optional  # Not supported for overlapping error values
-            if declare_dest:
-                self.emit_line(f"int16_t {dest};")
-            self.emit_line(f"{dest} = CPyLong_AsInt16({src});")
-            if not isinstance(error, AssignHandler):
-                self.emit_unbox_failure_with_overlapping_error_value(dest, typ, failure)
-        elif is_uint8_rprimitive(typ):
-            # Whether we are borrowing or not makes no difference.
-            assert not optional  # Not supported for overlapping error values
-            if declare_dest:
-                self.emit_line(f"uint8_t {dest};")
-            self.emit_line(f"{dest} = CPyLong_AsUInt8({src});")
-            if not isinstance(error, AssignHandler):
-                self.emit_unbox_failure_with_overlapping_error_value(dest, typ, failure)
+                self.emit_line(f"if ({dest} == {self.c_error_value(typ)} && PyErr_Occurred()) {{")
+                self.emit_line(failure)
+                self.emit_line("}")
         elif is_float_rprimitive(typ):
             assert not optional  # Not supported for overlapping error values
-            if declare_dest:
-                self.emit_line(f"double {dest};")
             # TODO: Don't use __float__ and __index__
             self.emit_line(f"{dest} = PyFloat_AsDouble({src});")
             self.emit_lines(f"if ({dest} == -1.0 && PyErr_Occurred()) {{", failure, "}")
         elif isinstance(typ, RTuple):
             self.declare_tuple_struct(typ)
-            if declare_dest:
-                self.emit_line(f"{self.ctype(typ)} {dest};")
-            # HACK: The error handling for unboxing tuples is busted
-            # and instead of fixing it I am just wrapping it in the
-            # cast code which I think is right. This is not good.
-            if optional:
-                self.emit_line(f"if ({src} == NULL) {{")
-                self.emit_line(f"{dest} = {self.c_error_value(typ)};")
-                self.emit_line("} else {")
 
-            cast_temp = self.temp_name()
-            self.emit_tuple_cast(
-                src, cast_temp, typ, declare_dest=True, error=error, src_type=None
-            )
-            self.emit_line(f"if (unlikely({cast_temp} == NULL)) {{")
-
-            # self.emit_arg_check(src, dest, typ,
-            #     '(!PyTuple_Check({}) || PyTuple_Size({}) != {}) {{'.format(
-            #         src, src, len(typ.types)), optional)
-            self.emit_line(failure)  # TODO: Decrease refcount?
+            condition = f"(unlikely(!PyTuple_Check({src}) || PyTuple_GET_SIZE({src}) != {len(typ.types)})) {{"
+            self.emit_arg_check(src, dest, typ, condition, optional)
+            self.emit_line(failure)
             self.emit_line("} else {")
             if not typ.types:
                 self.emit_line(f"{dest}.empty_struct_error_flag = 0;")
+
+            error_label, end_label = self.new_label(), self.new_label()
+            item_err = GotoHandler(error_label)
             for i, item_type in enumerate(typ.types):
-                temp = self.temp_name()
-                # emit_tuple_cast above checks the size, so this should not fail
-                self.emit_line(f"PyObject *{temp} = PyTuple_GET_ITEM({src}, {i});")
-                temp2 = self.temp_name()
-                # Unbox or check the item.
+                item_src = self.temp_name()
+                self.emit_line(f"PyObject *{item_src} = PyTuple_GET_ITEM({src}, {i});")
+                # Unbox or check the item. On error, jump to the error block.
                 if item_type.is_unboxed:
                     self.emit_unbox(
-                        temp,
-                        temp2,
+                        item_src,
+                        f"{dest}.f{i}",
                         item_type,
-                        raise_exception=raise_exception,
-                        error=error,
-                        declare_dest=True,
-                        borrow=borrow,
+                        raise_exception=False,
+                        error=item_err,
+                        borrow=True,
                     )
                 else:
-                    if not borrow:
-                        self.emit_inc_ref(temp, object_rprimitive)
-                    self.emit_cast(temp, temp2, item_type, declare_dest=True)
-                self.emit_line(f"{dest}.f{i} = {temp2};")
+                    self.emit_cast(
+                        item_src, f"{dest}.f{i}", item_type, raise_exception=False, error=item_err
+                    )
+
+            # All items were processed without issue, jump past the error block.
+            if not borrow:
+                self.emit_inc_ref(dest, typ)
+            self.emit_line(f"goto {end_label};")
+            self.emit_label(error_label)
+            # HACK: while most exceptions are suppressed, custom exceptions
+            # raised during native int/float unboxing *are not*. These exceptions
+            # should be preserved over the generic exception as it's not nearly
+            # as informative (say if a int -> i32 unbox overflowed).
+            if raise_exc and any(
+                is_fixed_width_rtype(t) or is_float_rprimitive(t) for t in typ.types
+            ):
+                self.emit_lines("if (!PyErr_Occurred()) {", raise_exc, "}")
+                self.emit_line(failure[len(raise_exc) :])
+            else:
+                self.emit_line(failure)
             self.emit_line("}")
-            if optional:
-                self.emit_line("}")
+            self.emit_label(end_label)
 
         else:
             assert False, "Unboxing not implemented: %s" % typ
@@ -1159,13 +1145,6 @@ class Emitter:
         self.emit_line(line)
         if DEBUG_ERRORS:
             self.emit_line('assert(PyErr_Occurred() != NULL && "failure w/o err!");')
-
-    def emit_unbox_failure_with_overlapping_error_value(
-        self, dest: str, typ: RType, failure: str
-    ) -> None:
-        self.emit_line(f"if ({dest} == {self.c_error_value(typ)} && PyErr_Occurred()) {{")
-        self.emit_line(failure)
-        self.emit_line("}")
 
 
 def c_array_initializer(components: list[str], *, indented: bool = False) -> str:
