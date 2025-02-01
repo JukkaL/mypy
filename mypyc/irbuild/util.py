@@ -30,7 +30,14 @@ from mypy.nodes import (
 from mypy.semanal import refers_to_fullname
 from mypy.types import FINAL_DECORATOR_NAMES
 
-DATACLASS_DECORATORS = {"dataclasses.dataclass", "attr.s", "attr.attrs"}
+DATACLASS_DECORATORS = {
+    "dataclasses.dataclass",
+    "attr.s",
+    "attr.attrs",
+    "attrs.define",
+    "attrs.frozen",
+    "attrs.mutable",
+}
 
 
 def is_final_decorator(d: Expression) -> bool:
@@ -47,19 +54,37 @@ def is_trait(cdef: ClassDef) -> bool:
 
 def dataclass_decorator_type(d: Expression) -> str | None:
     if isinstance(d, RefExpr) and d.fullname in DATACLASS_DECORATORS:
-        return d.fullname.split(".")[0]
+        name = d.fullname.split(".")[0]
+        if name == "attrs":
+            raise ValueError("Slotted attrs classes are not supported")
+        elif name == "attr":
+            return "attrs"
+        else:
+            return name
     elif (
         isinstance(d, CallExpr)
         and isinstance(d.callee, RefExpr)
         and d.callee.fullname in DATACLASS_DECORATORS
     ):
         name = d.callee.fullname.split(".")[0]
-        if name == "attr" and "auto_attribs" in d.arg_names:
-            # Note: the mypy attrs plugin checks that the value of auto_attribs is
-            # not computed at runtime, so we don't need to perform that check here
-            auto = d.args[d.arg_names.index("auto_attribs")]
-            if isinstance(auto, NameExpr) and auto.name == "True":
-                return "attr-auto"
+        if name in ("attr", "attrs"):
+            attrs_auto_attribs = name == "attrs"
+            if "auto_attribs" in d.arg_names:
+                # Note: the mypy attrs plugin checks that the value of auto_attribs is
+                # not computed at runtime, so we don't need to perform that check here
+                value = d.args[d.arg_names.index("auto_attribs")]
+                assert isinstance(value, NameExpr)
+                attrs_auto_attribs = value.name == "True"
+
+            attrs_slots = name == "attrs"
+            if "slots" in d.arg_names:
+                value = d.args[d.arg_names.index("slots")]
+                assert isinstance(value, NameExpr)
+                attrs_slots = value.name == "True"
+            if attrs_slots:  # TODO: add support
+                raise ValueError("Slotted attrs classes are not supported")
+
+            return "attrs-auto" if attrs_auto_attribs else "attrs"
         return name
     else:
         return None

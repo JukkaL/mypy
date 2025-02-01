@@ -125,9 +125,9 @@ def transform_class_def(builder: IRBuilder, cdef: ClassDef) -> None:
         cls_type = dataclass_type(cdef)
         if cls_type is None:
             cls_builder: ClassBuilder = ExtClassBuilder(builder, cdef)
-        elif cls_type in ["dataclasses", "attr-auto"]:
+        elif cls_type in ["dataclasses", "attrs-auto"]:
             cls_builder = DataClassBuilder(builder, cdef)
-        elif cls_type == "attr":
+        elif cls_type == "attrs":
             cls_builder = AttrsClassBuilder(builder, cdef)
         else:
             raise ValueError(cls_type)
@@ -389,7 +389,7 @@ class DataClassBuilder(ExtClassBuilder):
 
 
 class AttrsClassBuilder(DataClassBuilder):
-    """Create IR for an attrs class where auto_attribs=False (the default).
+    """Create IR for an attrs class where auto_attribs=False.
 
     When auto_attribs is enabled, attrs classes behave similarly to dataclasses
     (i.e. types are stored as annotations on the class) and are thus handled

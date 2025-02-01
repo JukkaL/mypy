@@ -489,6 +489,8 @@ def translate_sum_call(builder: IRBuilder, expr: CallExpr, callee: RefExpr) -> V
 @specialize_function("attr.ib")
 @specialize_function("attr.attrib")
 @specialize_function("attr.Factory")
+@specialize_function("attrs.field")
+@specialize_function("attrs.Factory")
 def translate_dataclasses_field_call(
     builder: IRBuilder, expr: CallExpr, callee: RefExpr
 ) -> Value | None:
