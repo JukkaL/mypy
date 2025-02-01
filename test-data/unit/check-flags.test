@@ -2349,7 +2349,7 @@ x: int = ""  # E: Incompatible types in assignment (expression has type "str", v
 # flags: --disable-bytearray-promotion --strict-equality
 def f(x: bytes) -> None: ...
 f(bytearray(b"asdf"))  # E: Argument 1 to "f" has incompatible type "bytearray"; expected "bytes"
-f(memoryview(b"asdf"))
+
 ba = bytearray(b"")
 if ba == b"":
     f(ba)  # E: Argument 1 to "f" has incompatible type "bytearray"; expected "bytes"
@@ -2364,25 +2364,12 @@ if bytes() == ba:
 [case testDisableMemoryviewPromotion]
 # flags: --disable-memoryview-promotion
 def f(x: bytes) -> None: ...
-f(bytearray(b"asdf"))
+
 f(memoryview(b"asdf"))  # E: Argument 1 to "f" has incompatible type "memoryview"; expected "bytes"
 [builtins fixtures/primitives.pyi]
 
 [case testDisableBytearrayMemoryviewPromotionStrictEquality]
-# flags: --disable-bytearray-promotion --disable-memoryview-promotion --strict-equality
-def f(x: bytes, y: bytearray, z: memoryview) -> None:
-    x == y
-    y == z
-    x == z
-    97 in x
-    97 in y
-    97 in z
-    x in y
-    x in z
-[builtins fixtures/primitives.pyi]
-
-[case testEnableBytearrayMemoryviewPromotionStrictEquality]
-# flags: --strict-equality
+# flags: --strict-equality --strict-bytes
 def f(x: bytes, y: bytearray, z: memoryview) -> None:
     x == y
     y == z

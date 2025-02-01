@@ -79,8 +79,8 @@ def test_concat() -> None:
     assert type(b1) == bytes
     assert type(b2) == bytes
     assert type(b3) == bytes
-    brr1: bytes = bytearray(3)
-    brr2: bytes = bytearray(range(5))
+    brr1: bytes | bytearray = bytearray(3)
+    brr2: bytes | bytearray = bytearray(range(5))
     b4 = b1 + brr1
     assert b4 == b'123\x00\x00\x00'
     assert type(brr1) == bytearray
@@ -171,23 +171,23 @@ def test_bytes_slicing() -> None:
 from typing import Any
 
 def test_basics() -> None:
-    brr1: bytes = bytearray(3)
+    brr1: bytes | bytearray = bytearray(3)
     assert brr1 == bytearray(b'\x00\x00\x00')
     assert brr1 == b'\x00\x00\x00'
     l = [10, 20, 30, 40]
-    brr2: bytes = bytearray(l)
+    brr2: bytes | bytearray = bytearray(l)
     assert brr2 == bytearray(b'\n\x14\x1e(')
     assert brr2 == b'\n\x14\x1e('
-    brr3: bytes = bytearray(range(5))
+    brr3: bytes | bytearray = bytearray(range(5))
     assert brr3 == bytearray(b'\x00\x01\x02\x03\x04')
     assert brr3 == b'\x00\x01\x02\x03\x04'
-    brr4: bytes = bytearray('string', 'utf-8')
+    brr4: bytes | bytearray = bytearray('string', 'utf-8')
     assert brr4 == bytearray(b'string')
     assert brr4 == b'string'
     assert len(brr1) == 3
     assert len(brr2) == 4
 
-def f(b: bytes) -> bool:
+def f(b: bytes | bytearray) -> bool:
     return True
 
 def test_bytearray_passed_into_bytes() -> None:
@@ -197,7 +197,7 @@ def test_bytearray_passed_into_bytes() -> None:
 
 [case testBytearraySlicing]
 def test_bytearray_slicing() -> None:
-    b: bytes = bytearray(b'abcdefg')
+    b: bytes | bytearray = bytearray(b'abcdefg')
     zero = int()
     ten = 10 + zero
     two = 2 + zero
@@ -231,7 +231,7 @@ def test_bytearray_slicing() -> None:
 from testutil import assertRaises
 
 def test_bytearray_indexing() -> None:
-    b: bytes = bytearray(b'\xae\x80\xfe\x15')
+    b: bytes | bytearray = bytearray(b'\xae\x80\xfe\x15')
     assert b[0] == 174
     assert b[1] == 128
     assert b[2] == 254
@@ -260,7 +260,7 @@ def test_bytes_join() -> None:
     assert b' '.join([b'a', b'b']) == b'a b'
     assert b' '.join([]) == b''
 
-    x: bytes = bytearray(b' ')
+    x: bytes | bytearray = bytearray(b' ')
     assert x.join([b'a', b'b']) == b'a b'
     assert type(x.join([b'a', b'b'])) == bytearray
 

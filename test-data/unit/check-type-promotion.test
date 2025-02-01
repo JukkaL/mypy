@@ -22,11 +22,13 @@ f(1)
 [builtins fixtures/primitives.pyi]
 
 [case testPromoteBytearrayToByte]
+# flags: --no-strict-bytes
 def f(x: bytes) -> None: pass
 f(bytearray(b''))
 [builtins fixtures/primitives.pyi]
 
 [case testPromoteMemoryviewToBytes]
+# flags: --no-strict-bytes
 def f(x: bytes) -> None: pass
 f(memoryview(b''))
 [builtins fixtures/primitives.pyi]

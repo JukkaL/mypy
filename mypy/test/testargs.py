@@ -12,7 +12,7 @@ import sys
 
 from mypy.main import infer_python_executable, process_options
 from mypy.options import Options
-from mypy.test.helpers import Suite, assert_equal
+from mypy.test.helpers import Suite
 
 
 class ArgSuite(Suite):
@@ -21,7 +21,7 @@ class ArgSuite(Suite):
         _, parsed_options = process_options([], require_targets=False)
         # FIX: test this too. Requires changing working dir to avoid finding 'setup.cfg'
         options.config_file = parsed_options.config_file
-        assert_equal(options.snapshot(), parsed_options.snapshot())
+        assert options.snapshot() == parsed_options.snapshot()
 
     def test_executable_inference(self) -> None:
         """Test the --python-executable flag with --python-version"""

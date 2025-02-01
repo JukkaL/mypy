@@ -870,9 +870,9 @@ def process_options(
     )
 
     add_invertible_flag(
-        "--strict-bytes",
-        default=False,
-        strict_flag=False,
+        "--no-strict-bytes",
+        default=True,
+        dest="strict_bytes",
         help="Disable treating bytearray and memoryview as subtypes of bytes",
         group=strictness_group,
     )
@@ -1405,9 +1405,9 @@ def process_options(
         process_cache_map(parser, special_opts, options)
 
     # Process --strict-bytes
-    if options.strict_bytes:
-        options.disable_bytearray_promotion = True
-        options.disable_memoryview_promotion = True
+    if not options.strict_bytes:
+        options.disable_bytearray_promotion = False
+        options.disable_memoryview_promotion = False
 
     # An explicitly specified cache_fine_grained implies local_partial_types
     # (because otherwise the cache is not compatible with dmypy)
