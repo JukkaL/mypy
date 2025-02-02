@@ -1894,6 +1894,10 @@ class TypeConverter:
         f = e.func
         constructor = stringify_name(f)
 
+        if self.parent() is None:
+            return self.invalid_type(
+                e, note="Suggestion: Don't use function calls in type annotations"
+            )
         if not isinstance(self.parent(), ast3.List):
             note = None
             if constructor:

@@ -205,7 +205,7 @@ def f(a: Foo(int)) -> int:
     pass
 [out]
 main:7: error: Invalid type comment or annotation
-main:7: note: Suggestion: use Foo[...] instead of Foo(...)
+main:7: note: Suggestion: Don't use function calls in type annotations
 
 [case testFastParseMatMul]
 

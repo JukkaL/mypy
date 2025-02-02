@@ -51,6 +51,33 @@ for v in x:  # type: int, int  # E: Syntax error in type annotation  [syntax] \
     # N: Suggestion: Use Tuple[T1, ..., Tn] instead of (T1, ..., Tn)
     pass
 
+[case testErrorCodeSyntaxError4]
+from typing import Dict
+from typing_extensions import Annotated
+
+class _EnvironmentVariables():
+    def __init__(self, variables: Dict) -> None:
+        self.__variables = variables
+
+def EnvironmentVariables(sort: bool):
+    return Annotated[_EnvironmentVariables, dict]
+
+def unsorted_env_variables(variables: EnvironmentVariables(sort=False)) -> None: # E: Invalid type comment or annotation  [valid-type] \
+    # N: Suggestion: Don't use function calls in type annotations
+    return variables.as_json_obj()
+
+[builtins fixtures/tuple.pyi]
+
+class _EnvironmentVariables():
+    def __init__(self, variables: dict[str, bytes]) -> None:
+        self.__variables = variables
+
+def EnvironmentVariables(sort: bool):
+    return Annotated[_EnvironmentVariables, dict]
+
+def unsorted_env_variables(variables: EnvironmentVariables(sort=False)) -> None:
+    return variables.as_json_obj()
+
 [case testErrorCodeSyntaxErrorIgnoreNote]
 # This is a bit inconsistent -- syntax error would be more logical?
 x: 'a b'  # type: ignore[valid-type]
