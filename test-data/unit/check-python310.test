@@ -1896,12 +1896,11 @@ match foo:
 [case testMatchUnionTwoTuplesNoCrash]
 var: tuple[int, int] | tuple[str, str]
 
-# TODO: we can infer better here.
 match var:
     case (42, a):
-        reveal_type(a)  # N: Revealed type is "Union[builtins.int, builtins.str]"
+        reveal_type(a)  # N: Revealed type is "builtins.int"
     case ("yes", b):
-        reveal_type(b)  # N: Revealed type is "Union[builtins.int, builtins.str]"
+        reveal_type(b)  # N: Revealed type is "builtins.str"
 [builtins fixtures/tuple.pyi]
 
 [case testMatchNamedAndKeywordsAreTheSame]
