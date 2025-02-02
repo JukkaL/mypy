@@ -79,6 +79,8 @@ INVALID_TYPE_FOR_SLOTS: Final = 'Invalid type for "__slots__"'
 
 ASYNC_FOR_OUTSIDE_COROUTINE: Final = '"async for" outside async function'
 ASYNC_WITH_OUTSIDE_COROUTINE: Final = '"async with" outside async function'
+AWAIT_OUTSIDE_FUNCTION: Final = '"await" outside function'
+AWAIT_OUTSIDE_COROUTINE: Final = '"await" outside coroutine ("async def")'
 
 INCOMPATIBLE_TYPES_IN_YIELD: Final = ErrorMessage('Incompatible types in "yield"')
 INCOMPATIBLE_TYPES_IN_YIELD_FROM: Final = ErrorMessage('Incompatible types in "yield from"')

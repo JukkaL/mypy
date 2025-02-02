@@ -1013,13 +1013,15 @@ async def foo(x: int) -> int: ...
 
 # These are allowed in some cases:
 top_level = await foo(1)  # E: "await" outside function  [top-level-await]
-crasher = [await foo(x) for x in [1, 2, 3]]  # E: "await" outside function  [top-level-await]
+crasher = [await foo(x) for x in [1, 2, 3]]  # E: "await" outside coroutine ("async def")  [await-not-async] \
+                                             # E: "await" outside function  [top-level-await]
 
 def bad() -> None:
     # These are always critical / syntax issues:
     y = [await foo(x) for x in [1, 2, 3]]  # E: "await" outside coroutine ("async def")  [await-not-async]
 async def good() -> None:
     y = [await foo(x) for x in [1, 2, 3]]  # OK
+
 [builtins fixtures/async_await.pyi]
 [typing fixtures/typing-async.pyi]
 
@@ -1077,6 +1079,27 @@ class Launcher(P):
                                              # N: Consider declaring "launch" in supertype "P" without "async" \
                                              # N: See https://mypy.readthedocs.io/en/stable/more_types.html#asynchronous-iterators
         raise BaseException
+
+[builtins fixtures/async_await.pyi]
+[typing fixtures/typing-async.pyi]
+
+[case testAwaitOutsideCoroutine]
+def foo():
+    yield 0
+
+def bar():
+    (await x for x in foo())
+
+    (await x for x in xs)  # OK
+    [await x for x in xs]  # E: "await" outside coroutine ("async def")
+    {await x for x in xs}  # E: "await" outside coroutine ("async def")
+    {0: await x for x in xs} # E: "await" outside coroutine ("async def")
+    {await x: 0 for x in xs} # E: "await" outside coroutine ("async def")
+
+    (x for x in await xs) # E: "await" outside coroutine ("async def")
+    [x for x in await xs] # E: "await" outside coroutine ("async def")
+    {x for x in await xs} # E: "await" outside coroutine ("async def")
+    {x: 0 for x in await xs} # E: "await" outside coroutine ("async def")
 
 [builtins fixtures/async_await.pyi]
 [typing fixtures/typing-async.pyi]

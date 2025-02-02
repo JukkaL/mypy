@@ -233,6 +233,7 @@ from mypy.semanal_shared import (
     set_callable_name as set_callable_name,
 )
 from mypy.semanal_typeddict import TypedDictAnalyzer
+from mypy.traverser import has_await_expression
 from mypy.tvar_scope import TypeVarLikeScope
 from mypy.typeanal import (
     SELF_TYPE_NAMES,
@@ -6077,24 +6078,59 @@ class SemanticAnalyzer(
             if analyzed is not None:
                 expr.types[i] = analyzed
 
+    def _check_await_outside_coroutine(
+        self, expr: ListComprehension | SetComprehension | DictionaryComprehension
+    ) -> None:
+        if not has_await_expression(expr):
+            return
+
+        if not self.is_func_scope() or not self.function_stack[-1].is_coroutine:
+            self.fail(
+                message_registry.AWAIT_OUTSIDE_COROUTINE,
+                expr,
+                code=codes.AWAIT_NOT_ASYNC,
+                serious=True,
+            )
+
     def visit_list_comprehension(self, expr: ListComprehension) -> None:
         if any(expr.generator.is_async):
             if not self.is_func_scope() or not self.function_stack[-1].is_coroutine:
-                self.fail(message_registry.ASYNC_FOR_OUTSIDE_COROUTINE, expr, code=codes.SYNTAX)
+                self.fail(
+                    message_registry.ASYNC_FOR_OUTSIDE_COROUTINE,
+                    expr,
+                    code=codes.SYNTAX,
+                    serious=True,
+                )
+
+        self._check_await_outside_coroutine(expr)
 
         expr.generator.accept(self)
 
     def visit_set_comprehension(self, expr: SetComprehension) -> None:
         if any(expr.generator.is_async):
             if not self.is_func_scope() or not self.function_stack[-1].is_coroutine:
-                self.fail(message_registry.ASYNC_FOR_OUTSIDE_COROUTINE, expr, code=codes.SYNTAX)
+                self.fail(
+                    message_registry.ASYNC_FOR_OUTSIDE_COROUTINE,
+                    expr,
+                    code=codes.SYNTAX,
+                    serious=True,
+                )
+
+        self._check_await_outside_coroutine(expr)
 
         expr.generator.accept(self)
 
     def visit_dictionary_comprehension(self, expr: DictionaryComprehension) -> None:
         if any(expr.is_async):
             if not self.is_func_scope() or not self.function_stack[-1].is_coroutine:
-                self.fail(message_registry.ASYNC_FOR_OUTSIDE_COROUTINE, expr, code=codes.SYNTAX)
+                self.fail(
+                    message_registry.ASYNC_FOR_OUTSIDE_COROUTINE,
+                    expr,
+                    code=codes.SYNTAX,
+                    serious=True,
+                )
+
+        self._check_await_outside_coroutine(expr)
 
         with self.enter(expr):
             self.analyze_comp_for(expr)
@@ -6170,10 +6206,18 @@ class SemanticAnalyzer(
             # We check both because is_function_scope() returns True inside comprehensions.
             # This is not a blocker, because some environments (like ipython)
             # support top level awaits.
-            self.fail('"await" outside function', expr, serious=True, code=codes.TOP_LEVEL_AWAIT)
-        elif not self.function_stack[-1].is_coroutine:
             self.fail(
-                '"await" outside coroutine ("async def")',
+                message_registry.AWAIT_OUTSIDE_FUNCTION,
+                expr,
+                serious=True,
+                code=codes.TOP_LEVEL_AWAIT,
+            )
+        elif (
+            not self.function_stack[-1].is_coroutine
+            and self.scope_stack[-1] != SCOPE_COMPREHENSION
+        ):
+            self.fail(
+                message_registry.AWAIT_OUTSIDE_COROUTINE,
                 expr,
                 serious=True,
                 code=codes.AWAIT_NOT_ASYNC,
