@@ -854,6 +854,7 @@ class MessageBuilder:
         context: Context,
         code: ErrorCode | None,
     ) -> None:
+
         if self.prefer_simple_messages():
             return
         if isinstance(
@@ -2177,6 +2178,11 @@ class MessageBuilder:
                 skip = ["__call__"]
         if subtype.extra_attrs and subtype.extra_attrs.mod_name:
             is_module = True
+
+        # show signature of call for supertype
+        call = find_member("__call__", supertype, supertype)
+        if call:
+            self.note_call(supertype, call, context, code=code)
 
         # Report missing members
         missing = get_missing_protocol_members(subtype, supertype, skip=skip)

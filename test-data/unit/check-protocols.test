@@ -2693,11 +2693,13 @@ def f() -> str: ...
 reveal_type(f.__name__)  # N: Revealed type is "builtins.str"
 a: A = f  # OK
 b1: B1 = f  # E: Incompatible types in assignment (expression has type "Callable[[], str]", variable has type "B1") \
+            # N: "B1.__call__" has type "Callable[[], str]" \
             # N: Following member(s) of "function" have conflicts: \
             # N:     __name__: expected "int", got "str"
 b2: B2 = f  # E: Incompatible types in assignment (expression has type "Callable[[], str]", variable has type "B2") \
             # N: "B2.__call__" has type "Callable[[], int]"
 b3: B3 = f  # E: Incompatible types in assignment (expression has type "Callable[[], str]", variable has type "B3") \
+            # N: "B3.__call__" has type "Callable[[], str]" \
             # N: "function" is missing following "B3" protocol member: \
             # N:     extra_stuff
 
@@ -3592,6 +3594,7 @@ class C:
 def test(arg: P) -> None: ...
 test(B)  # OK
 test(C)  # E: Argument 1 to "test" has incompatible type "Type[C]"; expected "P" \
+         # N: "P.__call__" has type "Callable[[Arg(int, 'x'), Arg(int, 'y')], Any]" \
          # N: "C" has constructor incompatible with "__call__" of "P" \
          # N: Following member(s) of "C" have conflicts: \
          # N:     Expected: \
@@ -3614,6 +3617,7 @@ class C:
 def test(arg: P) -> None: ...
 test(B)  # OK
 test(C)  # E: Argument 1 to "test" has incompatible type "Type[C]"; expected "P" \
+         # N: "P.__call__" has type "Callable[[Arg(int, 'x'), Arg(int, 'y')], Any]" \
          # N: "C" has constructor incompatible with "__call__" of "P" \
          # N: Following member(s) of "C" have conflicts: \
          # N:     Expected: \
@@ -3638,12 +3642,12 @@ class C:
         return None
 
 p: P = C  # E: Incompatible types in assignment (expression has type "Type[C]", variable has type "P") \
+          # N: "P.__call__" has type "Callable[[Arg(int, 'app')], Callable[[str], None]]" \
           # N: Following member(s) of "C" have conflicts: \
           # N:     Expected: \
           # N:         def __call__(app: int) -> Callable[[str], None] \
           # N:     Got: \
           # N:         def __init__(app: str) -> C \
-          # N: "P.__call__" has type "Callable[[Arg(int, 'app')], Callable[[str], None]]"
 
 [builtins fixtures/type.pyi]
 
