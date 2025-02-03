@@ -3886,3 +3886,44 @@ def a4(x: List[str], y: List[Never]) -> None:
     reveal_type(z2)  # N: Revealed type is "builtins.list[builtins.object]"
     z1[1].append("asdf")  # E: "object" has no attribute "append"
 [builtins fixtures/dict.pyi]
+
+
+[case testNonDeterminismFromNonCommuativeJoinInvolvingProtocolBaseAndPromotableType]
+# flags: --python-version 3.11
+# Regression test for https://github.com/python/mypy/issues/16979#issuecomment-1982246306
+from __future__ import annotations
+
+from typing import Any, Generic, Protocol, TypeVar, overload, cast
+from typing_extensions import Never
+
+T = TypeVar("T")
+U = TypeVar("U")
+
+class _SupportsCompare(Protocol):
+    def __lt__(self, other: Any, /) -> bool:
+        return True
+
+class Comparable(_SupportsCompare):
+    pass
+
+class A(Generic[T, U]):
+    @overload
+    def __init__(self: A[T, T], a: T, b: T, /) -> None: ...  # type: ignore[overload-overlap]
+    @overload
+    def __init__(self: A[T, U], a: T, b: U, /) -> Never: ...
+    def __init__(self, *a) -> None: ...
+
+comparable: Comparable = Comparable()
+
+from typing import _promote
+
+class floatlike:
+    def __lt__(self, other: floatlike, /) -> bool: ...
+
+@_promote(floatlike)
+class intlike:
+    def __lt__(self, other: intlike, /) -> bool: ...
+
+reveal_type(A(intlike(), comparable))  # N: Revealed type is "__main__.A[__main__._SupportsCompare, __main__._SupportsCompare]"
+[builtins fixtures/tuple.pyi]
+[typing fixtures/typing-medium.pyi]
