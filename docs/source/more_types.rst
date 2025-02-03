@@ -390,7 +390,7 @@ program:
 The ``summarize([])`` call matches both variants: an empty list could
 be either a ``list[int]`` or a ``list[str]``. In this case, mypy
 will break the tie by picking the first matching variant: ``output``
-will have an inferred type of ``float``. The implementor is responsible
+will have an inferred type of ``float``. The implementer is responsible
 for making sure ``summarize`` breaks ties in the same way at runtime.
 
 However, there are two exceptions to the "pick the first match" rule.
