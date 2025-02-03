@@ -2719,3 +2719,84 @@ print(native.A(ints=[1, -17]).ints)
 
 [out]
 \[1, -17]
+
+[case testDel]
+class A:
+    def __del__(self):
+        print("deleting A...")
+
+class B:
+    def __del__(self):
+        print("deleting B...")
+
+class C(B):
+    def __init__(self):
+        self.a = A()
+
+    def __del__(self):
+        print("deleting C...")
+        super().__del__()
+
+class D(A):
+    pass
+
+[file driver.py]
+import native
+native.C()
+native.D()
+
+[out]
+deleting C...
+deleting B...
+deleting A...
+deleting A...
+
+[case testDelCircular]
+import dataclasses
+import typing
+
+i: int = 1
+
+@dataclasses.dataclass
+class C:
+    var: typing.Optional["C"] = dataclasses.field(default=None)
+
+    def __del__(self):
+        global i
+        print(f"deleting C{i}...")
+        i = i + 1
+
+[file driver.py]
+import native
+import gc
+
+c1 = native.C()
+c2 = native.C()
+c1.var = c2
+c2.var = c1
+del c1
+del c2
+gc.collect()
+
+[out]
+deleting C1...
+deleting C2...
+
+[case testDelException]
+# The error message in the expected output of this test does not match CPython's error message due to the way mypyc compiles Python classes. If the error message is fixed, the expected output of this test will also change.
+class F:
+    def __del__(self):
+        if True:
+            raise Exception("e2")
+
+[file driver.py]
+import native
+f = native.F()
+del f
+
+[out]
+Exception ignored in: <slot wrapper '__del__' of 'F' objects>
+Traceback (most recent call last):
+  File "native.py", line 5, in __del__
+    raise Exception("e2")
+Exception: e2
