@@ -19,7 +19,9 @@ from mypy.fastparse import parse_type_comment
 from mypy.moduleinspect import is_c_module
 from mypy.stubdoc import (
     ArgSig,
+    ClassSig,
     FunctionSig,
+    PropertySig,
     Sig,
     find_unique_signatures,
     infer_arg_sig_from_anon_docstring,
@@ -650,16 +652,23 @@ class InspectionStubGenerator(BaseStubGenerator):
         output.extend(self.format_func_def(inferred, decorators=decorators, docstring=docstring))
         self._fix_iter(ctx, inferred, output)
 
-    def _indent_docstring(self, docstring: str) -> str:
+    def _indent_docstring(
+        self, docstring: str, extra_indent: bool = True, trailing_newline: bool = False
+    ) -> str:
         """Fix indentation of docstring extracted from pybind11 or other binding generators."""
         lines = docstring.splitlines(keepends=True)
-        indent = self._indent + "    "
+        indent = self._indent + ("    " if extra_indent else "")
         if len(lines) > 1:
             if not all(line.startswith(indent) or not line.strip() for line in lines):
                 # if the docstring is not indented, then indent all but the first line
                 for i, line in enumerate(lines[1:]):
                     if line.strip():
-                        lines[i + 1] = indent + line
+                        # ignore any left space to keep the standard ident
+                        lines[i + 1] = indent + line.lstrip()
+
+        if trailing_newline and not lines[-1].endswith("\n"):
+            lines[-1] += "\n"
+
         # if there's a trailing newline, add a final line to visually indent the quoted docstring
         if lines[-1].endswith("\n"):
             if len(lines) > 1:
@@ -729,6 +738,13 @@ class InspectionStubGenerator(BaseStubGenerator):
         self.record_name(ctx.name)
         static = self.is_static_property(raw_obj)
         readonly = self.is_property_readonly(raw_obj)
+
+        if docstring:
+            # fields must define its docstring using the same ident
+            # readonly properties generates a function,
+            # which requires an extra ident in the first line
+            docstring = self._indent_docstring(docstring, extra_indent=readonly)
+
         if static:
             ret_type: str | None = self.strip_or_import(self.get_type_annotation(obj))
         else:
@@ -739,25 +755,35 @@ class InspectionStubGenerator(BaseStubGenerator):
         if inferred_type is not None:
             inferred_type = self.strip_or_import(inferred_type)
 
+        if not self._include_docstrings:
+            docstring = None
+
         if static:
             classvar = self.add_name("typing.ClassVar")
-            trailing_comment = "  # read-only" if readonly else ""
             if inferred_type is None:
                 inferred_type = self.add_name("_typeshed.Incomplete")
 
+            prop_sig = PropertySig(name, inferred_type)
             static_properties.append(
-                f"{self._indent}{name}: {classvar}[{inferred_type}] = ...{trailing_comment}"
+                prop_sig.format_sig(
+                    indent=self._indent,
+                    is_readonly=readonly,
+                    is_static=True,
+                    name_ref=classvar,
+                    docstring=docstring,
+                )
             )
         else:  # regular property
             if readonly:
                 ro_properties.append(f"{self._indent}@property")
-                sig = FunctionSig(name, [ArgSig("self")], inferred_type)
-                ro_properties.append(sig.format_sig(indent=self._indent))
+                func_sig = FunctionSig(name, [ArgSig("self")], inferred_type)
+                ro_properties.append(func_sig.format_sig(indent=self._indent, docstring=docstring))
             else:
                 if inferred_type is None:
                     inferred_type = self.add_name("_typeshed.Incomplete")
 
-                rw_properties.append(f"{self._indent}{name}: {inferred_type}")
+                prop_sig = PropertySig(name, inferred_type)
+                rw_properties.append(prop_sig.format_sig(indent=self._indent, docstring=docstring))
 
     def get_type_fullname(self, typ: type) -> str:
         """Given a type, return a string representation"""
@@ -860,34 +886,27 @@ class InspectionStubGenerator(BaseStubGenerator):
             classvar = self.add_name("typing.ClassVar")
             static_properties.append(f"{self._indent}{attr}: {classvar}[{prop_type_name}] = ...")
 
+        docstring = class_info.docstring if self._include_docstrings else None
+        if docstring:
+            docstring = self._indent_docstring(
+                docstring, extra_indent=False, trailing_newline=True
+            )
+
         self.dedent()
 
         bases = self.get_base_types(cls)
-        if bases:
-            bases_str = "(%s)" % ", ".join(bases)
-        else:
-            bases_str = ""
-        if types or static_properties or rw_properties or methods or ro_properties:
-            output.append(f"{self._indent}class {class_name}{bases_str}:")
-            for line in types:
-                if (
-                    output
-                    and output[-1]
-                    and not output[-1].strip().startswith("class")
-                    and line.strip().startswith("class")
-                ):
-                    output.append("")
-                output.append(line)
-            for line in static_properties:
-                output.append(line)
-            for line in rw_properties:
-                output.append(line)
-            for line in methods:
-                output.append(line)
-            for line in ro_properties:
-                output.append(line)
-        else:
-            output.append(f"{self._indent}class {class_name}{bases_str}: ...")
+        sig = ClassSig(class_name, bases)
+        output.extend(
+            sig.format_sig(
+                indent=self._indent,
+                types=types,
+                methods=methods,
+                static_properties=static_properties,
+                rw_properties=rw_properties,
+                ro_properties=ro_properties,
+                docstring=docstring,
+            )
+        )
 
     def generate_variable_stub(self, name: str, obj: object, output: list[str]) -> None:
         """Generate stub for a single variable using runtime introspection.

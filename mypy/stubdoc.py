@@ -73,6 +73,63 @@ class ArgSig:
         return False
 
 
+class ClassSig(NamedTuple):
+    name: str
+    base_types: list[str] | None = None
+
+    def format_sig(
+        self,
+        indent: str,
+        types: list[str],
+        methods: list[str],
+        static_properties: list[str],
+        rw_properties: list[str],
+        ro_properties: list[str],
+        docstring: str | None = None,
+    ) -> list[str]:
+
+        output: list[str] = []
+
+        if self.base_types:
+            bases_str = "(%s)" % ", ".join(self.base_types)
+        else:
+            bases_str = ""
+
+        if docstring:
+            sufix = f"\n{indent}    {mypy.util.quote_docstring(docstring)}\n"
+        else:
+            sufix = ""
+
+        if types or static_properties or rw_properties or methods or ro_properties:
+            sig = f"{indent}class {self.name}{bases_str}:"
+            output.append(f"{sig}{sufix}")
+
+            for line in types:
+                if (
+                    output
+                    and output[-1]
+                    and not output[-1].strip().startswith("class")
+                    and line.strip().startswith("class")
+                ):
+                    output.append("")
+
+                output.append(line)
+
+            for line in static_properties:
+                output.append(line)
+            for line in rw_properties:
+                output.append(line)
+            for line in methods:
+                output.append(line)
+            for line in ro_properties:
+                output.append(line)
+        else:
+            sig = f"{indent}class {self.name}{bases_str}: ..."
+            output.append(f"{sig}{sufix}")
+
+        return output
+
+
 class FunctionSig(NamedTuple):
     name: str
     args: list[ArgSig]
@@ -149,6 +206,39 @@ class FunctionSig(NamedTuple):
         else:
             suffix = " ..."
         return f"{sig}{suffix}"
+
+
+class PropertySig(NamedTuple):
+    name: str
+    prop_type: str
+
+    def format_sig(
+        self,
+        indent: str = "",
+        is_readonly: bool | None = False,
+        is_static: bool | None = False,
+        name_ref: str | None = None,
+        docstring: str | None = None,
+    ) -> str:
+
+        if is_static:
+            if docstring:
+                sufix = f"\n{indent}{mypy.util.quote_docstring(docstring)}"
+            else:
+                sufix = ""
+
+            trailing_comment = "  # read-only" if is_readonly else ""
+            sig = f"{indent}{self.name}: {name_ref}[{self.prop_type}] = ...{trailing_comment}"
+
+            return f"{sig}{sufix}"
+        else:
+            sig = f"{indent}{self.name}: {self.prop_type}"
+            if docstring:
+                sufix = f"\n{indent}{mypy.util.quote_docstring(docstring)}"
+            else:
+                sufix = ""
+
+            return f"{sig}{sufix}"
 
 
 # States of the docstring parser.
