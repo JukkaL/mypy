@@ -3548,3 +3548,29 @@ def foo(x: T):
     reveal_type(C)  # N: Revealed type is "Overload(def [T, S] (x: builtins.int, y: S`-1) -> __main__.C[__main__.Int[S`-1]], def [T, S] (x: builtins.str, y: S`-1) -> __main__.C[__main__.Str[S`-1]])"
     reveal_type(C(0, x))  # N: Revealed type is "__main__.C[__main__.Int[T`-1]]"
     reveal_type(C("yes", x))  # N: Revealed type is "__main__.C[__main__.Str[T`-1]]"
+
+[case testTypeVarTupleInCallableInUnion]
+from typing import TypeVarTuple, Unpack, Generic, Union
+from collections.abc import Callable
+
+Args = TypeVarTuple("Args")
+
+class Built(Generic[Unpack[Args]]):
+    pass
+
+def example(n: Union[Built[Unpack[Args]], Callable[[Unpack[Args]], None]]) -> Built[Unpack[Args]]: ...
+
+reveal_type(example)  # N: Revealed type is "def [Args] (n: Union[__main__.Built[Unpack[Args`-1]], def (*Unpack[Args`-1])]) -> __main__.Built[Unpack[Args`-1]]"
+
+@example
+def command1() -> None:
+    return
+
+reveal_type(command1)  # N: Revealed type is "__main__.Built[()]"
+
+@example
+def command2(a: int) -> None:
+    return
+
+reveal_type(command2)  # N: Revealed type is "__main__.Built[builtins.int]"
+[builtins fixtures/tuple.pyi]
