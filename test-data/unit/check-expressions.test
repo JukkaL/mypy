@@ -1144,6 +1144,52 @@ f() and b  # E: "f" does not return a value (it only ever returns None)
 b or f()   # E: "f" does not return a value (it only ever returns None)
 [builtins fixtures/bool.pyi]
 
+[case testNoneReturnDecorated]
+from typing import Any, Callable, TypeVar
+
+F = TypeVar('F', bound=Callable[..., Any])
+
+def deco(f: F) -> F:
+    pass
+
+def deco_return_none(f: object) -> Callable[..., None]:
+    pass
+
+def deco_return_not_none(f: object) -> Callable[..., int]:
+    pass
+
+@deco
+@deco
+def f1() -> None:
+    pass
+
+@deco
+@deco_return_none
+def f2() -> int:
+    pass
+
+@deco
+@deco_return_not_none
+def f3() -> None:
+    pass
+
+class A:
+    @staticmethod
+    def s() -> None:
+        pass
+
+if int():
+    x = f1()      # E: "f1" does not return a value (it only ever returns None)
+if int():
+    x = f2()      # E: "f2" does not return a value (it only ever returns None)
+if int():
+    x = f3()
+if int():
+    x = A.s()    # E: "s" of "A" does not return a value (it only ever returns None)
+if int():
+    x = A().s()  # E: "s" of "A" does not return a value (it only ever returns None)
+[builtins fixtures/staticmethod.pyi]
+
 
 -- Slicing
 -- -------
