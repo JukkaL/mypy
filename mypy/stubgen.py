@@ -131,6 +131,7 @@ from mypy.stubutil import (
     generate_guarded,
     infer_method_arg_types,
     infer_method_ret_type,
+    is_private_module,
     remove_misplaced_type_comments,
     report_missing,
     walk_packages,
@@ -1734,6 +1735,9 @@ def generate_stub_for_py_module(
     If directory for target doesn't exist it will created. Existing stub
     will be overwritten.
     """
+    if not include_private and is_private_module(mod.module):
+        return
+
     if inspect:
         ngen = InspectionStubGenerator(
             module_name=mod.module,
