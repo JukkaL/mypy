@@ -1483,6 +1483,20 @@ reveal_type(a._value_)  # N: Revealed type is "Any"
 [builtins fixtures/primitives.pyi]
 [typing fixtures/typing-medium.pyi]
 
+[case testValueTypeWithUserDataType]
+from enum import Enum
+from typing import Any
+
+class Data:
+    def __new__(cls, value: Any) -> Data: pass
+
+class DataEnum(Data, Enum):
+    A = Data(1)
+
+reveal_type(DataEnum.A)          # N: Revealed type is "Literal[__main__.DataEnum.A]?"
+reveal_type(DataEnum.A.value)    # N: Revealed type is "__main__.Data"
+reveal_type(DataEnum.A._value_)  # N: Revealed type is "__main__.Data"
+
 [case testEnumNarrowedToTwoLiterals]
 # Regression test: two literals of an enum would be joined
 # as the full type, regardless of the amount of elements
