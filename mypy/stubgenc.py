@@ -341,7 +341,7 @@ class InspectionStubGenerator(BaseStubGenerator):
         # Add *args if present
         if varargs:
             arglist.append(ArgSig(f"*{varargs}", get_annotation(varargs)))
-        # if we have keyword only args, then wee need to add "*"
+        # if we have keyword only args, then we need to add "*"
         elif kwonlyargs:
             arglist.append(ArgSig("*"))
 

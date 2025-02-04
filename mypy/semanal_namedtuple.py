@@ -198,7 +198,7 @@ class NamedTupleAnalyzer:
                         # Something is incomplete. We need to defer this named tuple.
                         return None
                     types.append(analyzed)
-                # ...despite possible minor failures that allow further analyzis.
+                # ...despite possible minor failures that allow further analysis.
                 if name.startswith("_"):
                     self.fail(
                         f"NamedTuple field name cannot start with an underscore: {name}", stmt

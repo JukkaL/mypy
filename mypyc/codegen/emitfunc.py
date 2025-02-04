@@ -152,7 +152,7 @@ def generate_native_function(
             # generates them will add instructions between the branch and the
             # next label, causing the label to be wrongly removed. A better
             # solution would be to change the IR so that it adds a basic block
-            # inbetween the calls.
+            # in between the calls.
             is_problematic_op = isinstance(terminator, Branch) and any(
                 isinstance(s, GetAttr) for s in terminator.sources()
             )

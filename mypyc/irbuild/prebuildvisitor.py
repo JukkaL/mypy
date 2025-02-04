@@ -73,7 +73,7 @@ class PreBuildVisitor(ExtendedTraverserVisitor):
         self.decorators_to_remove: dict[FuncDef, list[int]] = decorators_to_remove
 
         # A mapping of import groups (a series of Import nodes with
-        # nothing inbetween) where each group is keyed by its first
+        # nothing in between) where each group is keyed by its first
         # import node.
         self.module_import_groups: dict[Import, list[Import]] = {}
         self._current_import_group: Import | None = None

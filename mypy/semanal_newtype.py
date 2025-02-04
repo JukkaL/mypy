@@ -174,7 +174,7 @@ class NewTypeAnalyzer:
     def check_newtype_args(
         self, name: str, call: CallExpr, context: Context
     ) -> tuple[Type | None, bool]:
-        """Ananlyze base type in NewType call.
+        """Analyze base type in NewType call.
 
         Return a tuple (type, should defer).
         """

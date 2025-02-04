@@ -220,7 +220,7 @@ class ArgTypeExpander:
                     self.tuple_index += 1
                 item = actual_type.items[self.tuple_index - 1]
                 if isinstance(item, UnpackType) and not allow_unpack:
-                    # An upack item that doesn't have special handling, use upper bound as above.
+                    # An unpack item that doesn't have special handling, use upper bound as above.
                     unpacked = get_proper_type(item.type)
                     if isinstance(unpacked, TypeVarTupleType):
                         fallback = get_proper_type(unpacked.upper_bound)

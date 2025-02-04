@@ -21,6 +21,12 @@ repos:
       - id: check-github-workflows
       - id: check-github-actions
       - id: check-readthedocs
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - tomli
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.7
     hooks:

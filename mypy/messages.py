@@ -215,7 +215,7 @@ class MessageBuilder:
     def prefer_simple_messages(self) -> bool:
         """Should we generate simple/fast error messages?
 
-        If errors aren't shown to the user, we don't want to waste cyles producing
+        If errors aren't shown to the user, we don't want to waste cycles producing
         complex error messages.
         """
         return self.errors.prefer_simple_messages()

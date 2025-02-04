@@ -999,7 +999,7 @@ similarly supported via generics (Python 3.12 syntax):
 
 .. code-block:: python
 
-    from colletions.abc import Callable
+    from collections.abc import Callable
     from typing import Any
 
     def route[F: Callable[..., Any]](url: str) -> Callable[[F], F]:

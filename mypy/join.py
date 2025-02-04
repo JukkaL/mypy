@@ -500,7 +500,7 @@ class TypeJoinVisitor(TypeVisitor[ProperType]):
                 return items
             return None
         if s_unpack_index is not None and t_unpack_index is not None:
-            # The most complex case: both tuples have an upack item.
+            # The most complex case: both tuples have an unpack item.
             s_unpack = s.items[s_unpack_index]
             assert isinstance(s_unpack, UnpackType)
             s_unpacked = get_proper_type(s_unpack.type)
