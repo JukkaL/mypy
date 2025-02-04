@@ -404,7 +404,6 @@ class Server:
                 sources, remove, update, explicit_export_types=export_types
             )
         else:
-            assert remove is None and update is None
             messages = self.fine_grained_increment_follow_imports(
                 sources, explicit_export_types=export_types
             )
