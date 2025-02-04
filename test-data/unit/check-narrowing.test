@@ -845,7 +845,7 @@ x1: Union[Custom, Literal[1], Literal[2]]
 if x1 == 1:
     reveal_type(x1)  # N: Revealed type is "Union[__main__.Custom, Literal[1], Literal[2]]"
 else:
-    reveal_type(x1)  # N: Revealed type is "Union[__main__.Custom, Literal[1], Literal[2]]"
+    reveal_type(x1)  # N: Revealed type is "Union[__main__.Custom, Literal[2]]"
 
 x2: Union[Default, Literal[1], Literal[2]]
 if x2 == 1:
@@ -2415,4 +2415,28 @@ x = 1
 while x is not None and b():
     x = f()
 
+[builtins fixtures/primitives.pyi]
+
+[case testNegativeNarrowingWithCustomEq]
+from typing import Union
+from typing_extensions import Literal
+
+class A:
+    def __eq__(self, other: object) -> bool: ...  # necessary
+
+def f(v: Union[A, Literal["text"]]) -> Union[A, None]:
+    if v == "text":
+        reveal_type(v)  # N: Revealed type is "Union[__main__.A, Literal['text']]"
+        return None
+    else:
+        reveal_type(v)  # N: Revealed type is "__main__.A"
+        return v  # no error
+
+def g(v: Union[A, Literal["text"]]) -> Union[A, None]:
+    if v != "text":
+        reveal_type(v)  # N: Revealed type is "__main__.A"
+        return None
+    else:
+        reveal_type(v)  # N: Revealed type is "Union[__main__.A, Literal['text']]"
+        return v  # E: Incompatible return value type (got "Union[A, Literal['text']]", expected "Optional[A]")
 [builtins fixtures/primitives.pyi]

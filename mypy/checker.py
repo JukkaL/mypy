@@ -6413,33 +6413,42 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             should_narrow_by_identity = True
         else:
 
-            def is_exactly_literal_type(t: Type) -> bool:
-                return isinstance(get_proper_type(t), LiteralType)
-
             def has_no_custom_eq_checks(t: Type) -> bool:
                 return not custom_special_method(
                     t, "__eq__", check_all=False
                 ) and not custom_special_method(t, "__ne__", check_all=False)
-
-            is_valid_target = is_exactly_literal_type
-            coerce_only_in_literal_context = True
 
             expr_types = [operand_types[i] for i in expr_indices]
             should_narrow_by_identity = all(
                 map(has_no_custom_eq_checks, expr_types)
             ) and not is_ambiguous_mix_of_enums(expr_types)
 
-        if_map: TypeMap = {}
-        else_map: TypeMap = {}
-        if should_narrow_by_identity:
-            if_map, else_map = self.refine_identity_comparison_expression(
-                operands,
-                operand_types,
-                expr_indices,
-                narrowable_operand_index_to_hash.keys(),
-                is_valid_target,
-                coerce_only_in_literal_context,
-            )
+            def is_exactly_literal_type_possibly_except_enum(t: Type) -> bool:
+                p_t = get_proper_type(t)
+                if isinstance(p_t, LiteralType):
+                    if should_narrow_by_identity:
+                        return True
+                    else:
+                        return not p_t.fallback.type.is_enum
+                else:
+                    return False
+
+            is_valid_target = is_exactly_literal_type_possibly_except_enum
+            coerce_only_in_literal_context = True
+
+        if_map, else_map = self.refine_identity_comparison_expression(
+            operands,
+            operand_types,
+            expr_indices,
+            narrowable_operand_index_to_hash.keys(),
+            is_valid_target,
+            coerce_only_in_literal_context,
+        )
+        if not should_narrow_by_identity:
+            # refine_identity_comparison_expression narrows against a single literal
+            # -- and we know that literal will only go to the positive branch.
+            # This means that the negative branch narrowing is actually correct.
+            if_map = {}
 
         if if_map == {} and else_map == {}:
             if_map, else_map = self.refine_away_none_in_comparison(
