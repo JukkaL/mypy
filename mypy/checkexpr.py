@@ -549,6 +549,41 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                         self.msg.cannot_use_function_with_type(e.callee.name, "TypedDict", e)
                     elif typ.node.is_newtype:
                         self.msg.cannot_use_function_with_type(e.callee.name, "NewType", e)
+        if (
+            isinstance(e.callee, NameExpr)
+            and e.callee.fullname == "typing.get_args"
+            and len(e.args) == 1
+        ):
+            # Special hanlding for get_args(), returns a typed tuple
+            # with the type set by the input
+            argtyp = None
+            if isinstance(e.args[0], IndexExpr):
+                self.accept(e.args[0].index)
+                argtyp = self.chk.lookup_type(e.args[0].index)
+            elif isinstance(e.args[0], NameExpr):
+                try:
+                    node = self.chk.lookup_qualified(e.args[0].name)
+                    if node:
+                        if isinstance(node.node, TypeAlias):
+                            # Resolve type
+                            argtyp = node.node.target
+                        elif isinstance(node.node, Var):
+                            argtyp = node.node.type
+                except KeyError:
+                    # Undefined names should already be reported in semantic analysis.
+                    pass
+            if argtyp is not None:
+                argtyp = get_proper_type(argtyp)
+            if (
+                argtyp is not None
+                and isinstance(argtyp, UnionType)
+                and all(isinstance(get_proper_type(t), LiteralType) for t in argtyp.items)
+            ):
+                # Returning strings is defined but order isn't so
+                # we need to return type * len of the union
+                return TupleType(
+                    [argtyp] * len(argtyp.items), fallback=self.named_type("builtins.tuple")
+                )
         self.try_infer_partial_type(e)
         type_context = None
         if isinstance(e.callee, LambdaExpr):
