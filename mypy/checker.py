@@ -5876,9 +5876,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                 for key in item_str_literals:
                     if key in possible_iterable_type.required_keys:
                         if_types.append(possible_iterable_type)
-                    elif (
-                        key in possible_iterable_type.items or not possible_iterable_type.is_final
-                    ):
+                    elif key in possible_iterable_type.items:
                         if_types.append(possible_iterable_type)
                         else_types.append(possible_iterable_type)
                     else:
