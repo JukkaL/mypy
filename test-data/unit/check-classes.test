@@ -2487,6 +2487,60 @@ reveal_type(Num3() + Num1())  # N: Revealed type is "__main__.Num3"
 reveal_type(Num2() + Num3())  # N: Revealed type is "__main__.Num2"
 reveal_type(Num3() + Num2())  # N: Revealed type is "__main__.Num3"
 
+[case testReverseOperatorWithOverloads3]
+from typing import Union, overload
+
+class A:
+    def __mul__(self, value: A, /) -> A: ...
+    def __rmul__(self, value: A, /) -> A: ...
+
+class B:
+    @overload
+    def __mul__(self, other: B, /) -> B: ...
+    @overload
+    def __mul__(self, other: A, /) -> str: ...
+    def __mul__(self, other: Union[B, A], /) -> Union[B, str]: pass
+
+    @overload
+    def __rmul__(self, other: B, /) -> B: ...
+    @overload
+    def __rmul__(self, other: A, /) -> str: ...
+    def __rmul__(self, other: Union[B, A], /) -> Union[B, str]: pass
+
+[case testReverseOperatorWithOverloadsNested]
+from typing import Union, overload
+
+class A:
+    def __mul__(self, value: A, /) -> A: ...
+    def __rmul__(self, value: A, /) -> A: ...
+
+class B:
+    @overload
+    def __mul__(self, other: B, /) -> B: ...
+    @overload
+    def __mul__(self, other: A, /) -> str: ...
+    def __mul__(self, other: Union[B, A], /) -> Union[B, str]: pass
+
+    @overload
+    def __rmul__(self, other: B, /) -> B: ...
+    @overload
+    def __rmul__(self, other: A, /) -> str: ...
+    def __rmul__(self, other: Union[B, A], /) -> Union[B, str]:
+        class A1:
+            def __add__(self, other: C1) -> int: ...
+
+        class B1:
+            def __add__(self, other: C1) -> int: ...
+
+        class C1:
+            @overload
+            def __radd__(self, other: A1) -> str: ...   # E: Signatures of "__radd__" of "C1" and "__add__" of "A1" are unsafely overlapping
+            @overload
+            def __radd__(self, other: B1) -> str: ...   # E: Signatures of "__radd__" of "C1" and "__add__" of "B1" are unsafely overlapping
+            def __radd__(self, other): pass
+
+        return ""
+
 [case testDivReverseOperator]
 # No error: __div__ has no special meaning in Python 3
 class A1:
