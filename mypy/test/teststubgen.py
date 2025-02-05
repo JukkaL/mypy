@@ -380,6 +380,27 @@ class StubgenUtilSuite(unittest.TestCase):
             ],
         )
 
+        assert_equal(
+            infer_sig_from_docstring("\nfunc(*args)", "func"),
+            [FunctionSig(name="func", args=[ArgSig(name="*args")], ret_type="Any")],
+        )
+
+        assert_equal(
+            infer_sig_from_docstring("\nfunc(**kwargs)", "func"),
+            [FunctionSig(name="func", args=[ArgSig(name="**kwargs")], ret_type="Any")],
+        )
+
+        assert_equal(
+            infer_sig_from_docstring("\nfunc(*args, **kwargs)", "func"),
+            [
+                FunctionSig(
+                    name="func",
+                    args=[ArgSig(name="*args"), ArgSig(name="**kwargs")],
+                    ret_type="Any",
+                )
+            ],
+        )
+
     def test_infer_sig_from_docstring_duplicate_args(self) -> None:
         assert_equal(
             infer_sig_from_docstring("\nfunc(x, x) -> str\nfunc(x, y) -> int", "func"),
@@ -397,6 +418,77 @@ class StubgenUtilSuite(unittest.TestCase):
                 "func",
             ),
             None,
+        )
+
+    def test_infer_sig_from_docstring_invalid_signature(self) -> None:
+
+        assert_equal(infer_sig_from_docstring("\nfunc() --> None", "func"), [])
+
+        assert_equal(infer_sig_from_docstring("\nfunc(name1 name2) -> None", "func"), [])
+
+        assert_equal(infer_sig_from_docstring("\nfunc(name1, name2 name3) -> None", "func"), [])
+
+        assert_equal(infer_sig_from_docstring("\nfunc(name2, name3) -> None, None", "func"), [])
+
+        assert_equal(infer_sig_from_docstring("\nfunc(invalid::name) -> None", "func"), [])
+
+        assert_equal(infer_sig_from_docstring("\nfunc(invalid: [type]) -> None", "func"), [])
+
+        assert_equal(infer_sig_from_docstring("\nfunc(invalid: (type)) -> None", "func"), [])
+
+        assert_equal(infer_sig_from_docstring("\nfunc(invalid: -type) -> None", "func"), [])
+
+        assert_equal(infer_sig_from_docstring("\nfunc(invalid<name) -> None", "func"), [])
+
+        assert_equal(infer_sig_from_docstring("\nfunc(cpp::type name) -> None", "func"), [])
+        assert_equal(infer_sig_from_docstring("\nfunc(name) -> cpp::type", "func"), [])
+        assert_equal(infer_sig_from_docstring("\nvoid func(int name) {", "func"), [])
+        assert_equal(infer_sig_from_docstring("\nvoid func(std::vector<int> name)", "func"), [])
+
+    def test_infer_sig_from_docstring_multiple_overloads(self) -> None:
+        input = """
+func(*args, **kwargs)
+Overloaded function.
+
+1. func(self: class_type) -> None
+
+2. func(self: class_type, a: float, b: int) -> None
+"""
+        assert_equal(
+            infer_sig_from_docstring(input, "func"),
+            [
+                FunctionSig(
+                    name="func", args=[ArgSig(name="self", type="class_type")], ret_type="None"
+                ),
+                FunctionSig(
+                    name="func",
+                    args=[
+                        ArgSig(name="self", type="class_type"),
+                        ArgSig(name="a", type="float"),
+                        ArgSig(name="b", type="int"),
+                    ],
+                    ret_type="None",
+                ),
+                FunctionSig(
+                    name="func",
+                    args=[ArgSig(name="*args"), ArgSig(name="**kwargs")],
+                    ret_type="Any",
+                ),
+            ],
+        )
+
+    def test_infer_sig_from_docstring_deeply_nested_types(self) -> None:
+        assert_equal(
+            infer_sig_from_docstring(
+                "\nfunc(name: dict[str, dict[str, list[tuple[int, float]]]]) -> None", "func"
+            ),
+            [
+                FunctionSig(
+                    name="func",
+                    args=[ArgSig(name="name", type="dict[str,dict[str,list[tuple[int,float]]]]")],
+                    ret_type="None",
+                )
+            ],
         )
 
     def test_infer_arg_sig_from_anon_docstring(self) -> None:

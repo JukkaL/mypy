@@ -180,6 +180,16 @@ class DocStringParser:
 
     def add_token(self, token: tokenize.TokenInfo) -> None:
         """Process next token from the token stream."""
+
+        if (
+            self.state[-1] == STATE_ARGUMENT_TYPE
+            and token.type != tokenize.NAME
+            and len(self.accumulator) == 0
+        ):
+            # the next token after : must be a name
+            self.reset()
+            return
+
         if (
             token.type == tokenize.NAME
             and token.string == self.function_name
@@ -282,8 +292,13 @@ class DocStringParser:
             self.accumulator = ""
 
         elif token.type == tokenize.OP and token.string == "->" and self.state[-1] == STATE_INIT:
+            if len(self.accumulator) == 0:
+                self.state.append(STATE_RETURN_VALUE)
+            else:
+                # ) is not directly followed by ->
+                self.reset()
+                return
             self.accumulator = ""
-            self.state.append(STATE_RETURN_VALUE)
 
         # ENDMAKER is necessary for python 3.4 and 3.5.
         elif token.type in (tokenize.NEWLINE, tokenize.ENDMARKER) and self.state[-1] in (
@@ -306,6 +321,17 @@ class DocStringParser:
             self.args = []
             self.ret_type = "Any"
             # Leave state as INIT.
+        elif (
+            token.type == tokenize.NAME
+            and self.state[-1] == STATE_ARGUMENT_LIST
+            and len(self.accumulator) != 0
+            and self.accumulator != "*"
+            and self.accumulator != "**"
+        ):
+            # not the token after the argument list started
+            # special case for *args and **kwargs
+            self.reset()
+            return
         else:
             self.accumulator += token.string
 
