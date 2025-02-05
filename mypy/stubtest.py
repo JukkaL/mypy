@@ -364,7 +364,7 @@ def verify_mypyfile(
     def _belongs_to_runtime(r: types.ModuleType, attr: str) -> bool:
         """Heuristics to determine whether a name originates from another module."""
         obj = getattr(r, attr)
-        if isinstance(obj, types.ModuleType):
+        if isinstance(obj, types.ModuleType) and not (r is sys and attr == "monitoring"):
             return False
 
         symbol_table = _module_symbol_table(r)
@@ -413,7 +413,9 @@ def verify_mypyfile(
 
     for entry in sorted(to_check):
         stub_entry = stub.names[entry].node if entry in stub.names else MISSING
-        if isinstance(stub_entry, nodes.MypyFile):
+        if isinstance(stub_entry, nodes.MypyFile) and not (
+            runtime is sys and entry == "monitoring"
+        ):
             # Don't recursively check exported modules, since that leads to infinite recursion
             continue
         assert stub_entry is not None
