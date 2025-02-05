@@ -1594,6 +1594,8 @@ __main__.A
 __main__.B
 __main__.C
 __main__.D
+[builtins fixtures/tuple.pyi]
+[typing fixtures/typing-full.pyi]
 
 [case testPEP695GenericFunction]
 # flags: --python-version=3.12

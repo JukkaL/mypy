@@ -4046,44 +4046,11 @@ class SemanticAnalyzer(
             eager=eager,
             python_3_12_type_alias=pep_695,
         )
-        if isinstance(s.rvalue, (IndexExpr, CallExpr, OpExpr)) and (
-            not isinstance(rvalue, OpExpr)
-            or (self.options.python_version >= (3, 10) or self.is_stub_file)
-        ):
-            # Note: CallExpr is for "void = type(None)" and OpExpr is for "X | Y" union syntax.
-            if not isinstance(s.rvalue.analyzed, TypeAliasExpr):
-                # Any existing node will be updated in-place below.
-                s.rvalue.analyzed = TypeAliasExpr(alias_node)
-            s.rvalue.analyzed.line = s.line
-            # we use the column from resulting target, to get better location for errors
-            s.rvalue.analyzed.column = res.column
-        elif isinstance(s.rvalue, RefExpr):
-            s.rvalue.is_alias_rvalue = True
+        self._link_type_alias_to_rvalue(s.rvalue, alias_node, s.line)
 
         if existing:
-            # An alias gets updated.
-            updated = False
-            if isinstance(existing.node, TypeAlias):
-                if existing.node.target != res:
-                    # Copy expansion to the existing alias, this matches how we update base classes
-                    # for a TypeInfo _in place_ if there are nested placeholders.
-                    existing.node.target = res
-                    existing.node.alias_tvars = alias_tvars
-                    existing.node.no_args = no_args
-                    updated = True
-                    # Invalidate recursive status cache in case it was previously set.
-                    existing.node._is_recursive = None
-            else:
-                # Otherwise just replace existing placeholder with type alias.
-                existing.node = alias_node
-                updated = True
-            if updated:
-                if self.final_iteration:
-                    self.cannot_resolve_name(lvalue.name, "name", s)
-                    return True
-                else:
-                    # We need to defer so that this change can get propagated to base classes.
-                    self.defer(s, force_progress=True)
+            if not self._update_type_alias(existing, alias_node, lvalue.name, s):
+                return True
         else:
             self.add_symbol(lvalue.name, alias_node, s)
         if isinstance(rvalue, RefExpr) and isinstance(rvalue.node, TypeAlias):
@@ -4097,6 +4064,58 @@ class SemanticAnalyzer(
                 self.fail("Type aliases are prohibited in protocol bodies", s)
                 if not lvalue.name[0].isupper():
                     self.note("Use variable annotation syntax to define protocol members", s)
+        return True
+
+    def _link_type_alias_to_rvalue(
+        self, rvalue: Expression, alias_node: TypeAlias, line: int
+    ) -> None:
+        if isinstance(rvalue, (IndexExpr, CallExpr)) or (
+            isinstance(rvalue, OpExpr)
+            and (self.options.python_version >= (3, 10) or self.is_stub_file)
+        ):
+            # Note: CallExpr is for "void = type(None)" and OpExpr is for "X | Y" union syntax.
+            if not isinstance(rvalue.analyzed, TypeAliasExpr):
+                # Any existing node will be updated in-place below.
+                rvalue.analyzed = TypeAliasExpr(alias_node)
+            rvalue.analyzed.line = line
+            # we use the column from resulting target, to get better location for errors
+            rvalue.analyzed.column = alias_node.target.column
+        elif isinstance(rvalue, RefExpr):
+            rvalue.is_alias_rvalue = True
+
+    def _update_type_alias(
+        self,
+        existing: SymbolTableNode,
+        new: TypeAlias,
+        name: str,
+        stmt: AssignmentStmt | TypeAliasStmt,
+    ) -> bool:
+        """Store updated type alias information.
+
+        Returns `False` to indicate early exit (attempt to defer during final iteration).
+        """
+        updated = False
+        if isinstance(existing.node, TypeAlias):
+            if existing.node.target != new.target:
+                # Copy expansion to the existing alias, this matches how we update base classes
+                # for a TypeInfo _in place_ if there are nested placeholders.
+                existing.node.target = new.target
+                existing.node.alias_tvars = new.alias_tvars
+                existing.node.no_args = new.no_args
+                updated = True
+                # Invalidate recursive status cache in case it was previously set.
+                existing.node._is_recursive = None
+        else:
+            # Otherwise just replace existing placeholder with type alias.
+            existing.node = new
+            updated = True
+        if updated:
+            if self.final_iteration:
+                self.cannot_resolve_name(name, "name", stmt)
+                return False
+            else:
+                # We need to defer so that this change can get propagated to base classes.
+                self.defer(stmt, force_progress=True)
         return True
 
     def check_type_alias_type_call(self, rvalue: Expression, *, name: str) -> TypeGuard[CallExpr]:
@@ -5553,31 +5572,18 @@ class SemanticAnalyzer(
             )
             s.alias_node = alias_node
 
+            alias_ret = s.value.body.body[0]
+            assert isinstance(alias_ret, ReturnStmt)
+            assert alias_ret.expr is not None
+            self._link_type_alias_to_rvalue(alias_ret.expr, alias_node, s.line)
+
             if (
                 existing
                 and isinstance(existing.node, (PlaceholderNode, TypeAlias))
                 and existing.node.line == s.line
             ):
-                updated = False
-                if isinstance(existing.node, TypeAlias):
-                    if existing.node.target != res:
-                        # Copy expansion to the existing alias, this matches how we update base classes
-                        # for a TypeInfo _in place_ if there are nested placeholders.
-                        existing.node.target = res
-                        existing.node.alias_tvars = alias_tvars
-                        updated = True
-                else:
-                    # Otherwise just replace existing placeholder with type alias.
-                    existing.node = alias_node
-                    updated = True
-
-                if updated:
-                    if self.final_iteration:
-                        self.cannot_resolve_name(s.name.name, "name", s)
-                        return
-                    else:
-                        # We need to defer so that this change can get propagated to base classes.
-                        self.defer(s, force_progress=True)
+                if not self._update_type_alias(existing, alias_node, s.name.name, s):
+                    return
             else:
                 self.add_symbol(s.name.name, alias_node, s)
 

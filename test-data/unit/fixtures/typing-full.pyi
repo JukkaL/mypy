@@ -36,6 +36,7 @@ Final = 0
 TypedDict = 0
 NoReturn = 0
 NewType = 0
+TypeAlias = 0
 Self = 0
 Unpack = 0
 Callable: _SpecialForm
