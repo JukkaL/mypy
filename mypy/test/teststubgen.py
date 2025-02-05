@@ -429,6 +429,61 @@ class StubgenUtilSuite(unittest.TestCase):
             == []
         )
 
+    def test_infer_sig_from_docstring_unterminated_string_literal(self) -> None:
+        docstring = """
+        func(*args, **kwargs)
+        Overloaded function.
+
+        1. func(x: int) -> None
+
+        This is a valid docstring with an "unterminated string literal.
+
+        2. func(x: int, y: int) -> str
+
+        This is an overloaded method.
+        """
+        sigs = infer_sig_from_docstring(docstring, name="func")
+        assert sigs is not None, "Expected two signatures"
+        assert_equal(
+            sigs[0], FunctionSig(name="func", args=[ArgSig(name="x", type="int")], ret_type="None")
+        )
+        assert_equal(
+            sigs[1],
+            FunctionSig(
+                name="func",
+                args=[ArgSig(name="x", type="int"), ArgSig(name="y", type="int")],
+                ret_type="str",
+            ),
+        )
+
+    def test_infer_sig_from_docstring_latex(self) -> None:
+        docstring = """
+        func(*args, **kwargs)
+        Overloaded function.
+
+        1. func(x: int) -> None
+
+        .. math::
+            \\mathbf{f}\\left(x\\right) = \\pi \\cdot x
+
+        2. func(x: int, y: int) -> str
+
+        This is an overloaded method.
+        """
+        sigs = infer_sig_from_docstring(docstring, name="func")
+        assert sigs is not None, "Expected two signatures"
+        assert_equal(
+            sigs[0], FunctionSig(name="func", args=[ArgSig(name="x", type="int")], ret_type="None")
+        )
+        assert_equal(
+            sigs[1],
+            FunctionSig(
+                name="func",
+                args=[ArgSig(name="x", type="int"), ArgSig(name="y", type="int")],
+                ret_type="str",
+            ),
+        )
+
     def test_remove_misplaced_type_comments_1(self) -> None:
         good = """
         \u1234
