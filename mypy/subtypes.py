@@ -1996,6 +1996,16 @@ def covers_at_runtime(item: Type, supertype: Type) -> bool:
     item = get_proper_type(item)
     supertype = get_proper_type(supertype)
 
+    # Left `Any` or `Type[Any]` type will never be covered at runtime:
+    if isinstance(item, AnyType) or (
+        isinstance(item, TypeType) and isinstance(item.item, AnyType)
+    ):
+        return False
+
+    if isinstance(item, (CallableType, TypeType)) and item.is_singleton_type():
+        if is_proper_subtype(item, supertype):
+            return True
+
     # Since runtime type checks will ignore type arguments, erase the types.
     supertype = erase_type(supertype)
     if is_proper_subtype(
