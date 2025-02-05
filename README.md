@@ -142,6 +142,7 @@ Mypy can be integrated into popular IDEs:
 - Emacs: using [Flycheck](https://github.com/flycheck/)
 - Sublime Text: [SublimeLinter-contrib-mypy](https://github.com/fredcallaway/SublimeLinter-contrib-mypy)
 - PyCharm: [mypy plugin](https://github.com/dropbox/mypy-PyCharm-plugin)
+- IDLE: [idlemypyextension](https://github.com/CoolCat467/idlemypyextension)
 - pre-commit: use [pre-commit mirrors-mypy](https://github.com/pre-commit/mirrors-mypy), although
   note by default this will limit mypy's ability to analyse your third party dependencies.
 
