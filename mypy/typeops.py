@@ -352,7 +352,9 @@ def bind_self(
     if func.variables and supported_self_type(
         self_param_type, allow_callable=allow_callable, allow_instances=not ignore_instances
     ):
+        from mypy.constraints import SUPERTYPE_OF, infer_constraints
         from mypy.infer import infer_type_arguments
+        from mypy.solve import solve_constraints
 
         if original_type is None:
             # TODO: type check method override (see #7861).
@@ -364,9 +366,9 @@ def bind_self(
         self_vars = [tv for tv in func.variables if tv.id in self_ids]
 
         # Solve for these type arguments using the actual class or instance type.
-        typeargs = infer_type_arguments(
-            self_vars, self_param_type, original_type, is_supertype=True
-        )
+        constraints = infer_constraints(self_param_type, original_type, SUPERTYPE_OF)
+        typeargs, free_vars = solve_constraints(self_vars, constraints, allow_polymorphic=True)
+
         if (
             is_classmethod
             and any(isinstance(get_proper_type(t), UninhabitedType) for t in typeargs)
@@ -376,12 +378,29 @@ def bind_self(
             typeargs = infer_type_arguments(
                 self_vars, self_param_type, TypeType(original_type), is_supertype=True
             )
+            free_vars = []
 
         # Update the method signature with the solutions found.
         # Technically, some constraints might be unsolvable, make them Never.
         to_apply = [t if t is not None else UninhabitedType() for t in typeargs]
+
+        # Try to push in any type vars where the self type was the only location. e.g.:
+        # [T] () -> (T) -> T should return () -> [T] (T) -> T
+        outer_tvs = set()
+        for arg in func.arg_types[1:]:
+            outer_tvs |= set(get_all_type_vars(arg)) & set(free_vars)
+
+        inner_tvs = [v for v in free_vars if v not in outer_tvs]
+        result_type = get_proper_type(func.ret_type)
+        if isinstance(result_type, CallableType):
+            func = func.copy_modified(
+                ret_type=result_type.copy_modified(
+                    variables=list(result_type.variables) + inner_tvs
+                )
+            )
+
         func = expand_type(func, {tv.id: arg for tv, arg in zip(self_vars, to_apply)})
-        variables = [v for v in func.variables if v not in self_vars]
+        variables = [v for v in func.variables if v not in self_vars or v in outer_tvs]
     else:
         variables = func.variables
 

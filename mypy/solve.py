@@ -73,13 +73,6 @@ def solve_constraints(
         # Constraints inferred from unions require special handling in polymorphic inference.
         constraints = skip_reverse_union_constraints(constraints)
 
-    # Collect a list of constraints for each type variable.
-    cmap: dict[TypeVarId, list[Constraint]] = {tv: [] for tv in vars + extra_vars}
-    for con in constraints:
-        if con.type_var in vars + extra_vars:
-            cmap[con.type_var].append(con)
-
-    if allow_polymorphic:
         if constraints:
             solutions, free_vars = solve_with_dependent(
                 vars + extra_vars, constraints, vars, originals
@@ -88,6 +81,12 @@ def solve_constraints(
             solutions = {}
             free_vars = []
     else:
+        # Collect a list of constraints for each type variable.
+        cmap: dict[TypeVarId, list[Constraint]] = {tv: [] for tv in vars + extra_vars}
+        for con in constraints:
+            if con.type_var in vars + extra_vars:
+                cmap[con.type_var].append(con)
+
         solutions = {}
         free_vars = []
         for tv, cs in cmap.items():

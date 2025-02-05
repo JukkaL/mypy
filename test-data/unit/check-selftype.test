@@ -2215,6 +2215,21 @@ class Test2:
 reveal_type(Test2().method) # N: Revealed type is "def (foo: builtins.int, *, bar: builtins.str) -> builtins.bytes"
 [builtins fixtures/tuple.pyi]
 
+[case testCallableWithTypeVarInSelfType]
+from typing import Generic, TypeVar, Callable
+
+T = TypeVar("T")
+V = TypeVar("V")
+
+class X(Generic[T]):
+    def f(self: X[Callable[[V], None]]) -> Callable[[V], V]:
+        def inner_f(v: V) -> V:
+            return v
+
+        return inner_f
+
+reveal_type(X[Callable[[T], None]]().f())  # N: Revealed type is "def [V] (V`4) -> V`4"
+
 [case testSelfInMultipleInheritance]
 from typing_extensions import Self
 
