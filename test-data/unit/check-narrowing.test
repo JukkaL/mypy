@@ -2106,6 +2106,172 @@ if isinstance(x, (Z, NoneType)):  # E: Subclass of "X" and "Z" cannot exist: "Z"
 
 [builtins fixtures/isinstance.pyi]
 
+[case testKeepTypeVarArgsWhenNarrowingGenericsWithIsInstance]
+from typing import Generic, Sequence, Tuple, TypeVar, Union
+
+s: Sequence[str]
+if isinstance(s, tuple):
+    reveal_type(s)  # N: Revealed type is "builtins.tuple[builtins.str, ...]"
+else:
+    reveal_type(s)  # N: Revealed type is "typing.Sequence[builtins.str]"
+if isinstance(s, list):
+    reveal_type(s)  # N: Revealed type is "builtins.list[builtins.str]"
+else:
+    reveal_type(s)  # N: Revealed type is "typing.Sequence[builtins.str]"
+
+t1: Tuple[str, int]
+if isinstance(t1, tuple):
+    reveal_type(t1)  # N: Revealed type is "Tuple[builtins.str, builtins.int]"
+else:
+    reveal_type(t1)
+
+t2: Tuple[str, ...]
+if isinstance(t2, tuple):
+    reveal_type(t2)  # N: Revealed type is "builtins.tuple[builtins.str, ...]"
+else:
+    reveal_type(t2)
+
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+class A(Generic[T1]): ...
+class B(A[T1], Generic[T1, T2]):...
+a: A[str]
+if isinstance(a, B):
+    reveal_type(a)  # N: Revealed type is "__main__.B[builtins.str, Any]"
+else:
+    reveal_type(a)  # N: Revealed type is "__main__.A[builtins.str]"
+class C(A[str], Generic[T1]):...
+if isinstance(a, C):
+    reveal_type(a)  # N: Revealed type is "__main__.C[Any]"
+else:
+    reveal_type(a)  # N: Revealed type is "__main__.A[builtins.str]"
+
+class AA(Generic[T1]): ...
+class BB(A[T1], AA[T1], Generic[T1, T2]):...
+aa: Union[A[int], Union[AA[str], AA[int]]]
+if isinstance(aa, BB):
+    reveal_type(aa)  # N: Revealed type is "Union[__main__.BB[builtins.int, Any], __main__.BB[builtins.str, Any]]"
+else:
+    reveal_type(aa)  # N: Revealed type is "Union[__main__.A[builtins.int], __main__.AA[builtins.str], __main__.AA[builtins.int]]"
+
+T3 = TypeVar("T3")
+T4 = TypeVar("T4")
+T5 = TypeVar("T5")
+T6 = TypeVar("T6")
+T7 = TypeVar("T7")
+T8 = TypeVar("T8")
+T9 = TypeVar("T9")
+T10 = TypeVar("T10")
+T11 = TypeVar("T11")
+class A1(Generic[T1, T2]): ...
+class A2(Generic[T3, T4]): ...
+class B1(A1[T5, T6]):...
+class B2(A2[T7, T8]):...
+class C1(B1[T9, T10], B2[T11, T9]):...
+a2: A2[str, int]
+if isinstance(a2, C1):
+    reveal_type(a2)  # N: Revealed type is "__main__.C1[builtins.int, Any, builtins.str]"
+else:
+    reveal_type(a2)  # N: Revealed type is "__main__.A2[builtins.str, builtins.int]"
+[builtins fixtures/tuple.pyi]
+
+[case testKeepTypeVarArgsWhenNarrowingGenericsInUnionsWithIsInstance]
+from typing import Generic, TypeVar, Union
+
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+class A(Generic[T1]): ...
+class B(A[T1], Generic[T1, T2]):...
+class C(A[T2], Generic[T1, T2]):...
+a: Union[A[str], A[int]]
+if isinstance(a, (B, C)):
+    reveal_type(a)  # N: Revealed type is "Union[__main__.B[builtins.str, Any], __main__.C[Any, builtins.str], __main__.B[builtins.int, Any], __main__.C[Any, builtins.int]]"
+else:
+    reveal_type(a)  # N: Revealed type is "Union[__main__.A[builtins.str], __main__.A[builtins.int]]"
+[builtins fixtures/isinstance.pyi]
+
+[case testKeepTypeVarArgsWhenNarrowingTupleTypeToTuple]
+from typing import Sequence, Tuple, Union
+
+class A: ...
+class B: ...
+x: Union[Tuple[A], Tuple[A, B], Tuple[B, ...], Sequence[Tuple[A]]]
+if isinstance(x, tuple):
+    reveal_type(x)  # N: Revealed type is "Union[Tuple[__main__.A], Tuple[__main__.A, __main__.B], builtins.tuple[__main__.B, ...], builtins.tuple[Tuple[__main__.A], ...]]"
+else:
+    reveal_type(x)  # N: Revealed type is "typing.Sequence[Tuple[__main__.A]]"
+[builtins fixtures/tuple.pyi]
+
+[case testKeepTypeVarArgsWhenNarrowingGenericsWithIsSubclass]
+from typing import Generic, Sequence, Type, TypeVar
+
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+class A(Generic[T1]): ...
+class B(A[T1], Generic[T1, T2]):...
+a: Type[A[str]]
+if issubclass(a, B):
+    reveal_type(a)  # N: Revealed type is "Type[__main__.B[builtins.str, Any]]"
+else:
+    reveal_type(a)  # N: Revealed type is "Type[__main__.A[builtins.str]]"
+class C(A[str], Generic[T1]):...
+if issubclass(a, C):
+    reveal_type(a)  # N: Revealed type is "Type[__main__.C[Any]]"
+else:
+    reveal_type(a)  # N: Revealed type is "Type[__main__.A[builtins.str]]"
+[builtins fixtures/isinstance.pyi]
+
+[case testKeepTypeVarTupleArgsWhenNarrowingGenericsWithIsInstance]
+from typing import Generic, Sequence, Tuple, TypeVar
+from typing_extensions import TypeVarTuple, Unpack
+
+TP = TypeVarTuple("TP")
+class A(Generic[Unpack[TP]]): ...
+class B(A[Unpack[TP]]): ...
+a: A[str, int]
+if isinstance(a, B):
+    reveal_type(a)  # N: Revealed type is "__main__.B[builtins.str, builtins.int]"
+else:
+    reveal_type(a)  # N: Revealed type is "__main__.A[builtins.str, builtins.int]"
+
+def f1(a: A[Unpack[Tuple[str, ...]]]):
+    if isinstance(a, B):
+        reveal_type(a)  # N: Revealed type is "__main__.B[Unpack[builtins.tuple[builtins.str, ...]]]"
+
+T = TypeVar("T")
+def f2(a: A[T, str, T]):
+    if isinstance(a, B):
+        reveal_type(a)  # N: Revealed type is "__main__.B[T`-1, builtins.str, T`-1]"
+
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+T3 = TypeVar("T3")
+T4 = TypeVar("T4")
+T5 = TypeVar("T5")
+T6 = TypeVar("T6")
+class C(Generic[T1, Unpack[TP], T2]): ...
+class D(C[T1, Unpack[TP], T2], Generic[T2, T4, T6, Unpack[TP], T5, T3, T1]): ...
+class E(D[T1, T2, float, Unpack[TP], float, T3, T4]): ...
+c: C[int, str, int, str]
+if isinstance(c, E):
+    reveal_type(c)  # N: Revealed type is "__main__.E[builtins.str, Any, builtins.str, builtins.int, Any, builtins.int]"
+else:
+    reveal_type(c)  # N: Revealed type is "__main__.C[builtins.int, builtins.str, builtins.int, builtins.str]"
+
+class F(E[T1, T2, str, int, T3, T4]): ...
+if isinstance(c, F):
+    reveal_type(c)  # N: Revealed type is "__main__.F[builtins.str, Any, Any, builtins.int]"
+[builtins fixtures/tuple.pyi]
+
+[case testKeepTypeVarArgsWhenNarrowingGenericsWithIsInstanceMappingIterableOverlap]
+# flags: --python-version 3.12
+# see PR 17099
+from typing import Iterable
+
+def f(x: dict[str, str] | Iterable[bytes]) -> None:
+    if isinstance(x, dict):
+        reveal_type(x)  # N: Revealed type is "Union[builtins.dict[builtins.str, builtins.str], builtins.dict[builtins.bytes, Any]]"
+[builtins fixtures/dict.pyi]
 [case testTypeNarrowingReachableNegative]
 # flags: --warn-unreachable
 from typing import Literal

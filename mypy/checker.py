@@ -7955,7 +7955,10 @@ def conditional_types(
                 ]
             )
             remaining_type = restrict_subtype_away(current_type, proposed_precise_type)
-            return proposed_type, remaining_type
+            proposed_type_with_data = _transfer_type_var_args_from_current_to_proposed(
+                current_type, proposed_type
+            )
+            return proposed_type_with_data, remaining_type
     else:
         # An isinstance check, but we don't understand the type
         return current_type, default
@@ -7977,6 +7980,128 @@ def conditional_types_to_typemaps(
             maps.append({expr: typ})
 
     return cast(tuple[TypeMap, TypeMap], tuple(maps))
+
+
+def _transfer_type_var_args_from_current_to_proposed(current: Type, proposed: Type) -> Type:
+    """Check if the current type is among the bases of the proposed type.  If so, try to transfer
+    the type variable arguments of the current type's instance to a copy of the proposed type's
+    instance.  This increases information when narrowing generic classes so that, for example,
+    Sequence[int] is narrowed to List[int] instead of List[Any]."""
+
+    def _get_instance_path_from_current_to_proposed(
+        this: Instance, target: TypeInfo
+    ) -> list[Instance] | None:
+        """Search for the current type among the bases of the proposed type and return the
+        "instance path" from the current to proposed type.  Or None, if the current type is not a
+        nominal super type. At most one path is returned, which means there is no special handling
+        of (inconsistent) multiple inheritance."""
+        if target == this.type:
+            return [this]
+        for base in this.type.bases:
+            path = _get_instance_path_from_current_to_proposed(base, target)
+            if path is not None:
+                path.append(this)
+                return path
+        return None
+
+    # Handle "tuple of Instance" cases, e.g. `isinstance(x, (A, B))`:
+    proposed = get_proper_type(proposed)
+    if isinstance(proposed, UnionType):
+        items = [
+            _transfer_type_var_args_from_current_to_proposed(current, item)
+            for item in flatten_nested_unions(proposed.items)
+        ]
+        return make_simplified_union(items)
+
+    # Otherwise handle only Instances:
+    if not isinstance(proposed, Instance):
+        return proposed
+
+    # Handle union cases like `a: A[int] | A[str]; isinstance(a, B)`:
+    current = get_proper_type(current)
+    if isinstance(current, UnionType):
+        items = [
+            _transfer_type_var_args_from_current_to_proposed(item, proposed)
+            for item in flatten_nested_unions(current.items)
+        ]
+        return make_simplified_union(items)
+
+    # Special handling for trivial "tuple is tuple" cases (handling tuple subclasses seems
+    # complicated, especially as long as `builtins.tuple` is not variadic):
+    if isinstance(current, TupleType) and (proposed.type.fullname == "builtins.tuple"):
+        return current
+
+    # Here comes the main logic:
+    if isinstance(current, Instance):
+
+        # Only consider nominal subtyping:
+        instances = _get_instance_path_from_current_to_proposed(proposed, current.type)
+        if instances is None:
+            return proposed
+        assert len(instances) > 0  # shortest case: proposed type is current type
+
+        # Make a list of the proposed type's type variable arguments that allows to replace each
+        # `Any` with one type variable argument or multiple type variable tuple arguments of the
+        # current type:
+        proposed_args: list[Type | tuple[Type, ...]] = list(proposed.args)
+
+        # Try to transfer each type variable argument from the current to the base type separately:
+        for pos1, typevar1 in enumerate(instances[0].args):
+            if isinstance(typevar1, UnpackType):
+                typevar1 = typevar1.type
+            if (len(instances) > 1) and not isinstance(typevar1, (TypeVarType, TypeVarTupleType)):
+                continue
+            # Find the position of the intermediate types' and finally the proposed type's
+            # related type variable (if not available, `pos2` becomes `None`):
+            pos2: int | None = pos1
+            for instance in instances[1:]:
+                for pos2, typevar2 in enumerate(instance.type.defn.type_vars):
+                    if typevar1 == typevar2:
+                        if instance.type.has_type_var_tuple_type:
+                            assert (pre := instance.type.type_var_tuple_prefix) is not None
+                            if pos2 > pre:
+                                pos2 += len(instance.args) - len(instance.type.defn.type_vars)
+                        typevar1 = instance.args[pos2]
+                        if isinstance(typevar1, UnpackType):
+                            typevar1 = typevar1.type
+                        break
+                else:
+                    pos2 = None
+                    break
+
+            # Transfer the current type's type variable argument or type variable tuple arguments:
+            if pos2 is not None:
+                proposed_arg = proposed_args[pos2]
+                assert not isinstance(proposed_arg, tuple)
+                if isinstance(get_proper_type(proposed_arg), (AnyType, UnpackType)):
+                    if current.type.has_type_var_tuple_type:
+                        assert (pre := current.type.type_var_tuple_prefix) is not None
+                        assert (suf := current.type.type_var_tuple_suffix) is not None
+                        if pos1 < pre:
+                            proposed_args[pos2] = current.args[pos1]
+                        elif pos1 == pre:
+                            proposed_args[pos2] = current.args[pre : len(current.args) - suf]
+                        else:
+                            middle = len(current.args) - pre - suf
+                            proposed_args[pos2] = current.args[pos1 + middle - 1]
+                    else:
+                        proposed_args[pos2] = current.args[pos1]
+
+        # Combine all type variable and type variable tuple arguments to a flat list:
+        flattened_proposed_args: list[Type] = []
+        for arg in proposed_args:
+            if isinstance(arg, tuple):
+                flattened_proposed_args.extend(arg)
+            else:
+                flattened_proposed_args.append(arg)
+        # Some later checks seem to expect flattened unions:
+        for arg_ in flattened_proposed_args:
+            if isinstance(arg_ := get_proper_type(arg_), UnionType):
+                arg_.items = flatten_nested_unions(arg_.items)
+
+        return proposed.copy_modified(args=flattened_proposed_args)
+
+    return proposed
 
 
 def gen_unique_name(base: str, table: SymbolTable) -> str:
