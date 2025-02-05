@@ -316,6 +316,12 @@ def parse_config_file(
             print(f"{file_read}: No [mypy] section in config file", file=stderr)
     else:
         section = parser["mypy"]
+
+        # if "files" in section:
+        #     raw_files = section["files"]
+        #     normalized_files = [file.strip() for file in raw_files.split(",") if file.strip()]
+        #     section["files"] = ",".join(normalized_files)
+
         prefix = f"{file_read}: [mypy]: "
         updates, report_dirs = parse_section(
             prefix, options, set_strict_flags, section, config_types, stderr
