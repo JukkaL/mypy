@@ -1239,7 +1239,7 @@ def main() -> None:
         case a:
             reveal_type(a)  # N: Revealed type is "builtins.int"
 
-[case testMatchCapturePatternFromAsyncFunctionReturningUnion-xfail]
+[case testMatchCapturePatternFromAsyncFunctionReturningUnion]
 async def func1(arg: bool) -> str | int: ...
 async def func2(arg: bool) -> bytes | int: ...
 
@@ -2524,3 +2524,86 @@ def fn2(x: Some | int | str) -> None:
         case Some(value):  # E: Incompatible types in capture pattern (pattern captures type "Union[int, str]", variable has type "Callable[[], str]")
             pass
 [builtins fixtures/dict.pyi]
+
+[case testMatchFunctionCall]
+# flags: --warn-unreachable
+
+def fn() -> int | str: ...
+
+match fn():
+    case str(s):
+        reveal_type(s)  # N: Revealed type is "builtins.str"
+    case int(i):
+        reveal_type(i)  # N: Revealed type is "builtins.int"
+    case other:
+        other  # E: Statement is unreachable
+
+[case testMatchAttribute]
+# flags: --warn-unreachable
+
+class A:
+    foo: int | str
+
+match A().foo:
+    case str(s):
+        reveal_type(s)  # N: Revealed type is "builtins.str"
+    case int(i):
+        reveal_type(i)  # N: Revealed type is "builtins.int"
+    case other:
+        other  # E: Statement is unreachable
+
+[case testMatchOperations]
+# flags: --warn-unreachable
+
+x: int
+match -x:
+    case -1 as s:
+        reveal_type(s)  # N: Revealed type is "Literal[-1]"
+    case int(s):
+        reveal_type(s)  # N: Revealed type is "builtins.int"
+    case other:
+        other  # E: Statement is unreachable
+
+match 1 + 2:
+    case 3 as s:
+        reveal_type(s)  # N: Revealed type is "Literal[3]"
+    case int(s):
+        reveal_type(s)  # N: Revealed type is "builtins.int"
+    case other:
+        other  # E: Statement is unreachable
+
+match 1 > 2:
+    case True as s:
+        reveal_type(s)  # N: Revealed type is "Literal[True]"
+    case False as s:
+        reveal_type(s)  # N: Revealed type is "Literal[False]"
+    case other:
+        other  # E: Statement is unreachable
+[builtins fixtures/ops.pyi]
+
+[case testMatchDictItem]
+# flags: --warn-unreachable
+
+m: dict[str, int | str]
+k: str
+
+match m[k]:
+    case str(s):
+        reveal_type(s)  # N: Revealed type is "builtins.str"
+    case int(i):
+        reveal_type(i)  # N: Revealed type is "builtins.int"
+    case other:
+        other  # E: Statement is unreachable
+
+[builtins fixtures/dict.pyi]
+
+[case testMatchLiteralValuePathological]
+# flags: --warn-unreachable
+
+match 0:
+    case 0 as i:
+        reveal_type(i)  # N: Revealed type is "Literal[0]?"
+    case int(i):
+        i  # E: Statement is unreachable
+    case other:
+        other  # E: Statement is unreachable
