@@ -178,6 +178,15 @@ DATACLASS_TRANSFORM_NAMES: Final = (
 # Supported @override decorator names.
 OVERRIDE_DECORATOR_NAMES: Final = ("typing.override", "typing_extensions.override")
 
+# Supported property decorators
+PROPERTY_DECORATOR_NAMES: Final = (
+    "builtins.property",
+    "abc.abstractproperty",
+    "functools.cached_property",
+    "enum.property",
+    "types.DynamicClassAttribute",
+)
+
 # A placeholder used for Bogus[...] parameters
 _dummy: Final[Any] = object()
 

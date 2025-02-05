@@ -3298,7 +3298,7 @@ class A:
     @decorator
     def f(self) -> int: ...
 
-reveal_type(A.f)  # N: Revealed type is "__main__.something_callable"
+reveal_type(A.f)  # N: Revealed type is "builtins.property"
 reveal_type(A().f)  # N: Revealed type is "builtins.str"
 [builtins fixtures/property.pyi]
 

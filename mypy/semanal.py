@@ -261,6 +261,7 @@ from mypy.types import (
     NEVER_NAMES,
     OVERLOAD_NAMES,
     OVERRIDE_DECORATOR_NAMES,
+    PROPERTY_DECORATOR_NAMES,
     PROTOCOL_NAMES,
     REVEAL_TYPE_NAMES,
     TPDICT_NAMES,
@@ -1651,16 +1652,7 @@ class SemanticAnalyzer(
                 removed.append(i)
                 dec.func.is_explicit_override = True
                 self.check_decorated_function_is_method("override", dec)
-            elif refers_to_fullname(
-                d,
-                (
-                    "builtins.property",
-                    "abc.abstractproperty",
-                    "functools.cached_property",
-                    "enum.property",
-                    "types.DynamicClassAttribute",
-                ),
-            ):
+            elif refers_to_fullname(d, PROPERTY_DECORATOR_NAMES):
                 removed.append(i)
                 dec.func.is_property = True
                 dec.var.is_property = True
@@ -7166,6 +7158,40 @@ class SemanticAnalyzer(
         self.fail(
             f'{noun} "{unmangle(name)}" already defined{extra_msg}', ctx, code=codes.NO_REDEF
         )
+
+        if (
+            isinstance(ctx, (OverloadedFuncDef, Decorator))
+            and node is not None
+            and self.maybe_property_setter_or_deleter(ctx)
+            and self.maybe_property_definition(node)
+        ):
+            self.note("Property setter and deleter must be adjacent to the getter.", ctx)
+
+    def maybe_property_setter_or_deleter(self, node: SymbolNode) -> bool:
+        if isinstance(node, OverloadedFuncDef) and node.unanalyzed_items:
+            # Use unanalyzed_items: setter+deletter would have empty .items
+            # due to previous error
+            node = node.unanalyzed_items[0]
+        return isinstance(node, Decorator) and any(
+            isinstance(dec, MemberExpr) and dec.name in ("setter", "deleter")
+            for dec in node.decorators
+        )
+
+    def maybe_property_definition(self, node: SymbolNode) -> bool:
+        if isinstance(node, Decorator) and node.func.is_property:
+            return True
+        elif isinstance(node, OverloadedFuncDef):
+            if node.is_property:
+                # Already analyzed
+                return True
+            elif isinstance(node.items[0], Decorator):
+                for dec in node.items[0].decorators:
+                    if isinstance(dec, (NameExpr, MemberExpr)):
+                        if not dec.fullname:
+                            self.accept(dec)
+                        if dec.fullname in PROPERTY_DECORATOR_NAMES:
+                            return True
+        return False
 
     def name_already_defined(
         self, name: str, ctx: Context, original_ctx: SymbolTableNode | SymbolNode | None = None

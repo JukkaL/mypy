@@ -1621,8 +1621,7 @@ class A:
         self.x = 1
         self.x = '' # E: Incompatible types in assignment (expression has type "str", variable has type "int")
         return ''
-[builtins fixtures/property.pyi]
-[out]
+[builtins fixtures/property-full.pyi]
 
 [case testDynamicallyTypedProperty]
 import typing
@@ -1632,7 +1631,7 @@ class A:
 a = A()
 a.f.xx
 a.f = '' # E: Property "f" defined in "A" is read-only
-[builtins fixtures/property.pyi]
+[builtins fixtures/property-full.pyi]
 
 [case testPropertyWithSetter]
 import typing
@@ -1649,7 +1648,7 @@ a.f.x # E: "int" has no attribute "x"
 a.f = '' # E: Incompatible types in assignment (expression has type "str", variable has type "int")
 a.f = 1
 reveal_type(a.f)  # N: Revealed type is "builtins.int"
-[builtins fixtures/property.pyi]
+[builtins fixtures/property-full.pyi]
 
 [case testPropertyWithDeleterButNoSetter]
 import typing
@@ -1663,7 +1662,367 @@ class A:
 a = A()
 a.f = a.f # E: Property "f" defined in "A" is read-only
 a.f.x # E: "int" has no attribute "x"
-[builtins fixtures/property.pyi]
+[builtins fixtures/property-full.pyi]
+
+[case testPropertyAccessOnClass]
+class Foo:
+    @property
+    def bar(self) -> bool:
+        return True
+
+    reveal_type(bar)  # N: Revealed type is "builtins.property"
+
+reveal_type(Foo.bar)  # N: Revealed type is "builtins.property"
+reveal_type(Foo.bar(Foo()))  # E: "property" not callable \
+                             # N: Revealed type is "Any"
+reveal_type(Foo.bar.fget(Foo()))  # E: "None" not callable \
+                                  # N: Revealed type is "Any"
+
+class Bar:
+    @property
+    def bar(self) -> bool:
+        return True
+    @bar.setter
+    def bar(self, bar: bool) -> None:
+        pass
+
+    reveal_type(bar)  # N: Revealed type is "builtins.property"
+
+reveal_type(Bar.bar)  # N: Revealed type is "builtins.property"
+reveal_type(Bar.bar(Bar()))  # E: "property" not callable \
+                             # N: Revealed type is "Any"
+reveal_type(Bar.bar.fget(Bar()))  # E: "None" not callable \
+                                  # N: Revealed type is "Any"
+[builtins fixtures/property-full.pyi]
+
+[case testPropertyAccessOnClass2]
+import functools
+from functools import cached_property
+
+class Foo:
+    @cached_property
+    def foo(self) -> bool:
+        return True
+
+    @functools.cached_property
+    def bar(self) -> bool:
+        return True
+
+    reveal_type(foo)  # N: Revealed type is "functools.cached_property[Any]"
+    reveal_type(bar)  # N: Revealed type is "functools.cached_property[Any]"
+
+reveal_type(Foo.foo)  # N: Revealed type is "functools.cached_property[Any]"
+reveal_type(Foo.bar)  # N: Revealed type is "functools.cached_property[Any]"
+Foo.foo(Foo())  # E: "cached_property[Any]" not callable
+Foo.bar(Foo())  # E: "cached_property[Any]" not callable
+[builtins fixtures/property-full.pyi]
+
+[case testPropertySetterDefinedInSubclass]
+# See https://github.com/python/mypy/issues/5936
+# Ideally we should support this, but at least be explicit that it isn't supported
+class Base:
+    @property
+    def value(self) -> int:
+        return 0
+
+    reveal_type(value)  # N: Revealed type is "builtins.property"
+    reveal_type(value.setter)  # N: Revealed type is "def (def (Any, Any)) -> builtins.property"
+    reveal_type(value.fset)  # N: Revealed type is "Union[def (Any, Any), None]"
+    reveal_type(value.fget)  # N: Revealed type is "Union[def (Any) -> Any, None]"
+
+class Sub(Base):
+    @Base.value.setter
+    def value(self, value: int) -> None:  # E: Property setter overrides are not supported. \
+                                          # N: Consider overriding getter explicitly with super() call.
+        self._value = value
+
+class Sub2(Base):
+    @Base.value.setter
+    def value(self, value: int) -> None:  # E: Property setter overrides are not supported. \
+                                          # N: Consider overriding getter explicitly with super() call.
+        self._value = value
+    @Base.value.deleter  # E: Name "value" already defined on line 19
+    def value(self) -> None: ...
+
+reveal_type(Base.value)  # N: Revealed type is "builtins.property"
+reveal_type(Base().value)  # N: Revealed type is "builtins.int"
+Base().value = 2  # E: Property "value" defined in "Base" is read-only
+
+reveal_type(Sub.value)  # N: Revealed type is "Any"
+reveal_type(Sub().value)  # N: Revealed type is "Any"
+Sub().value = 2
+[builtins fixtures/property-full.pyi]
+
+[case testPropertySetterOverrideInSubclass]
+# See https://github.com/python/mypy/issues/5936
+# Ideally we should support this, but at least be explicit that it isn't supported
+class Base:
+    _value: int
+
+    @property
+    def value(self) -> int:
+        return self._value
+    @value.setter
+    def value(self, value: int) -> None:
+        self._value = value
+
+    reveal_type(value)  # N: Revealed type is "builtins.property"
+    reveal_type(value.setter)  # N: Revealed type is "def (def (Any, Any)) -> builtins.property"
+
+class Sub(Base):
+    @Base.value.setter
+    def value(self, value: int) -> None:  # E: Property setter overrides are not supported. \
+                                          # N: Consider overriding getter explicitly with super() call.
+        self._value = value
+
+class Sub2(Base):
+    @Base.value.setter
+    def value(self, value: int) -> None:  # E: Property setter overrides are not supported. \
+                                          # N: Consider overriding getter explicitly with super() call.
+        self._value = value
+    @Base.value.deleter  # E: Name "value" already defined on line 22
+    def value(self) -> None: ...
+
+reveal_type(Base.value)  # N: Revealed type is "builtins.property"
+reveal_type(Base().value)  # N: Revealed type is "builtins.int"
+Base().value = 2
+
+reveal_type(Sub.value)  # N: Revealed type is "Any"
+reveal_type(Sub().value)  # N: Revealed type is "Any"
+Sub().value = 2
+[builtins fixtures/property-full.pyi]
+
+[case testUntypedPropertySetterOverrideInSubclass]
+# See https://github.com/python/mypy/issues/5936
+# Ideally we should support this, but at least be explicit that it isn't supported
+class Base:
+    _value: int
+
+    @property
+    def value(self):
+        return self._value
+    @value.setter
+    def value(self, value):
+        self._value = value
+
+    reveal_type(value)  # N: Revealed type is "builtins.property"
+    reveal_type(value.setter)  # N: Revealed type is "def (def (Any, Any)) -> builtins.property"
+
+class Sub(Base):
+    @Base.value.setter
+    def value(self, value):  # E: Property setter overrides are not supported. \
+                             # N: Consider overriding getter explicitly with super() call.
+        self._value = value
+
+class Sub2(Base):
+    @Base.value.deleter
+    def value(self):  # E: Property deleter overrides are not supported. \
+                      # N: Consider overriding getter explicitly with super() call.
+        self._value = value
+
+class Sub3(Base):
+    @Base.value.setter
+    def value(self, value):  # E: Property setter overrides are not supported. \
+                             # N: Consider overriding getter explicitly with super() call.
+        self._value = value
+    @Base.value.deleter  # E: Name "value" already defined on line 27
+    def value(self):
+        self._value = value
+
+reveal_type(Base.value)  # N: Revealed type is "builtins.property"
+reveal_type(Base().value)  # N: Revealed type is "Any"
+Base().value = 2
+
+reveal_type(Sub.value)  # N: Revealed type is "Any"
+reveal_type(Sub().value)  # N: Revealed type is "Any"
+Sub().value = 2
+[builtins fixtures/property-full.pyi]
+
+[case testPropertySetterNonAdjacent]
+# See https://github.com/python/mypy/issues/1465
+# We want to support this later, but at least fail explicitly for now.
+class A:
+    @property
+    def val(self) -> int:
+        return 0
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+
+    def _other(self) -> None: ...
+
+    @val.setter  # E: Name "val" already defined on line 4 \
+                 # N: Property setter and deleter must be adjacent to the getter.
+    def val(self, val: int) -> None: ...
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+
+class B:
+    @property
+    def val(self) -> int:
+        return 0
+    @val.setter
+    def val(self, val: int) -> None: ...
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+
+    def _other(self) -> None: ...
+
+    @val.deleter  # E: Name "val" already defined on line 18 \
+                  # N: Property setter and deleter must be adjacent to the getter.
+    def val(self) -> None: ...
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+
+class C:
+    @property
+    def val(self):
+        return 0
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+
+    def _other(self): ...
+
+    @val.setter  # E: Name "val" already defined on line 34 \
+                 # N: Property setter and deleter must be adjacent to the getter.
+    def val(self, new): ...
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+
+class D:
+    @property
+    def val(self): ...
+    @val.setter
+    def val(self, val): ...
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+
+    def _other(self) -> None: ...
+
+    @val.deleter  # E: Name "val" already defined on line 48 \
+                  # N: Property setter and deleter must be adjacent to the getter.
+    def val(self): ...
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+
+class E:
+    @property
+    def val(self): ...
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+
+    def _other(self) -> None: ...
+
+    @val.setter  # E: Name "val" already defined on line 63 \
+                 # N: Property setter and deleter must be adjacent to the getter.
+    def val(self, val): ...
+    @val.deleter  # E: Name "val" already defined on line 70
+    def val(self): ...
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+
+class F:
+    @property
+    def val(self): ...
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+    def _other(self) -> None: ...
+
+    @val.setter  # E: Name "val" already defined on line 78 \
+                 # N: Property setter and deleter must be adjacent to the getter.
+    def val(self, val): ...
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+    def _other2(self) -> None: ...
+
+    @val.deleter  # E: Name "val" already defined on line 78 \
+                  # N: Property setter and deleter must be adjacent to the getter.
+    def val(self): ...
+
+    reveal_type(val)  # N: Revealed type is "builtins.property"
+[builtins fixtures/property-full.pyi]
+
+[case testPropertyRedefinition]
+class A1:
+    @property
+    def fn(self) -> None: ...
+
+    @property  # E: Only supported top decorator is @fn.setter
+    def fn(self) -> None: ...
+
+class B1:
+    @property
+    def fn(self) -> None: ...
+
+    def foo(self) -> None: ...
+
+    @property  # E: Name "fn" already defined on line 9
+    def fn(self) -> None: ...
+
+class A2:
+    @property
+    def fn(self) -> None: ...
+    @fn.setter
+    def fn(self, _: None) -> None: ...
+
+    @property  # E: Only supported top decorator is @fn.setter
+    def fn(self) -> None: ...
+
+class B2:
+    @property
+    def fn(self) -> None: ...
+    @fn.setter
+    def fn(self, _: None) -> None: ...
+
+    def foo(self) -> None: ...
+
+    @property  # E: Name "fn" already defined on line 27
+    def fn(self) -> None: ...
+
+class A3:
+    @property
+    def fn(self) -> None: ...
+    @fn.setter
+    def fn(self, _: None) -> None: ...
+
+    @property  # E: Only supported top decorator is @fn.setter
+    def fn(self) -> None: ...
+    @fn.setter
+    def fn(self, _: None) -> None: ...
+
+class B3:
+    @property
+    def fn(self) -> None: ...
+    @fn.setter
+    def fn(self, _: None) -> None: ...
+
+    def foo(self) -> None: ...
+
+    @property  # E: Name "fn" already defined on line 49
+    def fn(self) -> None: ...
+    @fn.setter
+    def fn(self, _: None) -> None: ...
+
+class A4:
+    @property
+    def fn(self) -> None: ...
+    @fn.setter
+    def fn(self, _: None) -> None: ...
+
+    @fn.setter
+    def fn(self, _: None) -> None: ...
+
+class B4:
+    @property
+    def fn(self) -> None: ...
+    @fn.setter
+    def fn(self, _: None) -> None: ...
+
+    def foo(self) -> None: ...
+
+    @fn.setter  # E: Name "fn" already defined on line 71 \
+                # N: Property setter and deleter must be adjacent to the getter.
+    def fn(self, _: None) -> None: ...
+[builtins fixtures/property-full.pyi]
 
 -- Descriptors
 -- -----------

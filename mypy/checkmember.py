@@ -1123,6 +1123,16 @@ def analyze_class_attribute_access(
             #     C[int].x -> int
             t = erase_typevars(expand_type_by_instance(t, isuper), {tv.id for tv in def_vars})
 
+        if isinstance(node.node, Decorator) and node.node.func.is_property:
+            property_type = mx.chk.get_property_instance(node.node)
+            if property_type is not None:
+                return property_type
+        if isinstance(node.node, OverloadedFuncDef) and node.node.is_property:
+            assert isinstance(node.node.items[0], Decorator)
+            property_type = mx.chk.get_property_instance(node.node.items[0])
+            if property_type is not None:
+                return property_type
+
         is_classmethod = (is_decorated and cast(Decorator, node.node).func.is_class) or (
             isinstance(node.node, FuncBase) and node.node.is_class
         )

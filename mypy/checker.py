@@ -172,6 +172,7 @@ from mypy.types import (
     ANY_STRATEGY,
     MYPYC_NATIVE_INT_NAMES,
     OVERLOAD_NAMES,
+    PROPERTY_DECORATOR_NAMES,
     AnyType,
     BoolTypeQuery,
     CallableType,
@@ -641,6 +642,13 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         if not defn.items:
             # In this case we have already complained about none of these being
             # valid overloads.
+            # We only want to add more helpful note if possible.
+            if defn.info and defn.unanalyzed_items:
+                first_item = defn.unanalyzed_items[0]
+                if isinstance(first_item, Decorator):
+                    for base in defn.info.mro[1:]:
+                        if defn.name in base.names:
+                            self.check_property_component_override(first_item, defn.name, base)
             return
         if len(defn.items) == 1:
             self.fail(message_registry.MULTIPLE_OVERLOADS_REQUIRED, defn)
@@ -2034,6 +2042,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         if base:
             name = defn.name
             base_attr = base.names.get(name)
+            is_bad_property = False
             if base_attr:
                 # First, check if we override a final (always an error, even with Any types).
                 if is_final_node(base_attr.node) and not is_private(name):
@@ -2041,8 +2050,10 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                 # Second, final can't override anything writeable independently of types.
                 if defn.is_final:
                     self.check_if_final_var_override_writable(name, base_attr.node, defn)
+                if isinstance(defn, (OverloadedFuncDef, Decorator)):
+                    is_bad_property = self.check_property_component_override(defn, name, base)
                 found_base_method = True
-            if check_override_compatibility:
+            if not is_bad_property and check_override_compatibility:
                 # Check compatibility of the override signature
                 # (__init__, __new__, __init_subclass__ are special).
                 if self.check_method_override_for_base_with_name(defn, name, base):
@@ -2095,6 +2106,35 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
 
         if not is_subtype(original_type, typ):
             self.msg.incompatible_setter_override(defn.items[1], typ, original_type, base)
+
+    def check_property_component_override(
+        self, defn: OverloadedFuncDef | Decorator, name: str, base: TypeInfo
+    ) -> bool:
+        """Can the override refer to property setter/deleter?"""
+        if isinstance(defn, OverloadedFuncDef):
+            if isinstance(defn.items[0], Decorator):
+                return self.check_property_component_override(defn.items[0], name, base)
+            return False
+
+        deco_type = next(
+            (
+                deco.name
+                for deco in defn.decorators
+                if isinstance(deco, MemberExpr) and deco.name in ("setter", "deleter")
+            ),
+            None,
+        )
+        if deco_type is None:
+            return False
+
+        base_attr = base.names.get(name)
+        if not base_attr or base_attr.node is None or not is_property(base_attr.node):
+            return False
+        self.msg.fail(
+            f"Property {deco_type} overrides are not supported.", defn.func, code=codes.MISC
+        )
+        self.msg.note("Consider overriding getter explicitly with super() call.", defn.func)
+        return True
 
     def check_method_override_for_base_with_name(
         self, defn: FuncDef | OverloadedFuncDef | Decorator, name: str, base: TypeInfo
@@ -2278,6 +2318,20 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                 defn.name, name, base.name, context, original=original_type, override=typ
             )
         return False
+
+    def get_property_instance(self, method: Decorator) -> Instance | None:
+        property_deco_name = next(
+            (
+                name
+                for d in method.original_decorators
+                for name in PROPERTY_DECORATOR_NAMES
+                if refers_to_fullname(d, name)
+            ),
+            None,
+        )
+        if property_deco_name is not None:
+            return self.named_type(property_deco_name)
+        return None
 
     def bind_and_map_method(
         self, sym: SymbolTableNode, typ: FunctionLike, sub_info: TypeInfo, super_info: TypeInfo
@@ -5284,7 +5338,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         # For overloaded functions we already checked override for overload as a whole.
         if allow_empty:
             return
-        if e.func.info and not e.func.is_dynamic() and not e.is_overload:
+        if e.func.info and not e.is_overload:
             found_method_base_classes = self.check_method_override(e)
             if (
                 e.func.is_explicit_override

@@ -383,12 +383,15 @@ class ExpressionChecker(ExpressionVisitor[Type]):
             # Reference to a global function.
             result = function_type(node, self.named_type("builtins.function"))
         elif isinstance(node, OverloadedFuncDef):
+            result = node.type
             if node.type is None:
                 if self.chk.in_checked_function() and node.items:
                     self.chk.handle_cannot_determine_type(node.name, e)
                 result = AnyType(TypeOfAny.from_error)
-            else:
-                result = node.type
+            elif isinstance(node.items[0], Decorator):
+                property_type = self.chk.get_property_instance(node.items[0])
+                if property_type is not None:
+                    result = property_type
         elif isinstance(node, TypeInfo):
             # Reference to a type object.
             if node.typeddict_type:
@@ -414,7 +417,11 @@ class ExpressionChecker(ExpressionVisitor[Type]):
             # Reference to a module object.
             result = self.module_type(node)
         elif isinstance(node, Decorator):
-            result = self.analyze_var_ref(node.var, e)
+            property_type = self.chk.get_property_instance(node)
+            if property_type is not None:
+                result = property_type
+            else:
+                result = self.analyze_var_ref(node.var, e)
         elif isinstance(node, TypeAlias):
             # Something that refers to a type alias appears in runtime context.
             # Note that we suppress bogus errors for alias redefinitions,

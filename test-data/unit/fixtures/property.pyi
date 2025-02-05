@@ -10,7 +10,7 @@ class type:
 
 class function: pass
 
-property = object()  # Dummy definition
+class property: pass  # Dummy definition
 class classmethod: pass
 
 class list(typing.Generic[_T]): pass
