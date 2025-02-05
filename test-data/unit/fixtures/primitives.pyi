@@ -34,6 +34,7 @@ class str(Sequence[str]):
     def __getitem__(self, item: int) -> str: pass
     def format(self, *args: object, **kwargs: object) -> str: pass
 class bytes(Sequence[int]):
+    def __add__(self, x: bytes) -> bytes: pass
     def __iter__(self) -> Iterator[int]: pass
     def __contains__(self, other: object) -> bool: pass
     def __getitem__(self, item: int) -> int: pass

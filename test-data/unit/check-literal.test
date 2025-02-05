@@ -1416,22 +1416,23 @@ c: Literal[4]
 d: Literal['foo']
 e: str
 
-reveal_type(a + a)      # N: Revealed type is "builtins.int"
+reveal_type(a + a)      # N: Revealed type is "Literal[6]"
 reveal_type(a + b)      # N: Revealed type is "builtins.int"
 reveal_type(b + a)      # N: Revealed type is "builtins.int"
-reveal_type(a + 1)      # N: Revealed type is "builtins.int"
-reveal_type(1 + a)      # N: Revealed type is "builtins.int"
-reveal_type(a + c)      # N: Revealed type is "builtins.int"
-reveal_type(c + a)      # N: Revealed type is "builtins.int"
+reveal_type(a + 1)      # N: Revealed type is "Literal[4]"
+reveal_type(1 + a)      # N: Revealed type is "Literal[4]"
+reveal_type(a + c)      # N: Revealed type is "Literal[7]"
+reveal_type(c + a)      # N: Revealed type is "Literal[7]"
 
-reveal_type(d + d)      # N: Revealed type is "builtins.str"
+reveal_type(d + d)      # N: Revealed type is "Literal['foofoo']"
 reveal_type(d + e)      # N: Revealed type is "builtins.str"
 reveal_type(e + d)      # N: Revealed type is "builtins.str"
-reveal_type(d + 'foo')  # N: Revealed type is "builtins.str"
-reveal_type('foo' + d)  # N: Revealed type is "builtins.str"
+reveal_type(d + 'bar')  # N: Revealed type is "Literal['foobar']"
+reveal_type('bar' + d)  # N: Revealed type is "Literal['barfoo']"
 
 reveal_type(a.__add__(b))  # N: Revealed type is "builtins.int"
 reveal_type(b.__add__(a))  # N: Revealed type is "builtins.int"
+reveal_type(a.__add__(a))  # N: Revealed type is "builtins.int"
 
 a *= b                  # E: Incompatible types in assignment (expression has type "int", variable has type "Literal[3]")
 b *= a
@@ -2990,3 +2991,124 @@ x: Type[Literal[1]]  # E: Type[...] can't contain "Literal[...]"
 y: Type[Union[Literal[1], Literal[2]]]  # E: Type[...] can't contain "Union[Literal[...], Literal[...]]"
 z: Type[Literal[1, 2]]  # E: Type[...] can't contain "Union[Literal[...], Literal[...]]"
 [builtins fixtures/tuple.pyi]
+
+[case testLiteralAddition]
+from typing import Any, Union
+from typing_extensions import Literal
+
+class A:
+    def __add__(self, other: str) -> str: ...
+    def __radd__(self, other: str) -> str: ...
+
+str_a: Literal["a"]
+str_b: Literal["b"]
+str_union_1: Literal["a", "b"]
+str_union_2: Literal["d", "c"]
+str_union_mixed_1: Union[Literal["a"], Any]
+str_union_mixed_2: Union[Literal["a"], A]
+s: str
+int_1: Literal[1]
+int_2: Literal[2]
+int_union_1: Literal[1, 2]
+int_union_2: Literal[4, 3]
+i: int
+bytes_a: Literal[b"a"]
+bytes_b: Literal[b"b"]
+bytes_union_1: Literal[b"a", b"b"]
+bytes_union_2: Literal[b"d", b"c"]
+b: bytes
+
+misc_union: Literal["a", 1]
+
+reveal_type("a" + "b")  # N: Revealed type is "builtins.str"
+reveal_type(str_a + str_b)  # N: Revealed type is "Literal['ab']"
+reveal_type(str_a + "b")    # N: Revealed type is "Literal['ab']"
+reveal_type("a" + str_b)    # N: Revealed type is "Literal['ab']"
+reveal_type(str_union_1 + "b")    # N: Revealed type is "Union[Literal['ab'], Literal['bb']]"
+reveal_type(str_union_1 + str_b)  # N: Revealed type is "Union[Literal['ab'], Literal['bb']]"
+reveal_type("a" + str_union_1)    # N: Revealed type is "Union[Literal['aa'], Literal['ab']]"
+reveal_type(str_a + str_union_1)  # N: Revealed type is "Union[Literal['aa'], Literal['ab']]"
+reveal_type(str_union_1 + str_union_2)  # N: Revealed type is "Union[Literal['ac'], Literal['ad'], Literal['bc'], Literal['bd']]"
+reveal_type(str_a + s)  # N: Revealed type is "builtins.str"
+reveal_type(s + str_a)  # N: Revealed type is "builtins.str"
+reveal_type(str_union_1 + s)  # N: Revealed type is "builtins.str"
+reveal_type(s + str_union_1)  # N: Revealed type is "builtins.str"
+reveal_type(str_a + str_union_mixed_1)  # N: Revealed type is "builtins.str"
+reveal_type(str_union_mixed_1 + str_a)  # N: Revealed type is "Union[builtins.str, Any]"
+reveal_type(str_a + str_union_mixed_2)  # N: Revealed type is "builtins.str"
+reveal_type(str_union_mixed_2 + str_a)  # N: Revealed type is "builtins.str"
+
+reveal_type(1 + 2)  # N: Revealed type is "builtins.int"
+reveal_type(int_1 + int_2)  # N: Revealed type is "Literal[3]"
+reveal_type(int_1 + 1)      # N: Revealed type is "Literal[2]"
+reveal_type(1 + int_1)      # N: Revealed type is "Literal[2]"
+reveal_type(int_union_1 + 1)      # N: Revealed type is "Union[Literal[2], Literal[3]]"
+reveal_type(int_union_1 + int_1)  # N: Revealed type is "Union[Literal[2], Literal[3]]"
+reveal_type(1 + int_union_1)      # N: Revealed type is "Union[Literal[2], Literal[3]]"
+reveal_type(int_1 + int_union_1)  # N: Revealed type is "Union[Literal[2], Literal[3]]"
+reveal_type(int_union_1 + int_union_2)  # N: Revealed type is "Union[Literal[4], Literal[5], Literal[6]]"
+reveal_type(int_1 + i)  # N: Revealed type is "builtins.int"
+reveal_type(i + int_1)  # N: Revealed type is "builtins.int"
+reveal_type(int_union_1 + i)  # N: Revealed type is "builtins.int"
+reveal_type(i + int_union_1)  # N: Revealed type is "builtins.int"
+
+reveal_type(b"a" + b"b")  # N: Revealed type is "builtins.bytes"
+reveal_type(bytes_a + bytes_b)  # N: Revealed type is "Literal[b'ab']"
+reveal_type(bytes_a + b"b")    # N: Revealed type is "Literal[b'ab']"
+reveal_type(b"a" + bytes_b)    # N: Revealed type is "Literal[b'ab']"
+reveal_type(bytes_union_1 + b"b")    # N: Revealed type is "Union[Literal[b'ab'], Literal[b'bb']]"
+reveal_type(bytes_union_1 + bytes_b)  # N: Revealed type is "Union[Literal[b'ab'], Literal[b'bb']]"
+reveal_type(b"a" + bytes_union_1)    # N: Revealed type is "Union[Literal[b'aa'], Literal[b'ab']]"
+reveal_type(bytes_a + bytes_union_1)  # N: Revealed type is "Union[Literal[b'aa'], Literal[b'ab']]"
+reveal_type(bytes_union_1 + bytes_union_2)  # N: Revealed type is "Union[Literal[b'ac'], Literal[b'ad'], Literal[b'bc'], Literal[b'bd']]"
+reveal_type(bytes_a + b)  # N: Revealed type is "builtins.bytes"
+reveal_type(b + bytes_a)  # N: Revealed type is "builtins.bytes"
+reveal_type(bytes_union_1 + b)  # N: Revealed type is "builtins.bytes"
+reveal_type(b + bytes_union_1)  # N: Revealed type is "builtins.bytes"
+
+reveal_type(misc_union + "a")  # N: Revealed type is "Union[builtins.str, builtins.int]" \
+    # E: Unsupported operand types for + ("Literal[1]" and "str") \
+    # N: Left operand is of type "Literal['a', 1]"
+reveal_type("a" + misc_union)  # E: Unsupported operand types for + ("str" and "Literal[1]") \
+    # N: Right operand is of type "Literal['a', 1]" \
+    # N: Revealed type is "builtins.str"
+[builtins fixtures/primitives.pyi]
+
+[case testLiteralAdditionInheritance]
+class A:
+    a = ""
+
+class B(A):
+    a = "a" + "b"
+
+class C:
+    a = "a" + "b"
+
+reveal_type(A.a)  # N: Revealed type is "builtins.str"
+reveal_type(B.a)  # N: Revealed type is "builtins.str"
+reveal_type(C.a)  # N: Revealed type is "builtins.str"
+[builtins fixtures/primitives.pyi]
+
+[case testLiteralAdditionTypedDict]
+from typing import TypedDict
+from typing_extensions import Literal
+
+class LookupDict(TypedDict):
+    top_var: str
+    bottom_var: str
+    var: str
+
+def func(d: LookupDict, pos: Literal["top_", "bottom_", ""]) -> str:
+    return d[pos + "var"]
+
+[builtins fixtures/dict.pyi]
+[typing fixtures/typing-typeddict.pyi]
+
+[case testLiteralAdditionGuardMaxValues]
+from typing_extensions import Literal
+
+HexDigit = Literal["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"]
+
+def foo(a: HexDigit, b: HexDigit, c: HexDigit) -> None:
+    reveal_type(a + b + c)  # N: Revealed type is "builtins.str"
+[builtins fixtures/primitives.pyi]
