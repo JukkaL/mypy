@@ -1938,6 +1938,18 @@ class D(C):  # E: Cannot extend enum with existing members: "C" \
     x: int   # E: Cannot assign to final name "x"
 [builtins fixtures/bool.pyi]
 
+[case testEnumNotFinalWithMethodsAndUninitializedValuesStubMember]
+# flags: --python-version 3.11
+# This was added in 3.11
+import lib
+
+[file lib.pyi]
+from enum import Enum, member
+class A(Enum):
+    @member
+    def x(self) -> None: ...
+[builtins fixtures/bool.pyi]
+
 [case testEnumLiteralValues]
 from enum import Enum
 
@@ -2327,6 +2339,28 @@ reveal_type(A.y.value)  # N: Revealed type is "Literal[2]?"
 
 def some_a(a: A):
     reveal_type(a.value)  # N: Revealed type is "Union[Literal[1]?, Literal[2]?]"
+[builtins fixtures/dict.pyi]
+
+
+[case testEnumMemberAndNonMemberSupport]
+# flags: --python-version 3.11 --warn-unreachable
+# This was added in 3.11
+from enum import Enum, member, nonmember
+
+class A(Enum):
+    x = 1
+    y = member(2)
+    z = nonmember(3)
+
+def some_a(a: A):
+    if a is not A.x and a is not A.z:
+        reveal_type(a)  # N: Revealed type is "Literal[__main__.A.y]"
+    if a is not A.y and a is not A.z:
+        reveal_type(a)  # N: Revealed type is "Literal[__main__.A.x]"
+    if a is not A.x:
+        reveal_type(a)  # N: Revealed type is "Literal[__main__.A.y]"
+    if a is not A.y:
+        reveal_type(a)  # N: Revealed type is "Literal[__main__.A.x]"
 [builtins fixtures/dict.pyi]
 
 

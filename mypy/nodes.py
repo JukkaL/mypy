@@ -3235,10 +3235,26 @@ class TypeInfo(SymbolNode):
             name
             for name, sym in self.names.items()
             if (
-                isinstance(sym.node, Var)
-                and name not in EXCLUDED_ENUM_ATTRIBUTES
-                and not name.startswith("__")
-                and sym.node.has_explicit_value
+                (
+                    isinstance(sym.node, Var)
+                    and name not in EXCLUDED_ENUM_ATTRIBUTES
+                    and not name.startswith("__")
+                    and sym.node.has_explicit_value
+                    and not (
+                        isinstance(
+                            typ := mypy.types.get_proper_type(sym.node.type), mypy.types.Instance
+                        )
+                        and typ.type.fullname == "enum.nonmember"
+                    )
+                )
+                or (
+                    isinstance(sym.node, Decorator)
+                    and any(
+                        dec.fullname == "enum.member"
+                        for dec in sym.node.decorators
+                        if isinstance(dec, RefExpr)
+                    )
+                )
             )
         ]
 

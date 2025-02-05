@@ -955,7 +955,7 @@ def try_expanding_sum_type_to_union(typ: Type, target_fullname: str) -> ProperTy
             FAILURE = 2
             UNKNOWN = 3
 
-    ...and if we call `try_expanding_enum_to_union(Union[Color, Status], 'module.Color')`,
+    ...and if we call `try_expanding_sum_type_to_union(Union[Color, Status], 'module.Color')`,
     this function will return Literal[Color.RED, Color.BLUE, Color.YELLOW, Status].
     """
     typ = get_proper_type(typ)
