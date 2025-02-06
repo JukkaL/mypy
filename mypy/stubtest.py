@@ -840,6 +840,21 @@ class Signature(Generic[T]):
         # For most dunder methods, just assume all args are positional-only
         assume_positional_only = is_dunder(stub.name, exclude_special=True)
 
+        is_arg_pos_only: defaultdict[str, set[bool]] = defaultdict(set)
+        for func in map(_resolve_funcitem_from_decorator, stub.items):
+            assert func is not None
+            args = maybe_strip_cls(stub.name, func.arguments)
+            for arg in args:
+                if (
+                    arg.variable.name.startswith("__")
+                    or arg.pos_only
+                    or assume_positional_only
+                    or arg.variable.name.strip("_") == "self"
+                ):
+                    is_arg_pos_only[arg.variable.name].add(True)
+                else:
+                    is_arg_pos_only[arg.variable.name].add(False)
+
         all_args: dict[str, list[tuple[nodes.Argument, int]]] = {}
         for func in map(_resolve_funcitem_from_decorator, stub.items):
             assert func is not None
@@ -847,14 +862,13 @@ class Signature(Generic[T]):
             for index, arg in enumerate(args):
                 # For positional-only args, we allow overloads to have different names for the same
                 # argument. To accomplish this, we just make up a fake index-based name.
-                name = (
-                    f"__{index}"
-                    if arg.variable.name.startswith("__")
-                    or arg.pos_only
-                    or assume_positional_only
-                    or arg.variable.name.strip("_") == "self"
-                    else arg.variable.name
-                )
+                # We can only use the index-based name if the argument is always
+                # positional only. Sometimes overloads have an arg as positional-only
+                # in some but not all branches of the overload.
+                name = arg.variable.name
+                if is_arg_pos_only[name] == {True}:
+                    name = f"__{index}"
+
                 all_args.setdefault(name, []).append((arg, index))
 
         def get_position(arg_name: str) -> int:
