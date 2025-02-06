@@ -571,7 +571,7 @@ from abc import abstractmethod, ABCMeta
 import typing
 
 class A(metaclass=ABCMeta): pass
-class B(object, A): pass \
+class B(object, A, metaclass=ABCMeta): pass \
       # E: Cannot determine consistent method resolution order (MRO) for "B"
 
 [case testOverloadedAbstractMethod]

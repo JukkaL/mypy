@@ -3284,15 +3284,25 @@ class TypeInfo(SymbolNode):
             return declared
         if self._fullname == "builtins.type":
             return mypy.types.Instance(self, [])
-        candidates = [
-            s.declared_metaclass
-            for s in self.mro
-            if s.declared_metaclass is not None and s.declared_metaclass.type is not None
-        ]
-        for c in candidates:
-            if all(other.type in c.type.mro for other in candidates):
-                return c
-        return None
+
+        winner = declared
+        for super_class in self.mro[1:]:
+            super_meta = super_class.declared_metaclass
+            if super_meta is None or super_meta.type is None:
+                continue
+            if winner is None:
+                winner = super_meta
+                continue
+            if winner.type.has_base(super_meta.type.fullname):
+                continue
+            if super_meta.type.has_base(winner.type.fullname):
+                winner = super_meta
+                continue
+            # metaclass conflict
+            winner = None
+            break
+
+        return winner
 
     def is_metaclass(self) -> bool:
         return (

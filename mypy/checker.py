@@ -2966,23 +2966,14 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         ):
             return  # Reasonable exceptions from this check
 
-        metaclasses = [
-            entry.metaclass_type
-            for entry in typ.mro[1:-1]
-            if entry.metaclass_type
-            and not is_named_instance(entry.metaclass_type, "builtins.type")
-        ]
-        if not metaclasses:
-            return
-        if typ.metaclass_type is not None and all(
-            is_subtype(typ.metaclass_type, meta) for meta in metaclasses
+        if typ.metaclass_type is None and any(
+            base.type.metaclass_type is not None for base in typ.bases
         ):
-            return
-        self.fail(
-            "Metaclass conflict: the metaclass of a derived class must be "
-            "a (non-strict) subclass of the metaclasses of all its bases",
-            typ,
-        )
+            self.fail(
+                "Metaclass conflict: the metaclass of a derived class must be "
+                "a (non-strict) subclass of the metaclasses of all its bases",
+                typ,
+            )
 
     def visit_import_from(self, node: ImportFrom) -> None:
         for name, _ in node.names:

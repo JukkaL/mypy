@@ -7237,7 +7237,7 @@ class Conflict1(A1, B, E): ...  # E: Metaclass conflict: the metaclass of a deri
 class Conflict2(A, B): ...  # E: Metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases
 class Conflict3(B, A): ...  # E: Metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases
 
-class ChildOfConflict1(Conflict3): ...  # E: Metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases
+class ChildOfConflict1(Conflict3): ...
 class ChildOfConflict2(Conflict3, metaclass=CorrectMeta): ...
 
 class ConflictingMeta(MyMeta1, MyMeta3): ...
@@ -7245,6 +7245,37 @@ class Conflict4(A1, B, E, metaclass=ConflictingMeta): ...  # E: Metaclass confli
 
 class ChildOfCorrectButWrongMeta(CorrectSubclass1, metaclass=ConflictingMeta):  # E: Metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases
     ...
+
+[case testMetaClassConflictIssue14033]
+class M1(type): pass
+class M2(type): pass
+class Mx(M1, M2): pass
+
+class A1(metaclass=M1): pass
+class A2(A1): pass
+
+class B1(metaclass=M2): pass
+
+class C1(metaclass=Mx): pass
+
+class TestABC(A2, B1, C1): pass  # E: Metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases
+class TestBAC(B1, A2, C1): pass  # E: Metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases
+
+# should not warn again for children
+class ChildOfTestABC(TestABC): pass
+
+# no metaclass is assumed if super class has a metaclass conflict
+class ChildOfTestABCMetaMx(TestABC, metaclass=Mx): pass
+class ChildOfTestABCMetaM1(TestABC, metaclass=M1): pass
+
+class TestABCMx(A2, B1, C1, metaclass=Mx): pass
+class TestBACMx(B1, A2, C1, metaclass=Mx): pass
+
+class TestACB(A2, C1, B1): pass
+class TestBCA(B1, C1, A2): pass
+
+class TestCAB(C1, A2, B1): pass
+class TestCBA(C1, B1, A2): pass
 
 [case testGenericOverride]
 from typing import Generic, TypeVar, Any
