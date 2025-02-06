@@ -260,6 +260,24 @@ def foo():
             return  # E: "return" not allowed in except* block
 [builtins fixtures/exception.pyi]
 
+[case testLambdaInExceptStarBlock]
+# flags: --python-version 3.11
+def foo():
+    try:
+        pass
+    except* Exception:
+        x = lambda: 0
+        return lambda: 0  # E: "return" not allowed in except* block
+
+def loop():
+    while True:
+        try:
+            pass
+        except* Exception:
+            x = lambda: 0
+            return lambda: 0  # E: "return" not allowed in except* block
+[builtins fixtures/exception.pyi]
+
 [case testRedefineLocalWithinExceptStarTryClauses]
 # flags: --allow-redefinition
 def fn_str(_: str) -> int: ...
