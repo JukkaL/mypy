@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 from collections import defaultdict
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -37,6 +38,11 @@ class CurrentType(NamedTuple):
     from_assignment: bool
 
 
+class UnreachableType(enum.Enum):
+    BINDER_UNREACHABLE = enum.auto()
+    SEMANAL_UNREACHABLE = enum.auto()
+
+
 class Frame:
     """A Frame represents a specific point in the execution of a program.
     It carries information about the current types of expressions at
@@ -62,7 +68,7 @@ class Frame:
     def __init__(self, id: int, conditional_frame: bool = False) -> None:
         self.id = id
         self.types: dict[Key, CurrentType] = {}
-        self.unreachable = False
+        self.unreachable: UnreachableType | None = None
         self.conditional_frame = conditional_frame
         self.suppress_unreachable_warnings = False
 
@@ -177,8 +183,11 @@ class ConditionalTypeBinder:
             self._add_dependencies(key)
         self._put(key, typ, from_assignment)
 
-    def unreachable(self) -> None:
-        self.frames[-1].unreachable = True
+    def unreachable(self, from_semanal: bool = False) -> None:
+        unreachable_type = UnreachableType.BINDER_UNREACHABLE
+        if from_semanal:
+            unreachable_type = UnreachableType.SEMANAL_UNREACHABLE
+        self.frames[-1].unreachable = unreachable_type
 
     def suppress_unreachable_warnings(self) -> None:
         self.frames[-1].suppress_unreachable_warnings = True
@@ -191,12 +200,22 @@ class ConditionalTypeBinder:
             return None
         return found.type
 
-    def is_unreachable(self) -> bool:
+    def is_unreachable(self) -> UnreachableType | None:
         # TODO: Copy the value of unreachable into new frames to avoid
         # this traversal on every statement?
-        return any(f.unreachable for f in self.frames)
+        unreachable_type = None
+        for f in self.frames:
+            if f.unreachable and not unreachable_type:
+                unreachable_type = f.unreachable
+            elif f.unreachable == UnreachableType.SEMANAL_UNREACHABLE:
+                unreachable_type = f.unreachable
+        return unreachable_type
 
     def is_unreachable_warning_suppressed(self) -> bool:
+        # Do not report unreachable warnings from frames that were marked
+        # unreachable by the semanal_pass1.
+        if self.is_unreachable() == UnreachableType.SEMANAL_UNREACHABLE:
+            return True
         return any(f.suppress_unreachable_warnings for f in self.frames)
 
     def cleanse(self, expr: Expression) -> None:
@@ -218,6 +237,12 @@ class ConditionalTypeBinder:
         If a key is declared as AnyType, only update it if all the
         options are the same.
         """
+        if all(f.unreachable for f in frames):
+            semanal_unreachable = any(
+                f.unreachable == UnreachableType.SEMANAL_UNREACHABLE for f in frames
+            )
+            self.unreachable(from_semanal=semanal_unreachable)
+
         all_reachable = all(not f.unreachable for f in frames)
         frames = [f for f in frames if not f.unreachable]
         changed = False
@@ -289,8 +314,6 @@ class ConditionalTypeBinder:
             if current_value is None or not is_same_type(type, current_value.type):
                 self._put(key, type, from_assignment=True)
                 changed = True
-
-        self.frames[-1].unreachable = not frames
 
         return changed
 
@@ -429,7 +452,7 @@ class ConditionalTypeBinder:
         for f in self.frames[index + 1 :]:
             frame.types.update(f.types)
             if f.unreachable:
-                frame.unreachable = True
+                frame.unreachable = f.unreachable
         self.options_on_return[index].append(frame)
 
     def handle_break(self) -> None:

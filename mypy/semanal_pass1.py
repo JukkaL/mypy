@@ -53,6 +53,10 @@ class SemanticAnalyzerPreAnalysis(TraverserVisitor):
 
     The block containing 'import xyz' is unreachable in Python 3 mode. The import
     shouldn't be processed in Python 3 mode, even if the module happens to exist.
+
+    Note: Blocks marked unreachable here will not be reported by the
+    `--warn-unreachable` option. They are considered intentionally unreachable,
+    such as platform and version checks.
     """
 
     def visit_file(self, file: MypyFile, fnam: str, mod_id: str, options: Options) -> None:

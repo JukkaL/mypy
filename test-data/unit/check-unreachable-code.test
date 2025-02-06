@@ -349,6 +349,17 @@ def foo() -> None:
 [builtins fixtures/ops.pyi]
 [out]
 
+[case testSysVersionInfoInFunctionEarlyReturn]
+# flags: --warn-unreachable
+import sys
+
+def foo(self) -> int:
+    if sys.version_info >= (3, 5):
+        return 1
+    return 0
+[builtins fixtures/ops.pyi]
+[out]
+
 [case testSysPlatformInMethod]
 import sys
 class C:
@@ -358,6 +369,42 @@ class C:
         else:
             x = 0
         reveal_type(x)  # N: Revealed type is "builtins.str"
+[builtins fixtures/ops.pyi]
+[out]
+
+[case testSysPlatformInFunctionEarlyReturn]
+# flags: --warn-unreachable
+import sys
+
+def foo(self) -> int:
+    if sys.platform != 'fictional':
+        return 1
+    return 0
+[builtins fixtures/ops.pyi]
+[out]
+
+[case testSysPlatformEarlyReturnActualUnreachableCodeForPlatform]
+# flags: --warn-unreachable --platform fictional
+import sys
+
+def foo() -> int:
+    if sys.platform != 'fictional':
+        return 1
+    return 0
+    return 0 + 1  # E: Statement is unreachable
+[builtins fixtures/ops.pyi]
+[out]
+
+[case testSysPlatformEarlyReturnActualUnreachableCodeNotForPlatform]
+# flags: --warn-unreachable
+import sys
+
+def foo() -> int:
+    if sys.platform != 'fictional':
+        return 1
+    return 0
+    return 0 + 1  # Will not throw `Statement is unreachable` because we are
+                  # not on the fictional platform.
 [builtins fixtures/ops.pyi]
 [out]
 
