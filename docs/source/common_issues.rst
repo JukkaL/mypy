@@ -150,18 +150,28 @@ The second line is now fine, since the ignore comment causes the name
 
 .. note::
 
-    You can use the form ``# type: ignore[<code>]`` to only ignore
-    specific errors on the line. This way you are less likely to
-    silence unexpected errors that are not safe to ignore, and this
-    will also document what the purpose of the comment is.  See
-    :ref:`error-codes` for more information.
-
-.. note::
-
     The ``# type: ignore`` comment will only assign the implicit ``Any``
     type if mypy cannot find information about that particular module. So,
     if we did have a stub available for ``frobnicate`` then mypy would
     ignore the ``# type: ignore`` comment and typecheck the stub as usual.
+
+You can use the form ``# type: ignore[<code>]`` to only ignore
+specific errors on the line. This way you are less likely to
+silence unexpected errors that are not safe to ignore, and this
+will also document what the purpose of the comment is.  See
+:ref:`error-codes` for more information.
+
+Instead of ``# type: ignore``, you may also use the mypy-specific
+``# mypy: ignore``, to tell only mypy — and not other type checkers — to
+ignore that line. This is mostly useful if mypy has a bug that produces
+known-spurious error messages. You may also use the ``# mypy: ignore[<code>]``
+form to only ignore specific errors. Indeed, it is often wisest to use
+``# mypy: ignore[<code>]``, as this minimizes your chances of accidentally
+suppressing other errors that you don't really want to ignore!
+
+(``# mypy: ignore`` comments are per-line and should not be confused with
+:ref:`inline-config` comments, which are per-file configuration directives
+that just happen to be formatted a similar way.)
 
 Another option is to explicitly annotate values with type ``Any`` --
 mypy will let you perform arbitrary operations on ``Any``
