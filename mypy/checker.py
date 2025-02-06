@@ -8484,11 +8484,6 @@ class InvalidInferredTypes(BoolTypeQuery):
         # multi-step type inference.
         return t.id.is_meta_var()
 
-    def visit_tuple_type(self, t: TupleType, /) -> bool:
-        # Exclude fallback to avoid bogus "need type annotation" errors
-        # TODO: Maybe erase plain tuples used as fallback in TupleType constructor?
-        return self.query_types(t.items)
-
 
 class SetNothingToAny(TypeTranslator):
     """Replace all ambiguous Uninhabited types with Any (to avoid spurious extra errors)."""
