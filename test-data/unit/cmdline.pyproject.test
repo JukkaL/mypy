@@ -133,3 +133,119 @@ Neither is this!
 description = "Factory ⸻ A code generator 🏭"
 \[tool.mypy]
 [file x.py]
+
+[case testPyprojectFilesTrailingComma]
+# cmd: mypy
+[file pyproject.toml]
+\[tool.mypy]
+files = """
+  a.py,
+  b.py,
+"""
+[file a.py]
+x: str = 'x'  # ok
+[file b.py]
+y: int = 'y'  # E: Incompatible types in assignment (expression has type "str", variable has type "int")
+[file c.py]
+# This should not trigger any errors, because it is not included:
+z: int = 'z'
+[out]
+
+[case testPyprojectPluginsTrailingComma-posix]
+# cmd: mypy .
+[file pyproject.toml]
+# This test fails on windows for some reason, skipping it there.
+\[tool.mypy]
+plugins = """
+  <ROOT>/test-data/unit/plugins/function_sig_hook.py,
+  <ROOT>/test-data/unit/plugins/method_in_decorator.py,
+"""
+[out]
+
+[case testPyprojectAlwaysTrueTrailingComma]
+# cmd: mypy .
+[file pyproject.toml]
+\[tool.mypy]
+always_true = """
+  FLAG_A,
+  FLAG_B,
+"""
+[file a.py]
+FLAG_A = False
+FLAG_B = False
+if not FLAG_A:  # unreachable
+    x: int = 'x'
+if not FLAG_B:  # unreachable
+    y: int = 'y'
+
+[case testPyprojectAlwaysFalseTrailingComma]
+# cmd: mypy .
+[file pyproject.toml]
+\[tool.mypy]
+always_false = """
+  FLAG_A,
+  FLAG_B,
+"""
+[file a.py]
+FLAG_A = True
+FLAG_B = True
+if FLAG_A:  # unreachable
+    x: int = 'x'
+if FLAG_B:  # unreachable
+    y: int = 'y'
+
+[case testPyprojectEnableErrorCodeTrailingComma]
+# cmd: mypy .
+[file pyproject.toml]
+\[tool.mypy]
+enable_error_code = """
+  redundant-expr,
+  ignore-without-code,
+"""
+[file a.py]
+1 + 'a'  # type: ignore  # E: "type: ignore" comment without error code (consider "type: ignore[operator]" instead)
+
+[case testPyprojectDisableErrorCodeTrailingComma]
+# cmd: mypy .
+[file pyproject.toml]
+\[tool.mypy]
+disable_error_code = """
+  operator,
+  import,
+"""
+[file a.py]
+1 + 'a'
+
+[case testPyprojectModulesTrailingComma]
+# cmd: mypy
+[file pyproject.toml]
+\[tool.mypy]
+modules = """
+  a,
+  b,
+"""
+[file a.py]
+x: str = 'x'  # ok
+[file b.py]
+y: int = 'y'  # E: Incompatible types in assignment (expression has type "str", variable has type "int")
+[file c.py]
+# This should not trigger any errors, because it is not included:
+z: int = 'z'
+[out]
+
+[case testPyprojectPackagesTrailingComma]
+# cmd: mypy
+[file pyproject.toml]
+\[tool.mypy]
+packages = """
+  a,
+  b,
+"""
+[file a/__init__.py]
+x: str = 'x'  # ok
+[file b/__init__.py]
+y: int = 'y'  # E: Incompatible types in assignment (expression has type "str", variable has type "int")
+[file c/__init__.py]
+# This should not trigger any errors, because it is not included:
+z: int = 'z'
+[out]

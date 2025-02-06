@@ -1342,6 +1342,38 @@ always_true =
   MY_VAR,
 [out]
 
+[case testCmdlineCfgModulesTrailingComma]
+# cmd: mypy
+[file mypy.ini]
+\[mypy]
+modules =
+  a,
+  b,
+[file a.py]
+x: str = 'x'  # ok
+[file b.py]
+y: int = 'y'  # E: Incompatible types in assignment (expression has type "str", variable has type "int")
+[file c.py]
+# This should not trigger any errors, because it is not included:
+z: int = 'z'
+[out]
+
+[case testCmdlineCfgPackagesTrailingComma]
+# cmd: mypy
+[file mypy.ini]
+\[mypy]
+packages =
+  a,
+  b,
+[file a/__init__.py]
+x: str = 'x'  # ok
+[file b/__init__.py]
+y: int = 'y'  # E: Incompatible types in assignment (expression has type "str", variable has type "int")
+[file c/__init__.py]
+# This should not trigger any errors, because it is not included:
+z: int = 'z'
+[out]
+
 [case testTypeVarTupleUnpackEnabled]
 # cmd: mypy --enable-incomplete-feature=TypeVarTuple --enable-incomplete-feature=Unpack a.py
 [file a.py]
