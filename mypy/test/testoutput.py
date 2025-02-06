@@ -56,3 +56,42 @@ def test_output_json(testcase: DataDrivenTestCase) -> None:
     normalized_output = [line.replace(test_temp_dir + json_os_separator, "") for line in output]
 
     assert normalized_output == testcase.output
+
+
+class OutputGitHubsuite(DataSuite):
+    files = ["outputgithub.test"]
+
+    def run_case(self, testcase: DataDrivenTestCase) -> None:
+        test_output_github(testcase)
+
+
+def test_output_github(testcase: DataDrivenTestCase) -> None:
+    """Run Mypy in a subprocess, and ensure that `--output=github` works as intended."""
+    mypy_cmdline = ["--output=github"]
+    mypy_cmdline.append(f"--python-version={'.'.join(map(str, PYTHON3_VERSION))}")
+
+    # Write the program to a file.
+    program_path = os.path.join(test_temp_dir, "main")
+    mypy_cmdline.append(program_path)
+    with open(program_path, "w", encoding="utf8") as file:
+        for s in testcase.input:
+            file.write(f"{s}\n")
+
+    output = []
+    # Type check the program.
+    out, err, returncode = api.run(mypy_cmdline)
+    # split lines, remove newlines, and remove directory of test case
+    for line in (out + err).rstrip("\n").splitlines():
+        if line.startswith(test_temp_dir + os.sep):
+            output.append(line[len(test_temp_dir + os.sep) :].rstrip("\r\n"))
+        else:
+            output.append(line.rstrip("\r\n"))
+
+    if returncode > 1:
+        output.append("!!! Mypy crashed !!!")
+
+    # Remove temp file.
+    os.remove(program_path)
+
+    normalized_output = [line.replace(test_temp_dir + os.sep, "") for line in output]
+    assert normalized_output == testcase.output

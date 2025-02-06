@@ -34,4 +34,28 @@ class JSONFormatter(ErrorFormatter):
         )
 
 
-OUTPUT_CHOICES = {"json": JSONFormatter()}
+class GitHubFormatter(ErrorFormatter):
+    """Formatter for GitHub Actions output format."""
+
+    def report_error(self, error: "MypyError") -> str:
+        """Prints out the errors as GitHub Actions annotations."""
+        command = "error" if error.severity == "error" else "notice"
+        title = f"Mypy ({error.errorcode.code})" if error.errorcode is not None else "Mypy"
+
+        message = f"{error.message}."
+
+        if error.hints:
+            message += "%0A%0A"
+            message += "%0A".join(error.hints)
+
+        return (
+            f"::{command} "
+            f"file={error.file_path},"
+            f"line={error.line},"
+            f"col={error.column},"
+            f"title={title}"
+            f"::{message}"
+        )
+
+
+OUTPUT_CHOICES = {"json": JSONFormatter(), "github": GitHubFormatter()}

@@ -1,0 +1,44 @@
+-- Test cases for `--output=json`.
+-- These cannot be run by the usual unit test runner because of the backslashes
+-- in the output, which get normalized to forward slashes by the test suite on
+-- Windows.
+
+[case testOutputGitHubNoIssues]
+# flags: --output=github
+def foo() -> None:
+    pass
+
+foo()
+[out]
+
+[case testOutputGitHubSimple]
+# flags: --output=github
+def foo() -> None:
+    pass
+
+foo(1)
+[out]
+::error file=main,line=5,col=0,title=Mypy (call-arg)::Too many arguments for "foo".
+
+[case testOutputGitHubWithHint]
+# flags: --output=github
+from typing import Optional, overload
+
+@overload
+def foo() -> None: ...
+@overload
+def foo(x: int) -> None: ...
+
+def foo(x: Optional[int] = None) -> None:
+    ...
+
+reveal_type(foo)
+
+foo('42')
+
+def bar() -> None: ...
+bar('42')
+[out]
+::notice file=main,line=12,col=12,title=Mypy (misc)::Revealed type is "Overload(def (), def (x: builtins.int))".
+::error file=main,line=14,col=0,title=Mypy (call-overload)::No overload variant of "foo" matches argument type "str".%0A%0APossible overload variants:%0A    def foo() -> None%0A    def foo(x: int) -> None
+::error file=main,line=17,col=0,title=Mypy (call-arg)::Too many arguments for "bar".
