@@ -42,6 +42,32 @@ a: Any
 b = cast(Any, a)
 [builtins fixtures/list.pyi]
 
+[case testCastToObjectNotRedunant]
+# flags: --warn-redundant-casts
+from typing import cast
+
+a = 1
+b = cast(object, 1)
+
+[case testCastFromLiteralRedundant]
+# flags: --warn-redundant-casts
+from typing import cast
+
+cast(int, 1)
+[out]
+main:4: error: Redundant cast to "int"
+
+[case testCastFromUnionOfAnyOk]
+# flags: --warn-redundant-casts
+from typing import Any, cast, Union
+
+x = Any
+y = Any
+z = Any
+
+def f(q: Union[x, y, z]) -> None:
+    cast(Union[x, y], q)
+
 -- Unused 'type: ignore' comments
 -- ------------------------------
 

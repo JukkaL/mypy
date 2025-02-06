@@ -4679,8 +4679,8 @@ class ExpressionChecker(ExpressionVisitor[Type]):
         options = self.chk.options
         if (
             options.warn_redundant_casts
-            and not isinstance(get_proper_type(target_type), AnyType)
-            and source_type == target_type
+            and not is_same_type(target_type, AnyType(TypeOfAny.special_form))
+            and is_same_type(source_type, target_type)
         ):
             self.msg.redundant_cast(target_type, expr)
         if options.disallow_any_unimported and has_any_from_unimported_type(target_type):
