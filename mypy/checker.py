@@ -1612,7 +1612,8 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                 "but must return a subtype of",
             )
         elif not isinstance(
-            get_proper_type(bound_type.ret_type), (AnyType, Instance, TupleType, UninhabitedType)
+            get_proper_type(bound_type.ret_type),
+            (AnyType, Instance, TupleType, UninhabitedType, LiteralType),
         ):
             self.fail(
                 message_registry.NON_INSTANCE_NEW_TYPE.format(

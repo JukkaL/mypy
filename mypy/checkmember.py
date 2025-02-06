@@ -380,6 +380,8 @@ def analyze_type_callable_member_access(name: str, typ: FunctionLike, mx: Member
         ret_type = tuple_fallback(ret_type)
     if isinstance(ret_type, TypedDictType):
         ret_type = ret_type.fallback
+    if isinstance(ret_type, LiteralType):
+        ret_type = ret_type.fallback
     if isinstance(ret_type, Instance):
         if not mx.is_operator:
             # When Python sees an operator (eg `3 == 4`), it automatically translates that

@@ -202,7 +202,7 @@ def class_callable(
     default_ret_type = fill_typevars(info)
     explicit_type = init_ret_type if is_new else orig_self_type
     if (
-        isinstance(explicit_type, (Instance, TupleType, UninhabitedType))
+        isinstance(explicit_type, (Instance, TupleType, UninhabitedType, LiteralType))
         # We have to skip protocols, because it can be a subtype of a return type
         # by accident. Like `Hashable` is a subtype of `object`. See #11799
         and isinstance(default_ret_type, Instance)
