@@ -490,7 +490,9 @@ class MessageBuilder:
                         )
                         failed = True
                     else:
-                        alternatives = set(original_type.type.names.keys())
+                        alternatives: set[str] = set()
+                        for type_ in original_type.type.mro:
+                            alternatives.update(type_.names.keys())
                         if module_symbol_table is not None:
                             alternatives |= {
                                 k for k, v in module_symbol_table.items() if v.module_public

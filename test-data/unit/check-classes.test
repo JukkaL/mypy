@@ -8443,3 +8443,282 @@ class C:
     def x(self) -> None:
         pass
 [builtins fixtures/property.pyi]
+
+
+[case testNameManglingAttribute]
+
+class A:
+    __x: int
+
+    def __init__(self) -> None:
+        self.__y: int
+        self._A__z: int
+
+    def get(self) -> None:
+        reveal_type(self.__x)  # N: Revealed type is "builtins.int"
+        reveal_type(self._A__x)  # N: Revealed type is "builtins.int"
+        reveal_type(self.__y)  # N: Revealed type is "builtins.int"
+        reveal_type(self._A__y)  # N: Revealed type is "builtins.int"
+        reveal_type(self.__z)  # N: Revealed type is "builtins.int"
+        reveal_type(self._A__z)  # N: Revealed type is "builtins.int"
+
+    def set(self) -> None:
+        self.__x = ""  # E: Incompatible types in assignment (expression has type "str", variable has type "int")
+        self._A__x = ""  # E: Incompatible types in assignment (expression has type "str", variable has type "int")
+        self.__y += ""  # E: Unsupported operand types for + ("int" and "str")
+        self._A__y += ""  # E: Unsupported operand types for + ("int" and "str")
+        self.__z = ""  # E: Incompatible types in assignment (expression has type "str", variable has type "int")
+        self._A__z = ""  # E: Incompatible types in assignment (expression has type "str", variable has type "int")
+
+class B(A):
+    __x: str
+
+    def __init__(self) -> None:
+        self.__y: str
+        self._A__z: str  # E: Incompatible types in assignment (expression has type "str", base class "A" defined the type as "int")
+
+    def get(self) -> None:
+        reveal_type(self.__x)  # N: Revealed type is "builtins.str"
+        reveal_type(self._A__x)  # N: Revealed type is "builtins.int"
+        reveal_type(self._B__x)  # N: Revealed type is "builtins.str"
+        reveal_type(self.__y)  # N: Revealed type is "builtins.str"
+        reveal_type(self._A__y)  # N: Revealed type is "builtins.int"
+        reveal_type(self._B__y)  # N: Revealed type is "builtins.str"
+        self.__z  # E: "B" has no attribute "_B__z"; maybe "_A__z", "_B__x", or "_B__y"?
+        reveal_type(self._A__z)  # N: Revealed type is "builtins.str"
+        self._B__z  # E: "B" has no attribute "_B__z"; maybe "_A__z", "_B__x", or "_B__y"?
+
+[case testNameManglingMethod]
+
+class A:
+
+    def __f(self) -> int:
+        ...
+
+    def g(self) -> None:
+        reveal_type(self.__f())  # N: Revealed type is "builtins.int"
+        reveal_type(self._A__f())  # N: Revealed type is "builtins.int"
+
+    async def __h(self) -> int:
+        ...
+
+    async def i(self) -> None:
+        await reveal_type(self.__h())  # N: Revealed type is "typing.Coroutine[Any, Any, builtins.int]"
+        await reveal_type(self._A__h())  # N: Revealed type is "typing.Coroutine[Any, Any, builtins.int]"
+
+class B(A):
+
+    def j(self) -> None:
+        reveal_type(self._A__f())  # N: Revealed type is "builtins.int"
+        self.__f()  # E: "B" has no attribute "_B__f"; maybe "_A__f"?
+        self._B__f()  # E: "B" has no attribute "_B__f"; maybe "_A__f"?
+
+    async def k(self) -> None:
+        await reveal_type(self._A__h())  # N: Revealed type is "typing.Coroutine[Any, Any, builtins.int]"
+        self.__h()  # E: "B" has no attribute "_B__h"; maybe "_A__h"?
+        self._B__h()  # E: "B" has no attribute "_B__h"; maybe "_A__h"?
+
+class C(B):
+
+    def __f(self) -> str:
+        ...
+
+    def _A__f(self) -> str:  # E: Return type "str" of "_A__f" incompatible with return type "int" in supertype "A"
+        ...
+
+    async def __h(self) -> str:
+        ...
+
+    async def _A__h(self) -> str:  # E: Return type "Coroutine[Any, Any, str]" of "_A__h" incompatible with return type "Coroutine[Any, Any, int]" in supertype "A"
+        ...
+
+[case testNameManglingDecorator]
+from typing import Callable, Protocol, Type
+
+class FuncWrapper(Protocol):
+    def __call__(__self, f: Callable[[A], int]) -> Callable[[A], str]: ...
+def decorator_func(string: str) -> FuncWrapper: ...
+
+class ClassModifier(Protocol):
+    def __call__(__self, c: Type[A._A__B]) -> Type[A._A__B]: ...
+def decorator_class(string: str) -> ClassModifier: ...
+
+class A:
+    __x: str = "test"
+
+    @decorator_func(__x)
+    def __wrapped(self) -> int: ...
+
+    @decorator_class(__x)
+    class __B: ...
+
+a: A
+a.__wrapped()  # E: "A" has no attribute "__wrapped"; maybe "_A__wrapped"?
+reveal_type(a._A__wrapped())  # N: Revealed type is "builtins.str"
+a.__B  # E: "A" has no attribute "__B"
+reveal_type(a._A__B)  # N: Revealed type is "def () -> __main__.A._A__B"
+
+[case testNameManglingNestedClass]
+
+class A:
+    class __B:
+        __y: int
+
+        def __g(self) -> str:
+            reveal_type(self.__y)  # N: Revealed type is "builtins.int"
+            reveal_type(self._B__y)  # N: Revealed type is "builtins.int"
+            return "x"
+
+        reveal_type(__g)  # N: Revealed type is "def (self: __main__.A._A__B) -> builtins.str"
+        reveal_type(_B__g)  # N: Revealed type is "def (self: __main__.A._A__B) -> builtins.str"
+
+    __x: int
+
+    def __f(self) -> float:
+        reveal_type(self.__x)  # N: Revealed type is "builtins.int"
+        reveal_type(self._A__x)  # N: Revealed type is "builtins.int"
+        b = self.__B()
+        b.__y  # E: "_A__B" has no attribute "_A__y"; maybe "_B__y"?
+        b._A__y  # E: "_A__B" has no attribute "_A__y"; maybe "_B__y"?
+        reveal_type(b._B__y)  # N: Revealed type is "builtins.int"
+        return 1.0
+
+    reveal_type(__f)  # N: Revealed type is "def (self: __main__.A) -> builtins.float"
+    reveal_type(_A__f)  # N: Revealed type is "def (self: __main__.A) -> builtins.float"
+
+[case testNameManglingInheritance]
+
+class __A: ...
+class B(__A): ...
+
+import enum as __enum
+class C(__enum.Flag): ...
+[builtins fixtures/tuple.pyi]
+
+[case testNameManglingAnnotationsPast]
+from typing import Generic, TypeVar
+
+__T = TypeVar("__T")
+
+class A(Generic[__T]):
+    __x: __T  # E: Name "_A__T" is not defined
+
+__y = int
+class __B:
+    def f1(self, a: A[int]) -> __y:  # E: Name "_B__y" is not defined
+        a.__x  # E: "A[int]" has no attribute "_B__x"; maybe "_A__x"?
+
+    def f2(self, a: A) -> "__y":
+        a.__x  # E: "A[Any]" has no attribute "_B__x"; maybe "_A__x"?
+        return 1
+
+class C:
+    b1: __B  # E: Name "_C__B" is not defined
+    b2: "__B"
+
+    def f1(self, __x: __y, __z: int) -> None:  # E: Name "_C__y" is not defined
+        reveal_type(__z)  # N: Revealed type is "builtins.int"
+
+    def f2(self, __x: "__y", __z: "int") -> None:
+        reveal_type(__x)  # N: Revealed type is "builtins.int"
+        reveal_type(__z)  # N: Revealed type is "builtins.int"
+
+reveal_type(C().b2)  # N: Revealed type is "__main__.__B"
+
+[case testNameManglingAnnotationsFuture]
+from __future__ import annotations
+from typing import Generic, TypeVar
+
+__T = TypeVar("__T")
+class A(Generic[__T]):
+    __x: __T
+
+__y = int
+class __B:
+    def f1(self, a: A[int]) -> __y:
+        a.__x  # E: "A[int]" has no attribute "_B__x"; maybe "_A__x"?
+        return 1
+
+    def f2(self, a: A) -> "__y":
+        a.__x  # E: "A[Any]" has no attribute "_B__x"; maybe "_A__x"?
+        return 1
+
+class C:
+    b1: __B
+    b2: "__B"
+
+    def f1(self, __x: __y, __z: int) -> None:
+        reveal_type(__x)  # N: Revealed type is "builtins.int"
+        reveal_type(__z)  # N: Revealed type is "builtins.int"
+
+    def f2(self, __x: "__y", __z: "int") -> None:
+        reveal_type(__x)  # N: Revealed type is "builtins.int"
+        reveal_type(__z)  # N: Revealed type is "builtins.int"
+
+reveal_type(C().b1)  # N: Revealed type is "__main__.__B"
+reveal_type(C().b2)  # N: Revealed type is "__main__.__B"
+[builtins fixtures/tuple.pyi]
+
+[case testNameManglingSlots]
+
+class A:
+    __slots__ = ["__x"]
+
+    def __init__(self) -> None:
+        self.__x = 1
+
+A().__x = 1  # E: "A" has no attribute "__x"
+A()._A__x = 1
+
+class B(A):
+    def __init__(self) -> None:
+        self.__x = 1
+
+B().__x = 1  # E: "B" has no attribute "__x"
+B()._B__x = 1
+
+class C(A):
+    __slots__ = []
+
+    def __init__(self) -> None:
+        self.__x = 1  # E: Trying to assign name "_C__x" that is not in "__slots__" of type "__main__.C"
+
+C().__x = 1  # E: "C" has no attribute "__x"
+C()._C__x = 1  # E: Trying to assign name "_C__x" that is not in "__slots__" of type "__main__.C"
+
+class D(A):
+    __slots__ = ["__x"]
+
+    def __init__(self) -> None:
+        self.__x = 1
+
+D().__x = 1  # E: "D" has no attribute "__x"
+D()._D__x = 1
+
+class E(A):
+    __slots__ = ("__x",)
+
+    def __init__(self) -> None:
+        self.__x = 1
+
+E().__x = 1  # E: "E" has no attribute "__x"
+E()._E__x = 1
+
+class F(A):
+    __slots__ = "__x"
+
+    def __init__(self) -> None:
+        self.__x = 1
+
+F().__x = 1  # E: "F" has no attribute "__x"
+F()._F__x = 1
+
+class G(A):
+    __slots__ = {"__x": "docstring"}
+
+    def __init__(self) -> None:
+        self.__x = 1
+
+G().__x = 1  # E: "G" has no attribute "__x"
+G()._G__x = 1
+[builtins fixtures/dict.pyi]

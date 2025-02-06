@@ -62,11 +62,15 @@ def is_dunder(name: str, exclude_special: bool = False) -> bool:
     """
     if exclude_special and name in SPECIAL_DUNDERS:
         return False
-    return name.startswith("__") and name.endswith("__")
+    return name.startswith("__") and name.endswith("__") and bool(name.replace("_", ""))
 
 
 def is_sunder(name: str) -> bool:
     return not is_dunder(name) and name.startswith("_") and name.endswith("_")
+
+
+def maybe_mangled(member_name: str, type_name: str) -> bool:
+    return member_name.startswith(f"_{type_name}__") and not member_name.endswith("__")
 
 
 def split_module_names(mod_name: str) -> list[str]:

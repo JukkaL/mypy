@@ -74,6 +74,7 @@ from mypy.types import (
     get_proper_type,
 )
 from mypy.typetraverser import TypeTraverserVisitor
+from mypy.util import is_dunder, maybe_mangled
 
 if TYPE_CHECKING:  # import for forward declaration only
     import mypy.checker
@@ -1206,7 +1207,7 @@ def analyze_enum_class_attribute_access(
     if name in EXCLUDED_ENUM_ATTRIBUTES:
         return report_missing_attribute(mx.original_type, itype, name, mx)
     # Dunders and private names are not Enum members
-    if name.startswith("__") and name.replace("_", "") != "":
+    if is_dunder(name) or maybe_mangled(name, itype.type.name):
         return None
 
     node = itype.type.get(name)

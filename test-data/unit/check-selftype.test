@@ -955,17 +955,17 @@ In = TypeVar('In')
 Out = TypeVar('Out')
 Other = TypeVar('Other')
 
-_1 = TypeVar('_1')
-_2 = TypeVar('_2')
-__1 = TypeVar('__1')
-__2 = TypeVar('__2')
+A1 = TypeVar('A1')
+A2 = TypeVar('A2')
+B1 = TypeVar('B1')
+B2 = TypeVar('B2')
 
 class Lnk(Generic[In, Out]):
     @overload
     def __rshift__(self, other: Lnk[Out, Other]) -> Lnk[In,Other]: ...
     @overload
-    def __rshift__(self: Lnk[In, Tuple[_1, _2]],
-                   other: Tuple[Lnk[_1, __1], Lnk[_2, __2]]) -> Lnk[In, Tuple[__1, __2]]: ...
+    def __rshift__(self: Lnk[In, Tuple[A1, A2]],
+                   other: Tuple[Lnk[A1, B1], Lnk[A2, B2]]) -> Lnk[In, Tuple[B1, B2]]: ...
     def __rshift__(self: Any, other: Any) -> Any:
         ...
 

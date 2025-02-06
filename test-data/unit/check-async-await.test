@@ -177,7 +177,7 @@ async def f() -> None:
 [builtins fixtures/async_await.pyi]
 [typing fixtures/typing-async.pyi]
 [out]
-main:7: error: "Coroutine[Any, Any, AsyncGenerator[str, None]]" has no attribute "__aiter__" (not async iterable)
+main:7: error: "Coroutine[Any, Any, AsyncGenerator[str, None]]" has no attribute "__aiter__"; maybe "__await__"? (not async iterable)
 main:7: note: Maybe you forgot to use "await"?
 
 [case testAsyncForErrorCanBeIgnored]

@@ -226,6 +226,25 @@ reveal_type(d.foo)  # N: Revealed type is "builtins.str"
 reveal_type(d.bar)  # N: Revealed type is "builtins.int"
 [builtins fixtures/dataclasses.pyi]
 
+[case testDataclassCompatibleOverrideEqualName]
+from dataclasses import dataclass, InitVar
+import m
+
+@dataclass
+class D(m.D):
+    x: InitVar[int]
+
+[file m.py]
+from dataclasses import dataclass
+
+@dataclass
+class D:
+    y: int
+
+[out]
+
+[builtins fixtures/dataclasses.pyi]
+
 [case testDataclassIncompatibleFrozenOverride]
 from dataclasses import dataclass
 

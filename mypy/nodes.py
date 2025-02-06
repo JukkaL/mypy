@@ -14,7 +14,7 @@ from mypy_extensions import trait
 
 import mypy.strconv
 from mypy.options import Options
-from mypy.util import is_typeshed_file, short_type
+from mypy.util import is_dunder, is_typeshed_file, maybe_mangled, short_type
 from mypy.visitor import ExpressionVisitor, NodeVisitor, StatementVisitor
 
 if TYPE_CHECKING:
@@ -3242,7 +3242,7 @@ class TypeInfo(SymbolNode):
             if (
                 isinstance(sym.node, Var)
                 and name not in EXCLUDED_ENUM_ATTRIBUTES
-                and not name.startswith("__")
+                and not (is_dunder(name) or maybe_mangled(name, self.name))
                 and sym.node.has_explicit_value
             )
         ]

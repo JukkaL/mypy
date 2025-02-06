@@ -1963,17 +1963,33 @@ from dataclasses import dataclass, replace
 class A:
     x: int
 
+@dataclass
+class B(A):
+    y: str
+
 a = A(x=42)
 a2 = replace(a, x=42)
 reveal_type(a2)
 a2 = replace()
-a2 = replace(a, x='spam')
+a2 = replace(a, x="spam")
 a2 = replace(a, x=42, q=42)
+
+b = B(x=42, y="egg")
+b2 = replace(b, x=42, y="egg")
+reveal_type(b2)
+replace()
+replace(b, x="egg", y=42)
+replace(b, x=42, y="egg", q=42)
 [out]
-_testDataclassReplace.py:9: note: Revealed type is "_testDataclassReplace.A"
-_testDataclassReplace.py:10: error: Too few arguments for "replace"
-_testDataclassReplace.py:11: error: Argument "x" to "replace" of "A" has incompatible type "str"; expected "int"
-_testDataclassReplace.py:12: error: Unexpected keyword argument "q" for "replace" of "A"
+_testDataclassReplace.py:13: note: Revealed type is "_testDataclassReplace.A"
+_testDataclassReplace.py:14: error: Too few arguments for "replace"
+_testDataclassReplace.py:15: error: Argument "x" to "replace" of "A" has incompatible type "str"; expected "int"
+_testDataclassReplace.py:16: error: Unexpected keyword argument "q" for "replace" of "A"
+_testDataclassReplace.py:20: note: Revealed type is "_testDataclassReplace.B"
+_testDataclassReplace.py:21: error: Too few arguments for "replace"
+_testDataclassReplace.py:22: error: Argument "x" to "replace" of "B" has incompatible type "str"; expected "int"
+_testDataclassReplace.py:22: error: Argument "y" to "replace" of "B" has incompatible type "int"; expected "str"
+_testDataclassReplace.py:23: error: Unexpected keyword argument "q" for "replace" of "B"
 
 [case testGenericInferenceWithTuple]
 # flags: --new-type-inference

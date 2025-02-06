@@ -303,7 +303,14 @@ from mypy.types import (
 )
 from mypy.types_utils import is_invalid_recursive_alias, store_argument_type
 from mypy.typevars import fill_typevars
-from mypy.util import correct_relative_import, is_dunder, module_prefix, unmangle, unnamed_function
+from mypy.util import (
+    correct_relative_import,
+    is_dunder,
+    maybe_mangled,
+    module_prefix,
+    unmangle,
+    unnamed_function,
+)
 from mypy.visitor import NodeVisitor
 
 T = TypeVar("T")
@@ -4292,7 +4299,7 @@ class SemanticAnalyzer(
             kind == MDEF
             and isinstance(self.type, TypeInfo)
             and self.type.is_enum
-            and not name.startswith("__")
+            and not (is_dunder(name) or maybe_mangled(name, self.type.name))
         ):
             # Special case: we need to be sure that `Enum` keys are unique.
             if existing is not None and not isinstance(existing.node, PlaceholderNode):

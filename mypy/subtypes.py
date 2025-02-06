@@ -2061,9 +2061,10 @@ def infer_variance(info: TypeInfo, i: int) -> bool:
         tvar = info.defn.type_vars[i]
         self_type = fill_typevars(info)
         for member in all_non_object_members(info):
-            # __mypy-replace is an implementation detail of the dataclass plugin
-            if member in ("__init__", "__new__", "__mypy-replace"):
+            if member in ("__init__", "__new__"):
                 continue
+            if "mypy-" in member:
+                continue  # skip internally added methods
 
             if isinstance(self_type, TupleType):
                 self_type = mypy.typeops.tuple_fallback(self_type)

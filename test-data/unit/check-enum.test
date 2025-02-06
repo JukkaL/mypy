@@ -2260,8 +2260,7 @@ class MyEnum(Enum):
     B = 2
     __my_dict = {A: "ham", B: "spam"}
 
-# TODO: change the next line to use MyEnum._MyEnum__my_dict when mypy implements name mangling
-x: MyEnum = MyEnum.__my_dict  # E: Incompatible types in assignment (expression has type "Dict[int, str]", variable has type "MyEnum")
+x: MyEnum = MyEnum._MyEnum__my_dict  # E: Incompatible types in assignment (expression has type "Dict[int, str]", variable has type "MyEnum")
 [builtins fixtures/enum.pyi]
 
 [case testEnumWithPrivateAttributeReachability]

@@ -91,8 +91,8 @@ _TRANSFORM_SPEC_FOR_DATACLASSES: Final = DataclassTransformSpec(
     frozen_default=False,
     field_specifiers=DATACLASS_FIELD_SPECIFIERS,
 )
-_INTERNAL_REPLACE_SYM_NAME: Final = "__mypy-replace"
-_INTERNAL_POST_INIT_SYM_NAME: Final = "__mypy-post_init"
+_INTERNAL_REPLACE_SYM_NAME: Final = "mypy-replace"
+_INTERNAL_POST_INIT_SYM_NAME: Final = "mypy-post_init"
 
 
 class DataclassAttribute:
@@ -422,20 +422,22 @@ class DataclassTransformer:
         Stashes the signature of 'dataclasses.replace(...)' for this specific dataclass
         to be used later whenever 'dataclasses.replace' is called for this dataclass.
         """
+        mangled_name = _mangle_internal_sym_name(self._cls.fullname, _INTERNAL_REPLACE_SYM_NAME)
         add_method_to_class(
             self._api,
             self._cls,
-            _INTERNAL_REPLACE_SYM_NAME,
+            mangled_name,
             args=[attr.to_argument(self._cls.info, of="replace") for attr in attributes],
             return_type=NoneType(),
             is_staticmethod=True,
         )
 
     def _add_internal_post_init_method(self, attributes: list[DataclassAttribute]) -> None:
+        mangled_name = _mangle_internal_sym_name(self._cls.fullname, _INTERNAL_POST_INIT_SYM_NAME)
         add_method_to_class(
             self._api,
             self._cls,
-            _INTERNAL_POST_INIT_SYM_NAME,
+            mangled_name,
             args=[
                 attr.to_argument(self._cls.info, of="__post_init__")
                 for attr in attributes
@@ -971,6 +973,16 @@ def dataclass_class_maker_callback(ctx: ClassDefContext) -> bool:
     return transformer.transform()
 
 
+def _mangle_internal_sym_name(type_fullname: str, member_name: str) -> str:
+    """Create an internal symbol name with the class name mangled in as usual, but that also
+    contains the class module path to avoid false positives when subclassing a dataclass with
+    same name."""
+    module_name, _, type_name = type_fullname.rpartition(".")
+    module_name = module_name.replace(".", "-")
+    type_name = type_name.lstrip("_")
+    return f"_{type_name}__{module_name}__{member_name}"
+
+
 def _get_transform_spec(reason: Expression) -> DataclassTransformSpec:
     """Find the relevant transform parameters from the decorator/parent class/metaclass that
     triggered the dataclasses plugin.
@@ -1029,7 +1041,8 @@ def _get_expanded_dataclasses_fields(
             ctx, get_proper_type(typ.upper_bound), display_typ, parent_typ
         )
     elif isinstance(typ, Instance):
-        replace_sym = typ.type.get_method(_INTERNAL_REPLACE_SYM_NAME)
+        mangled_name = _mangle_internal_sym_name(typ.type.fullname, _INTERNAL_REPLACE_SYM_NAME)
+        replace_sym = typ.type.get_method(mangled_name)
         if replace_sym is None:
             return None
         replace_sig = replace_sym.type
@@ -1113,7 +1126,8 @@ def check_post_init(api: TypeChecker, defn: FuncItem, info: TypeInfo) -> None:
         return
     assert isinstance(defn.type, FunctionLike)
 
-    ideal_sig_method = info.get_method(_INTERNAL_POST_INIT_SYM_NAME)
+    mangled_name = _mangle_internal_sym_name(info.fullname, _INTERNAL_POST_INIT_SYM_NAME)
+    ideal_sig_method = info.get_method(mangled_name)
     assert ideal_sig_method is not None and ideal_sig_method.type is not None
     ideal_sig = ideal_sig_method.type
     assert isinstance(ideal_sig, ProperType)  # we set it ourselves
