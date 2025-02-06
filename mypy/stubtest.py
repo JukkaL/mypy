@@ -1482,6 +1482,8 @@ IGNORABLE_CLASS_DUNDERS: Final = frozenset(
         "__vectorcalloffset__",  # undocumented implementation detail of the vectorcall protocol
         "__firstlineno__",
         "__static_attributes__",
+        "__annotate__",
+        "__classdictcell__",
         # isinstance/issubclass hooks that type-checkers don't usually care about
         "__instancecheck__",
         "__subclasshook__",
