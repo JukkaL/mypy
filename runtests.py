@@ -65,6 +65,15 @@ cmds = {
         "-p",
         "mypyc",
     ],
+    # Type check setup.py as well
+    "self-packaging": [
+        executable,
+        "-m",
+        "mypy",
+        "--config-file",
+        "mypy_self_check.ini",
+        "setup.py",
+    ],
     # Lint
     "lint": ["pre-commit", "run", "--all-files"],
     # Fast test cases only (this is the bulk of the test suite)

@@ -31,7 +31,7 @@ def is_list_of_setuptools_extension(items: list[Any]) -> TypeGuard[list[Extensio
     return all(isinstance(item, Extension) for item in items)
 
 
-def find_package_data(base, globs, root="mypy"):
+def find_package_data(base: str, globs: list[str], root: str = "mypy") -> list[str]:
     """Find all interesting data files, for setup(package_data=)
 
     Arguments:
@@ -52,13 +52,13 @@ def find_package_data(base, globs, root="mypy"):
 
 
 class CustomPythonBuild(build_py):
-    def pin_version(self):
+    def pin_version(self) -> None:
         path = os.path.join(self.build_lib, "mypy")
         self.mkpath(path)
         with open(os.path.join(path, "version.py"), "w") as stream:
             stream.write(f'__version__ = "{version}"\n')
 
-    def run(self):
+    def run(self) -> None:
         self.execute(self.pin_version, ())
         build_py.run(self)
 
@@ -153,10 +153,10 @@ if USE_MYPYC:
         # our Appveyor builds run out of memory sometimes.
         multi_file=sys.platform == "win32" or force_multifile,
     )
-    assert is_list_of_setuptools_extension(ext_modules), "Expected mypycify to use setuptools"
 
 else:
     ext_modules = []
 
+assert is_list_of_setuptools_extension(ext_modules), "Expected mypycify to use setuptools"
 
 setup(version=version, ext_modules=ext_modules, cmdclass=cmdclass)
